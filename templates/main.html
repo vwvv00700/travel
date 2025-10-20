@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TravelMate | 여행 에이전트</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+    {% include "header.html" %}
+
+    <section class="cont-wrap cont-main">
+        <div class="hero-content">
+            <h2>당신만의 여행을 설계해주는 여행 에이전트</h2>
+            <p>목적지를 입력하면 AI가 나에게 꼭 맞는 여행지를 추천해줘요.</p>
+
+            <form method="post" action="{% url 'travel:travel_list' %}">
+                <div class="search-box">
+                    {% csrf_token %}
+                    <input type="text" name="searchBox" placeholder="예: 강남 2박3일 힐링 여행지, 제주 1박2일 커플 여행" />
+                    <button type="submit">검색</button>
+                </div>
+            </form>
+
+            <p>AND</p>
+
+            <a class="btn" href="{% url 'select' %}" style="display: inline-block;">AI 추천 코스</a>
+        </div>
+    </section>
+
+    <footer>&copy; 2025 TravelMate. All Rights Reserved.</footer>
+</body>
+</html>
