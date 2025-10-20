@@ -5,3 +5,6 @@ def main(request):
 
 def select(request):
     return render(request, "select.html")
+
+def chat(request):
+    return render(request, "chat.html")

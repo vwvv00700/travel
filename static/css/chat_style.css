@@ -1,0 +1,9 @@
+body { font-family: Arial, sans-serif; padding: 20px; background: #f0f2f5; }
+h1 { text-align: center; color: #333; }
+#cards { display: flex; flex-wrap: wrap; justify-content: center; }
+.card { background: white; padding: 15px; margin: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 250px; }
+button { margin-top: 5px; padding: 5px 10px; border: none; border-radius: 5px; background: #4CAF50; color: white; cursor: pointer; }
+button:hover { background: #45a049; }
+.badge { background: #eee; padding: 2px 6px; margin: 2px; border-radius: 5px; display: inline-block; }
+input { width: calc(100% - 12px); padding: 5px; margin-top: 5px; }
+ul { list-style: none; padding-left: 0; }

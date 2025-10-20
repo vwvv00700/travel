@@ -1,5 +1,7 @@
 # travel/models.py
 from django.db import models
+from sqlmodel import SQLModel, Field, create_engine, Session
+from typing import Optional, List
 
 
 class Place(models.Model):
@@ -65,3 +67,14 @@ class UploadEntry(Place):
         proxy = True
         verbose_name = "데이터 업로드"
         verbose_name_plural = "데이터 업로드"
+
+    engine = create_engine("sqlite:///database.db")
+
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    intro: str
+    interests: Optional[str] = ""  # 배지 저장 (콤마 구분)
+
+def init_db():
+    SQLModel.metadata.create_all(engine)
