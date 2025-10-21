@@ -1,8 +1,14 @@
-# travel/models.py
 from django.db import models
-from sqlmodel import SQLModel, Field, create_engine, Session
-from typing import Optional, List
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+# SQLModel 관련 불필요한 import 및 코드는 모두 제거했습니다.
 
+# Django의 기본 사용자 모델을 가져옵니다.
+User = get_user_model() 
+
+# =======================================================
+# 1. 기존 모델 (Place, Review)
+# =======================================================
 
 class Place(models.Model):
     # 장소 기본 정보
@@ -40,9 +46,7 @@ class Place(models.Model):
 class Review(models.Model):
     # 리뷰 작성자
     author = models.CharField(max_length=200, blank=True, null=True)
-    # 
     name = models.CharField(max_length=200, blank=True, null=True)
-    # 어떤 장소에 대한 리뷰인지(문자열 키, FK 아님)
     place_id = models.CharField(max_length=120, db_index=True)
     rating = models.FloatField(blank=True, null=True)
     content = models.TextField(blank=True, null=True)
@@ -62,19 +66,87 @@ class Review(models.Model):
         who = self.author or "anonymous"
         return f"{who} → {self.place_id}"
 
+
+# =======================================================
+# 2. 인증/여행 계획 모델 (문법 오류 수정됨)
+# =======================================================
+
+class UserProfile(models.Model):
+    # 1:1 관계를 통해 Django의 기본 User와 연결
+    user = models.OneToOneField(User, on_delete=models.CASCADE) 
+    
+    intro = models.CharField(max_length=255, blank=True, null=True)
+    interests = models.CharField(max_length=255, blank=True, null=True, default="") # 배지 저장
+    
+    def __str__(self):
+        return f"Profile of {self.user.username}"
+
+
+class TravelPlan(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    
+    # 1. 매칭 조건
+    location_city = models.CharField(max_length=100)
+    start_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(default=timezone.now)
+    is_seeking_partner = models.BooleanField(default=True)
+    
+    # 2. 동선 정보
+    route_data = models.JSONField(default=list) 
+
+    regdate = models.DateTimeField(auto_now_add=True)
+    chgdate = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "여행 계획"
+        verbose_name_plural = "여행 계획"
+
+    def __str__(self):
+        return f"{self.user.username}의 {self.location_city} 계획"
+
+# =======================================================
+# 3. 채팅 모델 (Channels용 필수 추가)
+# =======================================================
+
+class ChatRoom(models.Model):
+    # ChatRoom의 고유 이름 (웹소켓 room_name으로 사용: 예: chat_1_5)
+    room_name = models.CharField(max_length=255, unique=True, db_index=True)
+    
+    # 두 사용자 관계
+    user1 = models.ForeignKey(User, related_name='chatrooms_as_user1', on_delete=models.CASCADE)
+    user2 = models.ForeignKey(User, related_name='chatrooms_as_user2', on_delete=models.CASCADE)
+    
+    regdate = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Chat between {self.user1.username} and {self.user2.username}"
+
+
+class ChatMessage(models.Model):
+    room = models.ForeignKey(ChatRoom, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['timestamp']
+        verbose_name = "채팅 메시지"
+        verbose_name_plural = "채팅 메시지"
+        
+    def __str__(self):
+        return f"[{self.timestamp.strftime('%H:%M')}] {self.sender.username}: {self.content[:20]}..."
+
 class UploadEntry(Place):
+    """
+    Place 모델을 상속받는 프록시 모델입니다.
+    데이터 업로드/관리 목적으로 사용된 것으로 추정됩니다.
+    """
     class Meta:
         proxy = True
         verbose_name = "데이터 업로드"
         verbose_name_plural = "데이터 업로드"
 
-    engine = create_engine("sqlite:///database.db")
-
-class User(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
-    intro: str
-    interests: Optional[str] = ""  # 배지 저장 (콤마 구분)
-
-def init_db():
-    SQLModel.metadata.create_all(engine)
+    # engine = create_engine("sqlite:///database.db") 
+    # ❌ Django ORM 사용 시 이 코드는 제거해야 합니다!
+    pass # 기존 코드에서 create_engine을 제거한 뒤 pass로 대체
+    

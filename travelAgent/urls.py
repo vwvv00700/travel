@@ -17,12 +17,20 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from .views import main, select, chat
+from .views import main, select, chat, signup_view
 
 urlpatterns = [
+    # 1. 메인/홈 페이지
     path('', main, name='main'),
+
+    # 2. 채팅방 목록/매칭 페이지 (이 페이지에서 파트너를 선택)
+    # URL 경로 시작에 슬래시(/)를 넣지 않습니다.
+    path('chat/', chat, name='chat_list'),
     path('/chat', chat, name='chat'),
     path('/select', select, name='select'),
     path("travel/", include("travel.urls")),
     path("admin/", admin.site.urls),
+    # 이 줄을 추가하세요! (accounts/login/ 등의 경로를 등록해줍니다)
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/signup/', signup_view, name='signup'),
 ]

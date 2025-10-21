@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "import_export",
     "travel.apps.TravelConfig",
+    'channels',       # 채널스 등록
 ]
 
 MIDDLEWARE = [
@@ -117,7 +118,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles" 
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
@@ -132,3 +133,35 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DATA_DIR = BASE_DIR / "data"
+
+# ASGI 및 Channel Layer 설정
+ASGI_APPLICATION = 'travelAgent.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        # 개발 환경용 인메모리 레이어 (DB에만 메시지 저장, 재시작 시 실시간 그룹 정보만 초기화됨)
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+# 템플릿 디렉토리 설정 (이전에 문제되었던 부분)
+TEMPLATES = [
+    {
+        # ...
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'], # ✅ 프로젝트 루트의 templates 폴더를 찾도록 설정
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+        # ...
+    },
+]
+
+# 로그인 성공 후 리디렉션 URL (로그인 기능 사용 시)
+LOGIN_REDIRECT_URL = '/chat/'
