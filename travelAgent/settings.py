@@ -164,4 +164,5 @@ TEMPLATES = [
 ]
 
 # 로그인 성공 후 리디렉션 URL (로그인 기능 사용 시)
-LOGIN_REDIRECT_URL = '/chat/'
+LOGIN_REDIRECT_URL = '/'  # 메인 화면 URL
+LOGIN_URL = '/accounts/login/'  # 로그인 필요 시 이동할 URL

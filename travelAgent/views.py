@@ -1,8 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from travel.models import TravelPlan, ChatRoom
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
 
 def main(request):
     return render(request, "main.html")
@@ -57,9 +59,12 @@ def chat(request):
 
 def signup_view(request):
     if request.method == 'POST':
-        # 회원가입 처리 후 메인으로 리디렉션
-        return redirect('main')
-
-    # GET 요청 시 회원가입 페이지 렌더링
-    return render(request, 'registration/signup.html', {})
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '회원가입이 완료되었습니다. 로그인 해주세요.')
+            return redirect('login')  # urls.py에서 name='login' 확인
+    else:
+        form = UserCreationForm()
+    return render(request, 'chat/signup.html', {'form': form})
 

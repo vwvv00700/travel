@@ -5,8 +5,8 @@
         <a href="{% url 'chat' %}">채팅</a>
         <a href="{% url 'admin:index' %}">ADMIN</a>
         <a href="{% url 'select' %}">AI 추천 코스</a>
-        <a href="#">로그인</a>
-        <!-- <a href="#">로그아웃</a> -->
-        <a href="#">회원가입</a>
+        <a href="{% url 'login' %}">로그인</a>
+        <a href="{% url 'signup' %}">로그아웃</a>
+        <a href="{% url 'signup' %}">회원가입</a>
     </nav>
 </header>

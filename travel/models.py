@@ -83,58 +83,32 @@ class UserProfile(models.Model):
 
 
 class TravelPlan(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    
-    # 1. 매칭 조건
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     location_city = models.CharField(max_length=100)
-    start_date = models.DateField(default=timezone.now)
-    end_date = models.DateField(default=timezone.now)
+    start_date = models.DateField()
+    end_date = models.DateField()
     is_seeking_partner = models.BooleanField(default=True)
-    
-    # 2. 동선 정보
-    route_data = models.JSONField(default=list) 
-
-    regdate = models.DateTimeField(auto_now_add=True)
-    chgdate = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        verbose_name = "여행 계획"
-        verbose_name_plural = "여행 계획"
 
     def __str__(self):
-        return f"{self.user.username}의 {self.location_city} 계획"
-
-# =======================================================
-# 3. 채팅 모델 (Channels용 필수 추가)
-# =======================================================
+        return f"{self.user.username} - {self.location_city}"
 
 class ChatRoom(models.Model):
-    # ChatRoom의 고유 이름 (웹소켓 room_name으로 사용: 예: chat_1_5)
-    room_name = models.CharField(max_length=255, unique=True, db_index=True)
-    
-    # 두 사용자 관계
-    user1 = models.ForeignKey(User, related_name='chatrooms_as_user1', on_delete=models.CASCADE)
-    user2 = models.ForeignKey(User, related_name='chatrooms_as_user2', on_delete=models.CASCADE)
-    
-    regdate = models.DateTimeField(auto_now_add=True)
+    participants = models.ManyToManyField(User)
+    travel_plan1 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan1')
+    travel_plan2 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan2')
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Chat between {self.user1.username} and {self.user2.username}"
-
+        return f"ChatRoom({self.id}): {self.travel_plan1} <-> {self.travel_plan2}"
 
 class ChatMessage(models.Model):
-    room = models.ForeignKey(ChatRoom, related_name='messages', on_delete=models.CASCADE)
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        ordering = ['timestamp']
-        verbose_name = "채팅 메시지"
-        verbose_name_plural = "채팅 메시지"
-        
     def __str__(self):
-        return f"[{self.timestamp.strftime('%H:%M')}] {self.sender.username}: {self.content[:20]}..."
+        return f"{self.sender.username}: {self.message[:20]}"
 
 class UploadEntry(Place):
     """
