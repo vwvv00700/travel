@@ -1,0 +1,75 @@
+{% extends 'base_diary.html' %}
+
+{% block title %}기록 편집{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md border border-slate-200">
+    <h1 class="text-3xl font-bold text-slate-800 mb-6 text-center">기록 편집</h1>
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label class="block text-sm font-medium text-slate-700">소속 다이어리:</label>
+            <p class="text-lg font-semibold text-slate-800">{{ travel_diary.name }}</p>
+            {{ form.travel.as_hidden }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_photo" class="block text-sm font-medium text-slate-700">사진:</label>
+            {{ form.photo }}
+            {% if form.photo.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ form.photo.errors }}</p>
+            {% endif %}
+            <div class="mt-4 border border-slate-300 rounded-lg p-2 flex justify-center items-center min-h-[200px] bg-slate-50">
+                {% if diary_entry.photo %}
+                    <img id="image-preview" src="{{ diary_entry.photo.url }}" alt="업로드 미리보기" class="max-w-full max-h-[300px] object-contain">
+                {% else %}
+                    <img id="image-preview" src="#" alt="업로드 미리보기" class="max-w-full max-h-[300px] object-contain hidden">
+                    <span id="preview-placeholder" class="text-slate-400">이미지 미리보기</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="id_comment" class="block text-sm font-medium text-slate-700">감상평:</label>
+            {{ form.comment }}
+            {% if form.comment.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ form.comment.errors }}</p>
+            {% endif %}
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out">수정 완료</button>
+        <a href="{% url 'travel:travel_diary_detail' pk=travel_diary.pk %}" class="w-full block text-center bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out mt-2">취소</a>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const photoInput = document.getElementById('id_photo');
+        const imagePreview = document.getElementById('image-preview');
+        const previewPlaceholder = document.getElementById('preview-placeholder');
+
+        photoInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                    if (previewPlaceholder) previewPlaceholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.src = "#";
+                imagePreview.classList.add('hidden');
+                if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,562 @@
+여행 다이어리 웹 애플리케이션 개발 가이드
+
+이 문서는 사진의 메타데이터(시간, 위치)를 활용하는 '여행 다이어리' 웹 애플리케이션의 프론트엔드와 백엔드 개발 전반에 대한 가이드입니다.
+
+Part 1: Firebase를 활용한 빠른 프로토타이핑 및 프론트엔드 구현
+
+Part 2: Django를 활용한 안정적인 백엔드 시스템 구축 방안
+
+Part 1: 프론트엔드 구현 (Firebase 기반)
+
+서버 없이 빠르게 아이디어를 구현하고 테스트할 수 있는 프론트엔드 버전입니다. Google의 Firebase를 백엔드 서비스로 활용하여 데이터 저장, 파일 업로드, 사용자 인증을 처리합니다.
+
+1. 주요 기능
+
+사진 업로드: 여러 장의 사진을 동시에 업로드합니다.
+
+자동 정보 추출: 사진의 EXIF 메타데이터에서 촬영 시간과 GPS 좌표를 자동으로 읽어옵니다.
+
+주소 변환: GPS 좌표를 실제 주소로 변환하여 표시합니다.
+
+데이터 저장: 사진 정보와 감상평을 Firebase Firestore에 저장합니다.
+
+파일 저장: 사진 파일 자체는 Firebase Storage에 안전하게 업로드됩니다.
+
+다양한 뷰 제공: 시간순 그리드 뷰, 위치 기반 지도 뷰, 사진 갤러리 뷰를 제공합니다.
+
+2. 전체 코드 (travel_diary.html)
+
+아래 코드를 travel_diary.html 파일로 저장하면 바로 브라우저에서 실행해 볼 수 있습니다. (Firebase 연동 설정은 필요합니다.)
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 여행 다이어리</title>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <!-- EXIF 정보(사진 메타데이터)를 읽기 위한 라이브러리 -->
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js](https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js)"></script>
+    <!-- Leaflet 지도 라이브러리 -->
+    <link rel="stylesheet" href="[https://unpkg.com/leaflet@1.9.4/dist/leaflet.css](https://unpkg.com/leaflet@1.9.4/dist/leaflet.css)" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="[https://unpkg.com/leaflet@1.9.4/dist/leaflet.js](https://unpkg.com/leaflet@1.9.4/dist/leaflet.js)" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        @import url('[https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap](https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap)');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .diary-card {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            overflow: hidden;
+            position: relative;
+        }
+        .diary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .diary-card img { cursor: pointer; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toast {
+            visibility: hidden; min-width: 250px; background-color: #333; color: #fff;
+            text-align: center; border-radius: 8px; padding: 16px; position: fixed;
+            z-index: 1000; left: 50%; bottom: 50px; transform: translateX(-50%);
+            opacity: 0; transition: opacity 0.5s, visibility 0.5s;
+        }
+        .toast.show { visibility: visible; opacity: 1; }
+        #map-view {
+            height: 60vh; border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
+        }
+        .leaflet-popup-content-wrapper { border-radius: 12px; }
+        .leaflet-popup-content { margin: 0; width: 280px !important; }
+        .delete-btn {
+            position: absolute; top: 1rem; right: 1rem; background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%; width: 32px; height: 32px; display: flex;
+            align-items: center; justify-content: center; cursor: pointer;
+            transition: background-color 0.2s; border: none; z-index: 10;
+        }
+        .delete-btn:hover { background-color: rgba(239, 68, 68, 0.9); color: white; }
+        
+        .photo-album {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85); z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+        }
+        .photo-album.show { opacity: 1; visibility: visible; }
+        .photo-album-content {
+            position: relative; text-align: center;
+        }
+        .photo-album-image {
+            max-width: 90vw; max-height: 80vh;
+            border-radius: 8px;
+        }
+        .photo-album-caption {
+            color: white; margin-top: 1rem; text-align: center;
+        }
+        .album-nav-btn, .album-close-btn {
+            position: absolute; color: white; background: rgba(0,0,0,0.3);
+            border: none; cursor: pointer; font-size: 2rem;
+            padding: 0.5rem 1rem; border-radius: 8px;
+            transition: background 0.2s; user-select: none;
+        }
+        .album-nav-btn:hover, .album-close-btn:hover { background: rgba(0,0,0,0.6); }
+        .album-close-btn { top: 20px; right: 20px; font-size: 1.5rem; }
+        .album-prev-btn { left: 20px; top: 50%; transform: translateY(-50%); }
+        .album-next-btn { right: 20px; top: 50%; transform: translateY(-50%); }
+    </style>
+</head>
+<body class="bg-blue-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-800">나만의 여행 다이어리</h1>
+            <p class="text-gray-600 mt-2">여행의 소중한 순간들을 사진과 함께 기록해보세요.</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 max-w-2xl mx-auto">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <label for="photo-upload" class="w-full sm:w-auto cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 text-center shadow-md">
+                    📸 사진 추가하기
+                </label>
+                <input type="file" id="photo-upload" accept="image/jpeg" multiple class="hidden">
+                
+                <div class="flex gap-2">
+                    <button id="sort-time" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-300">시간순</button>
+                    <button id="sort-location" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-300">장소순</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden flex-col items-center justify-center my-10">
+            <div class="loader mb-4"></div>
+            <p class="text-gray-600">사진을 분석하고 있습니다. 잠시만 기다려주세요...</p>
+        </div>
+
+        <div id="view-container">
+            <main id="diary-entries" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </main>
+            <div id="map-view-container" class="hidden">
+                 <div id="map-view"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="photo-album" class="photo-album">
+        <button id="album-close-btn" class="album-close-btn">&times;</button>
+        <button id="album-prev-btn" class="album-nav-btn">&#10094;</button>
+        <div class="photo-album-content">
+            <img id="album-image" src="" alt="여행 사진 크게 보기" class="photo-album-image">
+            <div id="album-caption" class="photo-album-caption"></div>
+        </div>
+        <button id="album-next-btn" class="album-nav-btn">&#10095;</button>
+    </div>
+
+    <div id="toast" class="toast">저장되었습니다!</div>
+
+    <script type="module">
+        import { initializeApp } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js)";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js)";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, updateDoc, query, setLogLevel, deleteDoc } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js)";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js)";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "...", projectId: "..." };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        
+        let userId = null;
+        let diaryData = [];
+        let sortedGridData = [];
+        let currentSort = 'time'; 
+        let entriesCollectionRef;
+        let map = null;
+        let markers = [];
+        let currentAlbumIndex = -1;
+
+        const photoUpload = document.getElementById('photo-upload');
+        const diaryEntriesContainer = document.getElementById('diary-entries');
+        const mapViewContainer = document.getElementById('map-view-container');
+        const loadingIndicator = document.getElementById('loading');
+        const sortTimeBtn = document.getElementById('sort-time');
+        const sortLocationBtn = document.getElementById('sort-location');
+        const toast = document.getElementById('toast');
+        const photoAlbum = document.getElementById('photo-album');
+        
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                entriesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/diaryEntries`);
+                loadEntries();
+            } else {
+                userId = null;
+            }
+        });
+        
+        (async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Authentication failed:", error);
+            }
+        })();
+
+        function loadEntries() {
+            if (!entriesCollectionRef) return;
+            onSnapshot(query(entriesCollectionRef), (snapshot) => {
+                diaryData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderCurrentView();
+            });
+        }
+        
+        photoUpload.addEventListener('change', async (event) => {
+            const files = event.target.files;
+            if (files.length === 0) return;
+            loadingIndicator.classList.remove('hidden');
+            loadingIndicator.classList.add('flex');
+            for (const file of files) {
+                try {
+                    const entry = await processPhoto(file);
+                    await addDoc(entriesCollectionRef, entry);
+                } catch (error) {
+                    console.error("Error processing photo:", error);
+                    alert(`사진 처리 중 오류가 발생했습니다: ${error.message}`);
+                }
+            }
+            photoUpload.value = '';
+            loadingIndicator.classList.add('hidden');
+            loadingIndicator.classList.remove('flex');
+        });
+        
+        async function processPhoto(file) {
+            const exifData = await getExifData(file);
+            if (!exifData.timestamp || !exifData.coords) {
+                throw new Error("사진에서 시간 또는 위치 정보를 찾을 수 없습니다. (카메라 설정에서 위치 태그를 활성화해주세요)");
+            }
+            if (!userId) throw new Error("사용자 인증 정보가 없습니다.");
+            
+            const storageRef = ref(storage, `users/${userId}/diary_images/${Date.now()}-${file.name}`);
+            const uploadResult = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(uploadResult.ref);
+            const locationName = await reverseGeocode(exifData.coords.lat, exifData.coords.lon);
+
+            return {
+                imageUrl: downloadURL,
+                storagePath: storageRef.fullPath,
+                timestamp: exifData.timestamp,
+                location: locationName,
+                lat: exifData.coords.lat,
+                lon: exifData.coords.lon,
+                comment: ""
+            };
+        }
+
+        function getExifData(file) {
+            return new Promise((resolve, reject) => {
+                EXIF.getData(file, function() {
+                    try {
+                        const dateTimeOriginal = EXIF.getTag(this, "DateTimeOriginal");
+                        const lat = EXIF.getTag(this, "GPSLatitude");
+                        const lon = EXIF.getTag(this, "GPSLongitude");
+                        if (!dateTimeOriginal || !lat || !lon) {
+                            resolve({ timestamp: null, coords: null });
+                            return;
+                        }
+                        const timestamp = parseExifDateTime(dateTimeOriginal).getTime();
+                        const coords = {
+                            lat: convertDMSToDD(lat[0], lat[1], lat[2], EXIF.getTag(this, "GPSLatitudeRef")),
+                            lon: convertDMSToDD(lon[0], lon[1], lon[2], EXIF.getTag(this, "GPSLongitudeRef"))
+                        };
+                        resolve({ timestamp, coords });
+                    } catch (ex) { reject(ex); }
+                });
+            });
+        }
+        
+        async function reverseGeocode(lat, lon) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=ko`);
+                const data = await response.json();
+                return data.display_name || "알 수 없는 위치";
+            } catch (error) {
+                return `위도: ${lat.toFixed(4)}, 경도: ${lon.toFixed(4)}`;
+            }
+        }
+        
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('.save-comment-btn')) {
+                const id = e.target.closest('.save-comment-btn').dataset.id;
+                const textarea = e.target.closest('.save-comment-btn').previousElementSibling;
+                await saveComment(id, textarea.value);
+            }
+            if (e.target.closest('.delete-btn')) {
+                const id = e.target.closest('.delete-btn').dataset.id;
+                if (confirm('이 항목을 정말 삭제하시겠습니까?')) await deleteEntry(id);
+            }
+            if (e.target.matches('.album-trigger')) {
+                openPhotoAlbum(parseInt(e.target.dataset.index, 10));
+            }
+        });
+
+        async function saveComment(entryId, comment) {
+            const entryRef = doc(db, `artifacts/${appId}/users/${userId}/diaryEntries`, entryId);
+            await updateDoc(entryRef, { comment: comment });
+            showToast("감상평이 저장되었습니다!");
+        }
+
+        async function deleteEntry(entryId) {
+            const entryRef = doc(db, `artifacts/${appId}/users/${userId}/diaryEntries`, entryId);
+            const docSnap = await getDoc(entryRef);
+            if (docSnap.exists() && docSnap.data().storagePath) {
+                await deleteObject(ref(storage, docSnap.data().storagePath));
+            }
+            await deleteDoc(entryRef);
+            showToast("항목이 삭제되었습니다.");
+        }
+        
+        function openPhotoAlbum(index) {
+            currentAlbumIndex = index;
+            updateAlbumPhoto();
+            photoAlbum.classList.add('show');
+            window.addEventListener('keydown', handleAlbumKeyPress);
+        }
+
+        function closePhotoAlbum() {
+            photoAlbum.classList.remove('show');
+            window.removeEventListener('keydown', handleAlbumKeyPress);
+        }
+
+        function updateAlbumPhoto() {
+            const entry = sortedGridData[currentAlbumIndex];
+            document.getElementById('album-image').src = entry.imageUrl;
+            document.getElementById('album-caption').innerHTML = `<p>${entry.location}</p><p class="text-sm text-gray-400 mt-1">${new Date(entry.timestamp).toLocaleString('ko-KR')}</p>`;
+        }
+
+        function showNextPhoto() {
+            currentAlbumIndex = (currentAlbumIndex + 1) % sortedGridData.length;
+            updateAlbumPhoto();
+        }
+
+        function showPrevPhoto() {
+            currentAlbumIndex = (currentAlbumIndex - 1 + sortedGridData.length) % sortedGridData.length;
+            updateAlbumPhoto();
+        }
+        
+        function handleAlbumKeyPress(e) {
+            if (e.key === 'ArrowRight') showNextPhoto();
+            else if (e.key === 'ArrowLeft') showPrevPhoto();
+            else if (e.key === 'Escape') closePhotoAlbum();
+        }
+
+        function switchView(viewType) {
+            currentSort = viewType;
+            renderCurrentView();
+        }
+
+        sortTimeBtn.addEventListener('click', () => switchView('time'));
+        sortLocationBtn.addEventListener('click', () => switchView('location'));
+
+        function renderCurrentView() {
+            updateSortButtonUI();
+            if (currentSort === 'time') {
+                mapViewContainer.classList.add('hidden');
+                diaryEntriesContainer.classList.remove('hidden');
+                renderGridView();
+            } else {
+                diaryEntriesContainer.classList.add('hidden');
+                mapViewContainer.classList.remove('hidden');
+                renderMapView();
+            }
+        }
+
+        function renderGridView() {
+            diaryEntriesContainer.innerHTML = '';
+            sortedGridData = [...diaryData].sort((a, b) => b.timestamp - a.timestamp);
+            if(sortedGridData.length === 0) {
+                 diaryEntriesContainer.innerHTML = `<p class="text-gray-500 text-center col-span-full">첫 추억을 기록해보세요!</p>`;
+                 return;
+            }
+            sortedGridData.forEach((entry, index) => {
+                const card = document.createElement('div');
+                card.className = 'diary-card bg-white rounded-2xl shadow-md';
+                card.innerHTML = `
+                    <button class="delete-btn" data-id="${entry.id}">&times;</button>
+                    <img src="${entry.imageUrl}" class="w-full h-60 object-cover album-trigger" data-index="${index}">
+                    <div class="p-6">
+                        <p class="text-sm text-gray-500 mb-2">${new Date(entry.timestamp).toLocaleString('ko-KR')}</p>
+                        <h3 class="text-xl font-bold mb-4">${entry.location}</h3>
+                        <textarea class="w-full p-2 border rounded-md" rows="3">${entry.comment}</textarea>
+                        <button data-id="${entry.id}" class="save-comment-btn mt-4 w-full bg-green-500 text-white font-bold py-2 rounded-lg">감상평 저장</button>
+                    </div>`;
+                diaryEntriesContainer.appendChild(card);
+            });
+        }
+        
+        function renderMapView() {
+            if (!map) {
+                map = L.map('map-view').setView([37.5665, 126.9780], 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            }
+            setTimeout(() => map.invalidateSize(), 0);
+            markers.forEach(marker => marker.remove());
+            markers = [];
+            const entriesWithCoords = diaryData.filter(e => e.lat && e.lon);
+            if (entriesWithCoords.length > 0) {
+                entriesWithCoords.forEach(entry => {
+                    const marker = L.marker([entry.lat, entry.lon]).addTo(map);
+                    marker.bindPopup(`...`); // Popup content can be enhanced
+                    markers.push(marker);
+                });
+                map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.2));
+            }
+        }
+        
+        function updateSortButtonUI() { /* ... UI update logic ... */ }
+        function showToast(message) { /* ... Toast logic ... */ }
+        function parseExifDateTime(str) { /* ... parsing logic ... */ }
+        function convertDMSToDD(d, m, s, dir) { /* ... conversion logic ... */ }
+        
+        renderCurrentView();
+    </script>
+</body>
+</html>
+
+
+Part 2: 백엔드 구현 (Django 기반)
+
+프론트엔드 프로토타입이 완성된 후, 확장성 있고 안정적인 서비스를 위해 Django로 직접 백엔드를 구축하는 단계입니다.
+
+1. 핵심 개념: MEDIA_ROOT와 MEDIA_URL
+
+MEDIA_ROOT: 사용자가 업로드한 파일이 서버의 파일 시스템에 실제로 저장될 절대 경로입니다.
+
+MEDIA_URL: 브라우저가 업로드된 파일에 접근할 때 사용할 웹 주소(URL)입니다.
+
+2. 개발 환경 설정 단계
+
+가. 필요 라이브러리 설치
+
+Pillow는 Django에서 이미지 파일을 다루기 위한 필수 라이브러리입니다.
+
+pip install Django Pillow
+
+
+나. settings.py 설정
+
+프로젝트의 settings.py 파일에 다음 미디어 파일 설정을 추가합니다.
+
+# settings.py
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
+다. urls.py 설정 (개발용)
+
+개발 서버에서 미디어 파일을 서빙할 수 있도록 프로젝트의 메인 urls.py에 다음 코드를 추가합니다.
+
+# myproject/urls.py
+from django.conf import settings
+from django.conf.urls.static import static
+
+# ... 기존 urlpatterns ...
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+3. 데이터 모델링 (models.py)
+
+사진 정보와 메타데이터를 저장할 데이터베이스 테이블을 정의합니다.
+
+# myapp/models.py
+from django.db import models
+from django.contrib.auth.models import User
+
+class DiaryEntry(models.Model):
+    photo = models.ImageField(upload_to='diary_photos/%Y/%m/%d/')
+    location = models.CharField(max_length=200, blank=True)
+    timestamp = models.DateTimeField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    comment = models.TextField(blank=True)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.author.username}의 {self.created_at.strftime("%Y-%m-%d")} 기록'
+
+
+4. 사진 업로드 처리
+
+가. forms.py 생성
+
+ModelForm을 사용하여 모델과 연결된 폼을 쉽게 만듭니다.
+
+# myapp/forms.py
+from django import forms
+from .models import DiaryEntry
+
+class DiaryEntryForm(forms.ModelForm):
+    class Meta:
+        model = DiaryEntry
+        fields = ['photo', 'comment'] 
+
+
+나. views.py에서 업로드 로직 구현
+
+파일을 포함한 요청을 받아 데이터베이스에 저장하는 로직입니다.
+
+# myapp/views.py
+from django.shortcuts import render, redirect
+from .forms import DiaryEntryForm
+
+def upload_diary_entry(request):
+    if request.method == 'POST':
+        form = DiaryEntryForm(request.POST, request.FILES)
+        if form.is_valid():
+            entry = form.save(commit=False)
+            entry.author = request.user
+            # (선택) 여기서 EXIF 데이터 추출 및 모델 필드에 저장하는 로직 추가
+            entry.save()
+            return redirect('some_view_name')
+    else:
+        form = DiaryEntryForm()
+    return render(request, 'upload.html', {'form': form})
+
+
+다. 템플릿 (upload.html)
+
+파일 업로드를 위해서는 form 태그에 enctype="multipart/form-data" 속성이 필수입니다.
+
+<!-- upload.html -->
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">업로드</button>
+</form>
+
+
+5. 실제 서비스 환경(Production)을 위한 제언
+
+파일 서빙: Nginx와 같은 웹 서버가 미디어 파일을 직접 서빙하도록 설정합니다.
+
+클라우드 스토리지: Amazon S3, Google Cloud Storage 등 외부 스토리지를 사용하면 안정성과 확장성을 크게 높일 수 있습니다. django-storages 라이브러리를 사용하면 쉽게 연동 가능합니다.

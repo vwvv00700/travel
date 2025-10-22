@@ -1,0 +1,26 @@
+{% extends 'base_diary.html' %}
+
+{% block title %}여행 다이어리 홈{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] p-4">
+    <h1 class="text-4xl font-bold text-slate-800 mb-8">여행 다이어리</h1>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+        <a href="{% url 'travel:create_travel_diary' %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-6 px-8 rounded-lg shadow-lg flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:-translate-y-1">
+            <i class="fa-solid fa-plus-circle text-5xl mb-4"></i>
+            <span class="text-xl">새 여행 다이어리 만들기</span>
+            <span class="text-sm mt-2 opacity-80">(새로운 여행 기록 시작)</span>
+        </a>
+        <a href="{% url 'travel:upload_diary_entry' %}" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-6 px-8 rounded-lg shadow-lg flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:-translate-y-1">
+            <i class="fa-solid fa-cloud-arrow-up text-5xl mb-4"></i>
+            <span class="text-xl">여행 업로드</span>
+            <span class="text-sm mt-2 opacity-80">(사진과 내용을 업로드)</span>
+        </a>
+        <a href="{% url 'travel:diary_list' %}" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-6 px-8 rounded-lg shadow-lg flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:-translate-y-1">
+            <i class="fa-solid fa-book-open text-5xl mb-4"></i>
+            <span class="text-xl">내 여행 다이어리</span>
+            <span class="text-sm mt-2 opacity-80">(업로드된 사진과 내용을 확인)</span>
+        </a>
+    </div>
+</div>
+{% endblock %}
