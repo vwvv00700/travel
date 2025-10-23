@@ -1,12 +1,14 @@
-{% extends 'base_diary.html' %}
+{% extends 'base_main.html' %}
+
+{% block title %}새 여행 다이어리 만들기{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="hero-content">
     <h2>새 여행 다이어리 만들기</h2>
-    <form method="post">
+    <form method="post" class="diary-form">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">다이어리 생성</button>
+        <button type="submit" class="btn">다이어리 생성</button>
     </form>
 </div>
 {% endblock %}

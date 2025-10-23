@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "import_export",
     "travel.apps.TravelConfig",
+    "ai_planner",
 ]
 
 MIDDLEWARE = [
@@ -79,8 +80,14 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+    },
+    "diary_db": {  # New database for diary app
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "diary_db.sqlite3",
     }
 }
+
+DATABASE_ROUTERS = ['travelAgent.db_routers.DiaryRouter']
 
 
 # Password validation

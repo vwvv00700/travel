@@ -25,6 +25,7 @@ urlpatterns = [
     path('', main, name='main'),
     path('select', select, name='select'),
     path("travel/", include("travel.urls")),
+    path("ai_planner/", include("ai_planner.urls")),
     path("admin/", admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
 ]

@@ -1,6 +1,6 @@
-import logging # Import logging
 import json # Import json
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.models import User # Import User model
 from .forms import DiaryEntryForm, TravelForm # Import TravelForm
 from django.contrib.auth.decorators import login_required
 from .models import DiaryEntry, Travel # Import DiaryEntry and Travel models
@@ -19,8 +19,8 @@ def create_travel_diary(request):
         if form.is_valid():
             travel_diary = form.save(commit=False)
             travel_diary.author = request.user
-            travel_diary.save()
-            return redirect('travel:diary_home') # Redirect to diary home or a list of travel diaries
+            travel_diary.save()  # 라우터가 diary_db로 자동 라우팅
+            return redirect('travel:diary_home')
     else:
         form = TravelForm()
     return render(request, 'travel/create_travel_diary.html', {'form': form})
@@ -67,7 +67,7 @@ def travel_diary_detail(request, pk):
 @login_required # Ensure user is logged in to view their diary
 def diary_list(request):
     # Fetch all travel diaries for the current user
-    travel_diaries = Travel.objects.filter(author=request.user).order_by('-created_at')
+    travel_diaries = Travel.objects.filter(author=request.user).distinct().order_by('-created_at')
     return render(request, 'travel/diary_list.html', {'travel_diaries': travel_diaries})
 
 @login_required
@@ -91,9 +91,9 @@ def upload_diary_entry(request, travel_id=None):
             if travel_diary:
                 return redirect('travel:travel_diary_detail', pk=travel_diary.pk)
             else:
-                return redirect('travel:diary_home') # Redirect to diary home if no specific travel diary was selected
+                return redirect('travel:diary_home')
         else:
-            logging.error(f"DiaryEntryForm errors: {form.errors}") # Log form errors
+            print(f"DiaryEntryForm errors: {form.errors}") # Changed to print for debugging
     else:
         form = DiaryEntryForm(user=request.user, travel_diary=travel_diary)
     return render(request, 'upload.html', {'form': form, 'travel_diary': travel_diary})
@@ -107,7 +107,7 @@ def edit_travel_diary(request, pk):
             form.save()
             return redirect('travel:travel_diary_detail', pk=travel_diary.pk)
         else:
-            logging.error(f"TravelForm errors during edit: {form.errors}")
+            print(f"TravelForm errors during edit: {form.errors}")  # Changed to print for debugging
     else:
         form = TravelForm(instance=travel_diary)
     return render(request, 'travel/edit_travel_diary.html', {'form': form, 'travel_diary': travel_diary})
@@ -120,10 +120,12 @@ def edit_diary_entry(request, pk):
     if request.method == 'POST':
         form = DiaryEntryForm(request.POST, request.FILES, instance=diary_entry, user=request.user, travel_diary=travel_diary)
         if form.is_valid():
-            form.save()
+            entry = form.save(commit=False)
+            entry.author = request.user
+            entry.save()
             return redirect('travel:travel_diary_detail', pk=travel_diary.pk)
         else:
-            logging.error(f"DiaryEntryForm errors during edit: {form.errors}")
+            print(f"DiaryEntryForm errors during edit: {form.errors}")  # Changed to print for debugging
     else:
         form = DiaryEntryForm(instance=diary_entry, user=request.user, travel_diary=travel_diary)
     return render(request, 'travel/edit_diary_entry.html', {'form': form, 'diary_entry': diary_entry, 'travel_diary': travel_diary})

@@ -82,7 +82,7 @@
     {% include "header.html" %}
 
     <section class="cont-wrap">
-        <form class="form-select" method="post" action="{% url 'travel:travel_list' %}">
+        <form class="form-select" method="post" action="{% url 'select' %}">
             {% csrf_token %}
             <div class="form-wrap">
                 <div class="form-block" style="width:100%;">
@@ -148,33 +148,34 @@
                     <div id="selected-districts-display">
                         선택된 지역이 없습니다.
                     </div>
+                    <input type="hidden" name="selected_regions_list" id="selected-regions-list">
 
                     <ul class="check-list" style="display: none;">
-                        <li><input type="checkbox" name="travel_gu" id="gangnam" value="gangnam"><label for="gangnam">강남구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="jongno" value="jongno"><label for="jongno">종로구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="jung" value="jung"><label for="jung">중구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="yongsan" value="yongsan"><label for="yongsan">용산구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="seongdong" value="seongdong"><label for="seongdong">성동구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gwangjin" value="gwangjin"><label for="gwangjin">광진구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="dongdaemun" value="dongdaemun"><label for="dongdaemun">동대문구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="jungnang" value="jungnang"><label for="jungnang">중랑구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="seongbuk" value="seongbuk"><label for="seongbuk">성북구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gangbuk" value="gangbuk"><label for="gangbuk">강북구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="dobong" value="dobong"><label for="dobong">도봉구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="nowon" value="nowon"><label for="nowon">노원구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="eunpyeong" value="eunpyeong"><label for="eunpyeong">은평구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="seodaemun" value="seodaemun"><label for="seodaemun">서대문구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="mapo" value="mapo"><label for="mapo">마포구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="yangcheon" value="yangcheon"><label for="yangcheon">양천구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gangseo" value="gangseo"><label for="gangseo">강서구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="guro" value="guro"><label for="guro">구로구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="geumcheon" value="geumcheon"><label for="geumcheon">금천구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="yeongdeungpo" value="yeongdeungpo"><label for="yeongdeungpo">영등포구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="dongjak" value="dongjak"><label for="dongjak">동작구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gwanak" value="gwanak"><label for="gwanak">관악구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="seocho" value="seocho"><label for="seocho">서초구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="songpa" value="songpa"><label for="songpa">송파구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gangdong" value="gangdong"><label for="gangdong">강동구</label></li>
+                        <li><input type="checkbox" name="region" id="gangnam" value="gangnam"><label for="gangnam">강남구</label></li>
+                        <li><input type="checkbox" name="region" id="jongno" value="jongno"><label for="jongno">종로구</label></li>
+                        <li><input type="checkbox" name="region" id="jung" value="jung"><label for="jung">중구</label></li>
+                        <li><input type="checkbox" name="region" id="yongsan" value="yongsan"><label for="yongsan">용산구</label></li>
+                        <li><input type="checkbox" name="region" id="seongdong" value="seongdong"><label for="seongdong">성동구</label></li>
+                        <li><input type="checkbox" name="region" id="gwangjin" value="gwangjin"><label for="gwangjin">광진구</label></li>
+                        <li><input type="checkbox" name="region" id="dongdaemun" value="dongdaemun"><label for="dongdaemun">동대문구</label></li>
+                        <li><input type="checkbox" name="region" id="jungnang" value="jungnang"><label for="jungnang">중랑구</label></li>
+                        <li><input type="checkbox" name="region" id="seongbuk" value="seongbuk"><label for="seongbuk">성북구</label></li>
+                        <li><input type="checkbox" name="region" id="gangbuk" value="gangbuk"><label for="gangbuk">강북구</label></li>
+                        <li><input type="checkbox" name="region" id="dobong" value="dobong"><label for="dobong">도봉구</label></li>
+                        <li><input type="checkbox" name="region" id="nowon" value="nowon"><label for="nowon">노원구</label></li>
+                        <li><input type="checkbox" name="region" id="eunpyeong" value="eunpyeong"><label for="eunpyeong">은평구</label></li>
+                        <li><input type="checkbox" name="region" id="seodaemun" value="seodaemun"><label for="seodaemun">서대문구</label></li>
+                        <li><input type="checkbox" name="region" id="mapo" value="mapo"><label for="mapo">마포구</label></li>
+                        <li><input type="checkbox" name="region" id="yangcheon" value="yangcheon"><label for="yangcheon">양천구</label></li>
+                        <li><input type="checkbox" name="region" id="gangseo" value="gangseo"><label for="gangseo">강서구</label></li>
+                        <li><input type="checkbox" name="region" id="guro" value="guro"><label for="guro">구로구</label></li>
+                        <li><input type="checkbox" name="region" id="geumcheon" value="geumcheon"><label for="geumcheon">금천구</label></li>
+                        <li><input type="checkbox" name="region" id="yeongdeungpo" value="yeongdeungpo"><label for="yeongdeungpo">영등포구</label></li>
+                        <li><input type="checkbox" name="region" id="dongjak" value="dongjak"><label for="dongjak">동작구</label></li>
+                        <li><input type="checkbox" name="region" id="gwanak" value="gwanak"><label for="gwanak">관악구</label></li>
+                        <li><input type="checkbox" name="region" id="seocho" value="seocho"><label for="seocho">서초구</label></li>
+                        <li><input type="checkbox" name="region" id="songpa" value="songpa"><label for="songpa">송파구</label></li>
+                        <li><input type="checkbox" name="region" id="gangdong" value="gangdong"><label for="gangdong">강동구</label></li>
                     </ul>
                 </div>
                 
@@ -183,11 +184,11 @@
                         <h4>📅 여행 기간</h4>
                         <strong class="red">원하시는 여행 일정을 선택해주세요.</strong>
                         <ul class="radio-list">
-                            <li><input type="radio" name="days" id="day1" value="day1"><label for="day1">당일치기</label></li>
-                            <li><input type="radio" name="days" id="day2" value="day2"><label for="day2">1박 2일</label></li>
-                            <li><input type="radio" name="days" id="day3" value="day3"><label for="day3">2박 3일</label></li>
-                            <li><input type="radio" name="days" id="day4" value="day4"><label for="day4">3박 4일</label></li>
-                            <li><input type="radio" name="days" id="day5" value="day5"><label for="day5">4박 5일</label></li>
+                            <li><input type="radio" name="duration" id="day1" value="당일치기"><label for="day1">당일치기</label></li>
+                            <li><input type="radio" name="duration" id="day2" value="1박 2일"><label for="day2">1박 2일</label></li>
+                            <li><input type="radio" name="duration" id="day3" value="2박 3일"><label for="day3">2박 3일</label></li>
+                            <li><input type="radio" name="duration" id="day4" value="3박 4일"><label for="day4">3박 4일</label></li>
+                            <li><input type="radio" name="duration" id="day5" value="4박 5일"><label for="day5">4박 5일</label></li>
                         </ul>
                     </div>
 
@@ -195,22 +196,89 @@
                         <h4>🧾 여행 테마</h4>
                         <strong class="red">최대 4개까지 선택 가능합니다.</strong>
                         <ul class="check-list">
-                            <li><input type="checkbox" name="tema" id="cafe" value="cafe"><label for="cafe">카페</label></li>
-                            <li><input type="checkbox" name="tema" id="restaurant" value="restaurant"><label for="restaurant">맛집</label></li>
-                            <li><input type="checkbox" name="tema" id="festival" value="festival"><label for="festival">축제</label></li>
-                            <li><input type="checkbox" name="tema" id="nature" value="nature"><label for="nature">자연/산책</label></li>
-                            <li><input type="checkbox" name="tema" id="culture" value="culture"><label for="culture">문화/전시</label></li>
-                            <li><input type="checkbox" name="tema" id="park" value="park"><label for="park">테마파크</label></li>
-                            <li><input type="checkbox" name="tema" id="healing" value="healing"><label for="healing">힐링/스파</label></li>
-                            <li><input type="checkbox" name="tema" id="shopping" value="shopping"><label for="shopping">쇼핑</label></li>
+                            <li><input type="checkbox" name="theme" id="cafe" value="cafe"><label for="cafe">카페</label></li>
+                            <li><input type="checkbox" name="theme" id="restaurant" value="restaurant"><label for="restaurant">맛집</label></li>
+                            <li><input type="checkbox" name="theme" id="festival" value="festival"><label for="festival">축제</label></li>
+                            <li><input type="checkbox" name="theme" id="nature" value="자연 경관"><label for="nature">자연/산책</label></li>
+                            <li><input type="checkbox" name="theme" id="culture" value="culture"><label for="culture">문화/전시</label></li>
+                            <li><input type="checkbox" name="theme" id="park" value="park"><label for="park">테마파크</label></li>
+                            <li><input type="checkbox" name="theme" id="healing" value="healing"><label for="healing">힐링/스파</label></li>
+                            <li><input type="checkbox" name="theme" id="shopping" value="shopping"><label for="shopping">쇼핑</label></li>
                         </ul>
                     </div>
+
                 </div>
             </div>
             
             <button type="submit" class="btn">AI 추천 코스</button>
         </form>
     </section>
+
+    {% if selected_region or selected_duration or selected_theme %}
+    <section class="cont-wrap selected-info-box">
+        <h2>선택된 정보</h2>
+        {% if selected_region %}
+        <p><strong>지역:</strong> {{ selected_region|join:", " }}</p>
+        {% endif %}
+        {% if selected_duration %}
+        <p><strong>기간:</strong> {{ selected_duration }}</p>
+        {% endif %}
+        {% if selected_theme %}
+        <p><strong>테마:</strong> {{ selected_theme|join:", " }}</p>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {% if generated_prompt %}
+    <section class="cont-wrap generated-prompt-box">
+        <h2>생성된 프롬프트</h2>
+        <pre>{{ generated_prompt }}</pre>
+    </section>
+    {% endif %}
+
+    {% if raw_ai_response %}
+    <section class="cont-wrap raw-ai-response-box">
+        <h2>AI 원본 응답</h2>
+        <pre>{{ raw_ai_response }}</pre>
+    </section>
+    {% endif %}
+
+    {% if parsed_plan %}
+    <section class="cont-wrap ai-plan-results">
+        <h2>AI 추천 여행 계획</h2>
+        {% for day_plan in parsed_plan %}
+        <div class="day-plan">
+            <h3>{{ day_plan.day }}일차</h3>
+            {% for activity in day_plan.activities %}
+            <div class="activity-item">
+                <h4>{{ activity.place }}</h4>
+                <p><strong>활동:</strong> {{ activity.activity }}</p>
+                <p><strong>설명:</strong> {{ activity.description }}</p>
+                {% if activity.details %}
+                <div class="place-details">
+                    <p><strong>카테고리:</strong> {{ activity.details.category }}</p>
+                    <p><strong>주소:</strong> {{ activity.details.address }}</p>
+                    <p><strong>평점:</strong> {{ activity.details.rating|default:"N/A" }}</p>
+                    <p><strong>리뷰 수:</strong> {{ activity.details.reviewCnt|default:"N/A" }}</p>
+                    {% if activity.details.website %}<p><strong>웹사이트:</strong> <a href="{{ activity.details.website }}" target="_blank">{{ activity.details.website }}</a></p>{% endif %}
+                    {% if activity.details.phone %}<p><strong>전화번호:</strong> {{ activity.details.phone }}</p>{% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </section>
+    {% elif plan_result %}
+    <section class="cont-wrap ai-plan-results">
+        <h2>AI 응답 (JSON 파싱 실패)</h2>
+        <pre>{{ plan_result }}</pre>
+    </section>
+    {% elif error_message %}
+    <section class="cont-wrap ai-plan-results">
+        <h2 class="red">오류: {{ error_message }}</h2>
+    </section>
+    {% endif %}
 
     <footer>
         &copy; 2025 TravelMate. All Rights Reserved.
@@ -226,10 +294,12 @@
             // 선택된 지역구 이름을 화면에 업데이트하는 함수 (로직 수정)
             function updateSelectedDisplay() {
                 // 함수가 호출될 때마다, 현재 'checked' 상태인 체크박스만 새로 찾습니다.
-                const selectedCheckboxes = document.querySelectorAll('input[name="travel_gu"]:checked');
-                
+                const selectedCheckboxes = document.querySelectorAll('input[name="region"]:checked');
+                const hiddenInput = document.getElementById('selected-regions-list'); // Get the hidden input
+
                 if (selectedCheckboxes.length === 0) {
                     displayElement.textContent = '선택된 지역이 없습니다.';
+                    hiddenInput.value = ''; // Clear hidden input
                     return;
                 }
 
@@ -239,6 +309,7 @@
                 });
 
                 displayElement.textContent = '선택한 지역: ' + selectedNames.join(', ');
+                hiddenInput.value = selectedNames.join(','); // Update hidden input with comma-separated values
             }
 
             districts.forEach(function(district) {
@@ -248,13 +319,13 @@
 
                     // input과 SVG가 같은 id를 가지는 경우 getElementById()가 SVG 요소를 먼저 반환할 수 있음
                     // 따라서 input 요소를 명시적으로 찾도록 querySelector를 사용합니다.
-                    let checkbox = document.querySelector(`input[name="travel_gu"][id="${districtId}"]`);
+                    let checkbox = document.querySelector(`input[name="region"][id="${districtId}"]`);
                     if (!checkbox) {
                         // 폼에서 value로 설정된 경우를 대비한 폴백
-                        checkbox = document.querySelector(`input[name="travel_gu"][value="${districtId}"]`);
+                        checkbox = document.querySelector(`input[name="region"][value="${districtId}"]`);
                     }
 
-                    const currentlySelectedCount = document.querySelectorAll('input[name="travel_gu"]:checked').length;
+                    const currentlySelectedCount = document.querySelectorAll('input[name="region"]:checked').length;
 
                     // 체크박스가 없는 경우(예: 폼에 아직 포함되지 않았거나 id가 다를 경우)
                     if (!checkbox) {
