@@ -24,19 +24,11 @@ def _generate_llm_prompt(region: list, duration: str, theme: list, places_info: 
     return prompt
 
 def get_api_key(api_name: str):
-    """Retrieves API key from AISettings model."""
-    try:
-        settings = AISettings.objects.first()
-        if not settings:
-            logger.error("AISettings model instance not found. Please configure AI settings in Django Admin.")
-            return None
-
-        if api_name == "gemini":
-            return settings.google_gemini_api_key
-        elif api_name == "openai":
-            return settings.openai_api_key
-    except Exception as e:
-        logger.error(f"Error retrieving API key from AISettings: {e}")
+    """Retrieves API key from environment variables."""
+    if api_name == "gemini":
+        return os.environ.get("GOOGLE_GEMINI_API_KEY")
+    elif api_name == "openai":
+        return os.environ.get("OPENAI_API_KEY")
     return None
 
 def generate_travel_plan(prompt: str, api_model: str = None) -> str:
@@ -56,7 +48,7 @@ def generate_travel_plan(prompt: str, api_model: str = None) -> str:
     if api_model == "gemini":
         api_key = get_api_key("gemini")
         if not api_key:
-            return "Error: Google Gemini API key not found in settings."
+            return "Error: GOOGLE_GEMINI_API_KEY environment variable not set."
 
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-pro')
@@ -71,7 +63,7 @@ def generate_travel_plan(prompt: str, api_model: str = None) -> str:
     elif api_model == "openai":
         api_key = get_api_key("openai")
         if not api_key:
-            return "Error: OpenAI API key not found in settings."
+            return "Error: OPENAI_API_KEY environment variable not set."
 
         client = openai.OpenAI(api_key=api_key)
         try:

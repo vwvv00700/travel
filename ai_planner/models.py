@@ -6,8 +6,7 @@ class AISettings(models.Model):
         ('openai', 'OpenAI GPT'),
     ]
 
-    openai_api_key = models.CharField(max_length=255, blank=True, null=True, verbose_name="OpenAI API Key")
-    google_gemini_api_key = models.CharField(max_length=255, blank=True, null=True, verbose_name="Google Gemini API Key")
+
     default_api_model = models.CharField(
         max_length=10,
         choices=API_CHOICES,

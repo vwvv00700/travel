@@ -3,8 +3,8 @@ from .models import AISettings
 
 @admin.register(AISettings)
 class AISettingsAdmin(admin.ModelAdmin):
-    list_display = ('default_api_model', 'openai_api_key', 'google_gemini_api_key',)
-    fields = ('default_api_model', 'openai_api_key', 'google_gemini_api_key',)
+    list_display = ('default_api_model',)
+    fields = ('default_api_model',)
 
     def has_add_permission(self, request):
         # Allow adding only if no instance exists
