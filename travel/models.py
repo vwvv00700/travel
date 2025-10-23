@@ -93,6 +93,7 @@ class TravelPlan(models.Model):
         return f"{self.user.username} - {self.location_city}"
 
 class ChatRoom(models.Model):
+    room_name = models.CharField(max_length=100, unique=True)
     participants = models.ManyToManyField(User)
     travel_plan1 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan1')
     travel_plan2 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan2')

@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from .views import main, select, chat, signup_view
 from django.contrib.auth import views as auth_views
+from travel import views as travel_views
 
 urlpatterns = [
     # 1. 메인/홈 페이지
@@ -34,4 +35,5 @@ urlpatterns = [
     path('accounts/signup/', signup_view, name='signup'),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='chat/login.html'), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    path('chat/test/', travel_views.test_chat_room, name='chat_test'),
 ]

@@ -68,3 +68,4 @@ def signup_view(request):
         form = UserCreationForm()
     return render(request, 'chat/signup.html', {'form': form})
 
+
