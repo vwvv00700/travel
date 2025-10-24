@@ -1,0 +1,145 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+/* --- 기본 스타일 --- */
+.tab-container {
+  margin: 20px 0;
+}
+
+.tab-buttons {display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tab-buttons button { border: 1px solid #ccc; background-color: #f8f8f8; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+.tab-buttons button.active { background-color: #333; color: white; border-color: #333; }
+.tab-content { border: 1px solid #ccc; border-radius: 8px; padding: 15px; background-color: #fff; height: 400px; overflow: scroll;}
+
+.category-block {display: none;}
+.category-block.active {display: block;}
+
+/* 버튼 스타일 */
+.button { background-color: #333; color: white; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer;}
+.button:hover {background-color: #333;}
+</style>
+
+<div class="content" style="margin:20px;">
+
+  <form method="post" action="{{ post_url }}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="analyze">
+
+    {% if grouped_places %}
+      <h2>1. LLM 분석할 장소 선택 (최대 5개 추천)</h2>
+      <p style="margin:8px 0 16px;">분석을 원하는 장소를 카테고리별로 선택하세요.</p>
+      
+      <div class="tab-container">
+          <div class="tab-buttons">
+              {% for category, places in grouped_places.items %}
+                  <button type="button" class="tab-button" data-category="{{ category }}">
+                      {{ category }} (<span class="count-{{ category }}">0</span>)
+                  </button>
+              {% endfor %}
+          </div>
+
+          <div class="tab-content">
+              {% for category, places in grouped_places.items %}
+                  <div class="category-block" id="block-{{ category }}" data-category="{{ category }}">
+                      <h3>{{ category }} (총 {{ places|length }}개)</h3>
+                      {% for place in places %}
+                          <label style="display:block; margin-bottom: 4px;">
+                              <input type="checkbox" name="place_ids" value="{{ place.pk }}" data-category="{{ category }}">
+                              {{ place.name }} ({{ place.city_gu }})
+                          </label>
+                      {% endfor %}
+                  </div>
+              {% endfor %}
+          </div>
+      </div>
+      
+      <button class="button" type="submit">선택한 장소 LLM 분석하기</button>
+    {% endif %}
+  </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const MAX = 5;
+
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabBlocks = document.querySelectorAll('.category-block');
+
+  // 탭 변경 로직
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const cat = this.dataset.category;
+
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+
+      tabBlocks.forEach(block => {
+        if (block.dataset.category === cat) {
+          block.classList.add('active');
+        } else {
+          block.classList.remove('active');
+        }
+      });
+    });
+  });
+
+  // 초기 활성화 (첫 번째 탭)
+  if (tabButtons.length > 0) {
+    tabButtons[0].click();
+  }
+
+
+  // 카테고리별 카운트 업데이트
+  function updateCategoryCount(cat) {
+    const boxes = Array.from(document.querySelectorAll(`input[name="place_ids"][data-category="${cat}"]`));
+    const count = boxes.filter(b => b.checked).length;
+    document.querySelector(`.count-${cat}`).textContent = count;
+  }
+  
+  // 체크박스 제한 로직
+  document.querySelectorAll('input[name="place_ids"]').forEach(box => {
+    box.addEventListener('change', function(e) {
+      const cat = e.target.dataset.category;
+      const boxes = Array.from(document.querySelectorAll(`input[name="place_ids"][data-category="${cat}"]`));
+      const count = boxes.filter(b => b.checked).length;
+      if (count > MAX) {
+        e.target.checked = false;
+        alert(`${cat}은(는) 최대 ${MAX}개까지만 선택할 수 있습니다.`);
+      }
+      updateCategoryCount(cat);
+    });
+  });
+
+  // 초기 카운트
+  const cats = new Set(Array.from(document.querySelectorAll('input[name="place_ids"]'))
+                       .map(el => el.dataset.category));
+  cats.forEach(updateCategoryCount);
+});
+</script>
+
+<hr style="margin: 30px 0;"/>
+
+{# 2) 분석 결과 화면 + DB 저장 버튼 #}
+{% if analysis_results %}
+<h2>2. LLM 분석 결과 확인 및 DB 저장</h2>
+<form method="post" action="{{ save_url }}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save">
+
+    <p style="margin:8px 0 16px;">아래 결과를 확인하고 <b>DB 저장</b>을 눌러주세요.</p>
+    <button class="button default" type="submit" style="padding: 5px 10px;">DB 저장</button>
+    <hr/>
+
+    {% for item in analysis_results %}
+    <h3>{{ forloop.counter }}. {{ item.place_name }}</h3>
+    <pre style="white-space:pre-wrap; background:#f7f7f7; padding:10px; border-radius:6px; border:1px solid #eee;">
+    {{ item.analysis_json_pretty }}
+    </pre>
+    <textarea name="payload_{{ item.place_pk }}" style="display:none;">{{ item.analysis_json_raw }}</textarea>
+    {% endfor %}
+</form>
+{% endif %}
+
+</div>
+{% endblock content %}

@@ -1,0 +1,275 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM 기반 여행 추천 코스</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; display: flex; height: 100vh; margin: 0; }
+        #recommendation-list { width: 350px; padding: 20px; overflow-y: auto; border-right: 1px solid #ddd; background-color: #f8f8f8; box-sizing: border-box; }
+        #map-container { flex-grow: 1; height: 100%; }
+        #map { width: 100%; height: 100%; }
+        .recommendation-item { 
+            padding: 15px; 
+            margin-bottom: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: background-color 0.2s, box-shadow 0.2s;
+            background-color: #fff;
+        }
+        .recommendation-item:hover { background-color: #fff0f0; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .item-name { font-weight: bold; font-size: 1.1em; color: #333; margin-bottom: 5px; }
+        .item-category { font-size: 0.9em; color: #777; }
+        .item-rationale { font-size: 0.8em; color: #007bff; margin-top: 5px; }
+        #route-summary { 
+            margin-top: 15px; 
+            padding: 10px; 
+            border: 1px solid #eee; 
+            border-radius: 6px; 
+            background: #fff; 
+            font-size: 0.9em;
+        }
+        #route-steps { 
+            margin-bottom: 15px; 
+            padding: 10px 0; 
+            border-top: 1px dashed #eee;
+            font-size: 0.9em;
+        }
+        .route-step { margin-bottom: 4px; padding-left: 10px; border-left: 3px solid #ddd; }
+        .route-order { font-weight: bold; color: #d63384; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    
+    <div id="recommendation-list">
+        <h2>LLM 추천 코스</h2>
+        
+        <div id="route-summary">
+            경로 정보를 불러오는 중...
+        </div>
+        
+        <div id="route-steps">
+            </div>
+
+        {% for place in llm_recommendations %}
+            <div class="recommendation-item" 
+                 data-lat="{{ place.lat }}" 
+                 data-lon="{{ place.lon }}"
+                 onclick="moveToPlace({{ place.lat }}, {{ place.lon }})">
+                <div class="item-name">{{ forloop.counter }}. {{ place.name }}</div>
+                <div class="item-category">({{ place.category }})</div>
+                <div class="item-rationale">{{ place.rationale }}</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <script>
+        // views.py에서 전달된 변수
+        const KAKAO_APP_KEY = "{{ KAKAO_APP_KEY }}";
+        const locationsJson = '{{ locations_json|escapejs }}'; 
+        
+        let recommendedPlaces = [];
+        let routeData = {}; 
+        
+        try {
+            const fullItinerary = JSON.parse(locationsJson);
+            
+            if (fullItinerary.length === 0) {
+                console.error("추천 장소 데이터가 비어있습니다.");
+            } else {
+                if (fullItinerary[0] && fullItinerary[0].polyline_coords) {
+                    // 경로 데이터 추출 및 제거
+                    routeData = fullItinerary.shift(); 
+                }
+                recommendedPlaces = fullItinerary;
+            }
+        } catch (e) {
+            console.error("JSON 파싱 오류:", e);
+        }
+        
+        let map = null;
+        let markers = [];
+        let polyline = null;
+        
+        function initMap() {
+            if (recommendedPlaces.length === 0) {
+                document.getElementById('map').innerHTML = '<div style="text-align:center; padding-top:200px; color:#999;">추천 장소가 없습니다.</div>';
+                return;
+            }
+
+            const firstPlace = recommendedPlaces[0];
+            
+            const mapContainer = document.getElementById('map');
+            const mapOption = {
+                // 🚨🚨 JS 변환 강화 🚨🚨: lat/lon이 문자열로 올 경우를 대비해 parseFloat() 사용
+                center: new kakao.maps.LatLng(parseFloat(firstPlace.lat), parseFloat(firstPlace.lon)),
+                level: 5 
+            };
+            
+            map = new kakao.maps.Map(mapContainer, mapOption);
+
+            displayRoute(recommendedPlaces);
+        }
+
+        function displayRoute(places) {
+            markers.forEach(m => m.setMap(null));
+            markers = [];
+            if (polyline) polyline.setMap(null);
+            
+            const bounds = new kakao.maps.LatLngBounds();
+
+            places.forEach((place, index) => {
+                // 🚨🚨 JS 변환 강화 🚨🚨: place.lat, place.lon이 문자열일 경우를 대비
+                const lat = parseFloat(place.lat);
+                const lon = parseFloat(place.lon);
+
+                if (isNaN(lat) || isNaN(lon)) {
+                     console.error(`Invalid coordinates for place: ${place.name}`);
+                     return;
+                }
+                
+                const position = new kakao.maps.LatLng(lat, lon);
+                bounds.extend(position);
+                
+            // 🚨🚨 마커 이미지 URL 수정 🚨🚨
+            // 404 오류가 발생한 URL 대신, 유효한 카카오 샘플 이미지로 교체합니다.
+            const imageSrc = 'https://t1.daumcdn.net/mapjs/resource/default/marker/number_l.png'; // 새로운 유효 URL
+            const imageSize = new kakao.maps.Size(35, 35); 
+            
+            // 이미지 옵션 수정: 새로운 이미지에 맞게 스프라이트 정보 수정
+            const imgOptions =  {
+                spriteSize : new kakao.maps.Size(35, 349), 
+                spriteOrigin : new kakao.maps.Point(0, index * 35), // 인덱스에 따라 위치 변경
+                offset: new kakao.maps.Point(17, 35) // 마커의 중심 좌표
+            };
+
+            const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imgOptions);
+            
+            const marker = new kakao.maps.Marker({
+                position: position,
+                image: markerImage
+            });
+
+                marker.setMap(map);
+                markers.push(marker);
+
+                // 인포윈도우 (장소 이름 표시)
+                const infowindow = new kakao.maps.InfoWindow({
+                    content: '<div style="padding:6px; font-weight:bold;">' + place.name + '</div>'
+                });
+                kakao.maps.event.addListener(marker, 'mouseover', function() { infowindow.open(map, marker); });
+                kakao.maps.event.addListener(marker, 'mouseout', function() { infowindow.close(); });
+            });
+            
+            // 2. 길 찾기 API 결과로 Polyline 그리기 (실제 경로)
+            if (routeData.polyline_coords && routeData.polyline_coords.length > 0) {
+                const routeLinePath = routeData.polyline_coords.map(coord => 
+                    // coord[0]=위도(Lat), coord[1]=경도(Lon)
+                    new kakao.maps.LatLng(coord[0], coord[1]) 
+                );
+
+                polyline = new kakao.maps.Polyline({
+                    path: routeLinePath, 
+                    strokeWeight: 5, 
+                    strokeColor: '#004CFF', 
+                    strokeOpacity: 0.8, 
+                    strokeStyle: 'solid'
+                });
+                
+            } else {
+                // API 실패 시 기존의 직선 연결 방식 (Fallback)
+                const fallbackLinePath = places.map(place => 
+                    new kakao.maps.LatLng(parseFloat(place.lat), parseFloat(place.lon)) // 🚨🚨 JS 변환 강화 🚨🚨
+                );
+                polyline = new kakao.maps.Polyline({
+                    path: fallbackLinePath, 
+                    strokeWeight: 5, 
+                    strokeColor: '#FF6432', 
+                    strokeOpacity: 0.7, 
+                    strokeStyle: 'solid'
+                });
+            }
+            
+            polyline.setMap(map);
+            updateRouteSummary(places, routeData);
+        
+            if (!bounds.isEmpty()) {
+                map.setBounds(bounds);
+            }
+        }
+        
+        function updateRouteSummary(places, data) {
+            const summaryDiv = document.getElementById('route-summary');
+            const stepsDiv = document.getElementById('route-steps');
+            
+            let summaryHtml = '';
+            
+            if (data.total_distance_km) {
+                summaryHtml += '<h6>🚗 최적 경로 정보 (카카오 길 찾기)</h6>';
+                summaryHtml += `<p><strong>총 거리:</strong> ${data.total_distance_km} km</p>`;
+                summaryHtml += `<p><strong>총 예상 시간:</strong> ${data.total_duration_min} 분 (차량 기준)</p>`;
+            } else {
+                // 길 찾기 API 실패 경고 메시지
+                summaryHtml += '<h6>🚨 길 찾기 API 실패 또는 장소 부족</h6>';
+                summaryHtml += `<p>카카오 REST API 키나 통신 오류를 확인하거나 장소를 2개 이상 선택했는지 확인해주세요. (현재 직선 경로 표시 중)</p>`;
+            }
+            
+            summaryDiv.innerHTML = summaryHtml;
+            
+            stepsDiv.innerHTML = '<h6>방문 순서 (LLM 최적 순)</h6>';
+            places.forEach((place, index) => {
+                stepsDiv.innerHTML += `
+                    <div class="route-step">
+                        <span class="route-order">${index + 1}.</span> ${place.name}
+                        <span style="font-size:0.8em; color:#999;">(${place.category})</span>
+                    </div>`;
+            });
+        }
+        
+        // 리스트 아이템 클릭 시 지도 이동 함수
+        function moveToPlace(lat, lon) {
+             // 🚨🚨 JS 변환 강화 🚨🚨: lat, lon이 이미 인라인 이벤트에서 숫자로 넘어왔을 것이지만, 안전을 위해 다시 확인
+             const moveLatLon = new kakao.maps.LatLng(parseFloat(lat), parseFloat(lon));
+             map.panTo(moveLatLon);
+        }
+
+
+        // (loadKakaoSDK 함수는 이전과 동일하게 유지)
+        function loadKakaoSDK(appKey, libraries, onSuccess, onError) {
+            if (window.kakao && window.kakao.maps) {
+                onSuccess();
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&libraries=${libraries}&autoload=false`;
+            script.onload = () => {
+                kakao.maps.load(onSuccess);
+            };
+            script.onerror = onError;
+            document.head.appendChild(script);
+        }
+        
+        // 실제 로드 호출
+        loadKakaoSDK(KAKAO_APP_KEY, 'services',
+            function onSdkLoaded() {
+                initMap();
+            },
+            function onSdkError() {
+                var map = document.getElementById('map');
+                if (map) {
+                    map.innerHTML = '카카오 지도 SDK 로드에 실패했습니다. 키를 확인하세요.';
+                }
+            }
+        );
+
+    </script>
+</body>
+</html>

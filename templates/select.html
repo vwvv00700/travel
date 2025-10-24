@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TravelMate | 여행 에이전트</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+    {% include "header.html" %}
+
+    <section class="cont-wrap">
+        <form class="form-select" method="post" action="{% url 'travel:travel_list' %}">
+            {% csrf_token %}
+            <!-- 여행지 선택 -->
+            <div class="form-wrap">
+                <div class="form-block">
+                    <h4>🛫 여행지</h4>
+                    <strong class="red">최대 4개까지 선택 가능합니다.</strong>
+                    <ul class="check-list">
+                        <li><input type="checkbox" name="travel_gu" id="gangnam" value="gangnam"><label for="gangnam">강남구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="jongno" value="jongno"><label for="jongno">종로구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="jung" value="jung"><label for="jung">중구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="yongsan" value="yongsan"><label for="yongsan">용산구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="seongdong" value="seongdong"><label for="seongdong">성동구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gwangjin" value="gwangjin"><label for="gwangjin">광진구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="dongdaemun" value="dongdaemun"><label for="dongdaemun">동대문구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="jungnang" value="jungnang"><label for="jungnang">중랑구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="seongbuk" value="seongbuk"><label for="seongbuk">성북구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gangbuk" value="gangbuk"><label for="gangbuk">강북구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="dobong" value="dobong"><label for="dobong">도봉구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="nowon" value="nowon"><label for="nowon">노원구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="eunpyeong" value="eunpyeong"><label for="eunpyeong">은평구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="seodaemun" value="seodaemun"><label for="seodaemun">서대문구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="mapo" value="mapo"><label for="mapo">마포구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="yangcheon" value="yangcheon"><label for="yangcheon">양천구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gangseo" value="gangseo"><label for="gangseo">강서구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="guro" value="guro"><label for="guro">구로구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="geumcheon" value="geumcheon"><label for="geumcheon">금천구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="yeongdeungpo" value="yeongdeungpo"><label for="yeongdeungpo">영등포구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="dongjak" value="dongjak"><label for="dongjak">동작구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gwanak" value="gwanak"><label for="gwanak">관악구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="seocho" value="seocho"><label for="seocho">서초구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="songpa" value="songpa"><label for="songpa">송파구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gangdong" value="gangdong"><label for="gangdong">강동구</label></li>
+                    </ul>
+                </div>
+
+                <!-- 여행 기간 -->
+                <div class="form-block">
+                    <h4>📅 여행 기간</h4>
+                    <strong class="red">원하시는 여행 일정을 선택해주세요.</strong>
+                    <ul class="radio-list">
+                        <li><input type="radio" name="days" id="day1" value="day1"><label for="day1">당일치기</label></li>
+                        <li><input type="radio" name="days" id="day2" value="day2"><label for="day2">1박 2일</label></li>
+                        <li><input type="radio" name="days" id="day3" value="day3"><label for="day3">2박 3일</label></li>
+                        <li><input type="radio" name="days" id="day4" value="day4"><label for="day4">3박 4일</label></li>
+                        <li><input type="radio" name="days" id="day5" value="day5"><label for="day5">4박 5일</label></li>
+                    </ul>
+                </div>
+
+                <!-- 여행 테마 -->
+                <div class="form-block">
+                    <h4>🧾 여행 테마</h4>
+                    <strong class="red">최대 4개까지 선택 가능합니다.</strong>
+                    <ul class="check-list">
+                        <li><input type="checkbox" name="tema" id="cafe" value="cafe"><label for="cafe">카페</label></li>
+                        <li><input type="checkbox" name="tema" id="restaurant" value="restaurant"><label for="restaurant">맛집</label></li>
+                        <li><input type="checkbox" name="tema" id="festival" value="festival"><label for="festival">축제</label></li>
+                        <li><input type="checkbox" name="tema" id="nature" value="nature"><label for="nature">자연/산책</label></li>
+                        <li><input type="checkbox" name="tema" id="culture" value="culture"><label for="culture">문화/전시</label></li>
+                        <li><input type="checkbox" name="tema" id="park" value="park"><label for="park">테마파크</label></li>
+                        <li><input type="checkbox" name="tema" id="healing" value="healing"><label for="healing">힐링/스파</label></li>
+                        <li><input type="checkbox" name="tema" id="shopping" value="shopping"><label for="shopping">쇼핑</label></li>
+                    </ul>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">AI 추천 코스</button>
+        </form>
+    </section>
+
+    <footer>
+        &copy; 2025 TravelMate. All Rights Reserved.
+    </footer>
+</body>
+</html>
