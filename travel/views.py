@@ -1,13 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import ChatRoom, ChatMessage
 from django.contrib.auth.forms import UserCreationForm
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import ChatRoom, ChatMessage
 from django.contrib.auth.decorators import login_required
-import json
-from .models import ChatMessage, ChatReport
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+import json
+from .models import ChatRoom, ChatMessage, ChatReport
+# from django.contrib.auth.models import User # User 모델은 필요한 경우에만 import합니다.
 
 # ------------------------
 # 여행 리스트 뷰
@@ -16,34 +14,35 @@ def travel_list(request):
     print(f"request =======> {request.POST}")
     return render(request, "travel/travel_list.html")
 
-
 # ------------------------
 # 회원가입 뷰
 # ------------------------
-def signup_view(request, room_name=None):
+def signup_view(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('travel:login')  # travel.urls에서 login 이름 확인
+            # 'travel:login'으로 리다이렉트 (travel.urls에서 login 이름 확인)
+            return redirect('travel:login')
     else:
         form = UserCreationForm()
     return render(request, 'chat/signup.html', {'form': form})
-
 
 # ------------------------
 # 실제 매칭용 채팅방 뷰
 # ------------------------
 @login_required
 def chat_view(request, room_name):
+    # ChatRoom 모델에서 room_name을 찾아 가져옵니다. 없으면 404 에러를 반환합니다.
     room = get_object_or_404(ChatRoom, room_name=room_name)
     
-    # 참가자 중 현재 사용자가 아닌 상대방
+    # 참가자 중 현재 사용자가 아닌 상대방을 찾습니다.
     participants = room.participants.exclude(id=request.user.id)
     partner = participants.first() if participants.exists() else None
     
     partner_profile = None
     if partner:
+        # 상대방의 UserProfile을 가져옵니다. (UserProfile 모델이 User 모델에 연결되어 있다고 가정)
         partner_profile = getattr(partner, 'userprofile', None)
 
     return render(request, 'chat/match_chat.html', {
@@ -53,155 +52,12 @@ def chat_view(request, room_name):
     })
 
 
-
-@login_required
-def test_chat_room(request):
-    """
-    테스트용 채팅방 + 파트너 정보 표시
-    """
-    # 내 계정 이름 기준 테스트용 방 생성
-    room_name = f"test_{request.user.username}"
-    room, created = ChatRoom.objects.get_or_create(room_name=room_name)
-
-    #  예제 파트너 정보 (실제 DB에서 UserProfile 가져오기)
-    partner_users = User.objects.exclude(id=request.user.id)  # 본인 제외
-
-    partners = []
-    for user in partner_users:
-        profile = getattr(user, 'userprofile', None)
-        partners.append({
-            'id': user.id,
-            'name': user.username,
-            'age': profile.age if profile and hasattr(profile,'age') else '정보 없음',
-            'gender': profile.gender if profile and hasattr(profile,'gender') else '정보 없음',
-            'intro': profile.intro if profile else '',
-            'trip': '테스트 여행'  # 필요 시 TravelPlan에서 가져올 수 있음
-        })
-
-    # 테스트용 AI 파트너도 추가
-    partners.append({
-        'id': 0,
-        'name': 'AI 여행 파트너',
-        'age': '∞',
-        'gender': 'AI',
-        'intro': '혼자 테스트 여행',
-        'trip': '서울 여행'
-    })
-
-    context = {
-        'room_name': room_name,
-        'partners': partners
-    }
-
-    return render(request, 'travel/match_chat.html', context)
 # ------------------------
-# chat_test 뷰 (urls.py 연결용)
+# 채팅 메시지 신고 기능 (AJAX 요청용)
 # ------------------------
-@login_required
-def chat_test(request):
-    return test_chat_room(request)
-
-
-
-# ------------------------
-# 여행 리스트 뷰
-# ------------------------
-def travel_list(request):
-    print(f"request =======> {request.POST}")
-    return render(request, "travel/travel_list.html")
-
-
-# ------------------------
-# 회원가입 뷰
-# ------------------------
-def signup_view(request, room_name=None):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('travel:login')  # travel.urls에서 login 이름 확인
-    else:
-        form = UserCreationForm()
-    return render(request, 'chat/signup.html', {'form': form})
-
-
-# ------------------------
-# 실제 매칭용 채팅방 뷰
-# ------------------------
-@login_required
-def chat_view(request, room_name):
-    room = get_object_or_404(ChatRoom, room_name=room_name)
-    
-    # 참가자 중 현재 사용자가 아닌 상대방
-    participants = room.participants.exclude(id=request.user.id)
-    partner = participants.first() if participants.exists() else None
-    
-    partner_profile = None
-    if partner:
-        partner_profile = getattr(partner, 'userprofile', None)
-
-    return render(request, 'chat/match_chat.html', {
-        'room_name': room.room_name,
-        'partner': partner,
-        'partner_profile': partner_profile
-    })
-
-
-
-@login_required
-def test_chat_room(request):
-    """
-    테스트용 채팅방 + 파트너 정보 표시
-    """
-    # 내 계정 이름 기준 테스트용 방 생성
-    room_name = f"test_{request.user.username}"
-    room, created = ChatRoom.objects.get_or_create(room_name=room_name)
-
-    #  예제 파트너 정보 (실제 DB에서 UserProfile 가져오기)
-    partner_users = User.objects.exclude(id=request.user.id)  # 본인 제외
-
-    partners = []
-    for user in partner_users:
-        profile = getattr(user, 'userprofile', None)
-        partners.append({
-            'id': user.id,
-            'name': user.username,
-            'age': profile.age if profile and hasattr(profile,'age') else '정보 없음',
-            'gender': profile.gender if profile and hasattr(profile,'gender') else '정보 없음',
-            'intro': profile.intro if profile else '',
-            'trip': '테스트 여행'  # 필요 시 TravelPlan에서 가져올 수 있음
-        })
-
-    # 테스트용 AI 파트너도 추가
-    partners.append({
-        'id': 0,
-        'name': 'AI 여행 파트너',
-        'age': '∞',
-        'gender': 'AI',
-        'intro': '혼자 테스트 여행',
-        'trip': '서울 여행'
-    })
-
-    context = {
-        'room_name': room_name,
-        'partners': partners
-    }
-
-    return render(request, 'travel/match_chat.html', context)
-# ------------------------
-# chat_test 뷰 (urls.py 연결용)
-# ------------------------
-@login_required
-def chat_test(request):
-    return test_chat_room(request)
-
-
 @csrf_exempt
 @login_required
 def report_message(request):
-    """
-    채팅 메시지 신고 기능 (AJAX 요청용)
-    """
     if request.method == "POST":
         try:
             data = json.loads(request.body)

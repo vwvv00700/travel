@@ -21,17 +21,12 @@
     --shadow-soft: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* 기본 레이아웃 */
 body {
-    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', Roboto, Arial, sans-serif;
+    margin: 0; padding: 0;
     background: linear-gradient(135deg, var(--bg-light) 0%, #E6E6FA 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    color: var(--text-dark);
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; color: var(--text-dark);
 }
 
 #app-container {
@@ -46,76 +41,59 @@ body {
     box-shadow: var(--shadow-soft);
 }
 
-/* 사이드바 */
+/* Sidebar */
 #sidebar {
     width: 100%;
     max-height: 200px;
-    background-color: #F8F8FF;
+    background: #F8F8FF;
     border-bottom: 1px solid var(--border-light);
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
 }
-
 #sidebar header {
     padding: 15px;
     border-bottom: 3px solid var(--secondary-color);
-    background-color: var(--secondary-color);
+    background: var(--secondary-color);
     color: white;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
-
-.match-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-
+#sidebar h2 { margin: 0; font-size: 1.2em; }
+.match-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+}
 .partner-card {
     display: flex;
     align-items: center;
     padding: 15px;
     border-bottom: 1px solid var(--border-light);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: 0.2s;
 }
-.partner-card:hover { background-color: var(--primary-color); }
-.partner-card.active { background-color: var(--primary-color); border-left: 5px solid var(--accent-color); }
-
+.partner-card:hover { background: var(--primary-color); }
+.partner-card.active { background: var(--primary-color); border-left: 5px solid var(--accent-color); }
 .partner-card img {
-    object-fit: cover;
-    border: 2px solid var(--primary-color);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    margin-right: 10px;
+    width: 40px; height: 40px; border-radius: 50%;
+    margin-right: 10px; border: 2px solid var(--primary-color); object-fit: cover;
 }
-
 .partner-name { font-weight: bold; color: var(--text-dark); }
 
-/* 채팅 영역 */
+/* Chat Area */
 #chat-area { flex-grow: 1; display: flex; flex-direction: column; }
-
 .chat-header {
     flex-shrink: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
     padding: 15px 20px;
-    background-color: var(--secondary-color);
+    background: var(--secondary-color);
     color: white;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    z-index: 10;
 }
-
-#partner-info { display: flex; align-items: center; cursor: pointer; }
+#partner-info { display: flex; align-items: center; cursor:pointer; }
 #partner-avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; border: 3px solid white; }
 #partner-name { font-weight: bold; font-size: 1.2em; }
-
-.chat-actions .action-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.2em;
-    cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 50%;
-}
+.chat-actions .action-btn { background:none; border:none; color:white; font-size:1.2em; cursor:pointer; padding:5px; border-radius:50%; }
 
 .chat-box {
     flex-grow: 1;
@@ -123,120 +101,83 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    background-color: var(--bg-light);
+    background: var(--bg-light);
+    scrollbar-width: thin;
+    scrollbar-color: #FFC0CB transparent;
 }
+.message { display: flex; margin-bottom: 10px; align-items: flex-end; position: relative; }
+.message-content { max-width: 65%; padding: 10px 15px; border-radius: 20px; line-height:1.4; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.message-time { font-size:0.7em; color:#888; align-self:flex-end; }
 
-.message { display: flex; margin-bottom: 10px; align-items: flex-end; }
+.sent { justify-content:flex-end; }
+.sent .message-content { background: var(--chat-bubble-self); border-radius: 20px 5px 20px 20px; }
+.sent .message-time { order: -1; margin-right:5px; margin-left:0; }
 
-.message-content { max-width: 65%; padding: 10px 15px; border-radius: 20px; line-height: 1.4; box-shadow: 0 1px 3px rgba(0,0,0,0.08); position: relative; }
+.received { justify-content:flex-start; }
+.received .message-content { background: var(--chat-bubble-partner); border:1px solid var(--primary-color); border-radius:5px 20px 20px 20px; }
+.received .message-time { order:1; margin-left:5px; margin-right:0; }
 
-.sent { justify-content: flex-end; }
-.sent .message-content { background-color: var(--chat-bubble-self); border-radius: 20px 5px 20px 20px; }
-.sent .message-time { order: -1; margin-right: 5px; font-size: 0.7em; color:#888888; }
+/* Chat Input */
+.chat-input-form { flex-shrink: 0; display: flex; padding: 10px; border-top: 1px solid var(--border-light); background:white; }
+#msg-input { flex-grow:1; padding:12px 18px; border:2px solid var(--primary-color); border-radius:25px; font-size:1em; margin-right:10px; }
+#send-btn { width:50px; height:50px; border-radius:50%; border:none; background: var(--secondary-color); color:white; font-size:1.2em; cursor:pointer; }
 
-.received { justify-content: flex-start; }
-.received .message-content { background-color: var(--chat-bubble-partner); border: 1px solid var(--primary-color); border-radius: 5px 20px 20px 20px; }
-.received .message-time { order: 1; margin-left: 5px; font-size: 0.7em; color:#888888; }
-
-.chat-input-form {
-    flex-shrink: 0;
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid var(--border-light);
-    background-color: white;
-}
-
-#msg-input {
-    flex-grow: 1;
-    padding: 12px 18px;
-    border: 2px solid var(--primary-color);
-    border-radius: 25px;
-    font-size: 1em;
-    margin-right: 10px;
-}
-
-#send-btn {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    border: none;
-    background-color: var(--secondary-color);
-    color: white;
-    font-size: 1.2em;
-    cursor: pointer;
-}
-
-.hidden { display: none !important; }
-
-/* ================== 프로필 팝업 디자인 ================== */
-#partner-profile {
+/* Profile Popup */
+#profile-popup {
     position: absolute;
-    top: 100px; left: 50%;
-    transform: translateX(-50%);
-    width: 85%;
-    max-width: 300px;
-    background-color: white;
+    top: 100px;
+    left: 40%; right: 40%;
+    background: white;
     border-radius: 15px;
-    box-shadow: var(--shadow-soft);
-    z-index: 50;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 30;
+    display: none;
 }
-#partner-profile.hidden { display: none; }
+#profile-popup img { width:80px; height:80px; border-radius:50%; margin-bottom:10px; }
+#profile-popup h3 { margin:5px 0; }
+#profile-popup p { margin:3px 0; }
+#profile-popup .close-popup { position:absolute; top:10px; right:10px; cursor:pointer; font-size:1.2em; }
+#report-section { margin-top:10px; }
+#report-section form { display:flex; flex-direction:column; }
+#report-section label { margin-bottom:5px; }
+#report-section textarea { margin-top:5px; padding:5px; border-radius:5px; border:1px solid var(--border-light);}
+#open-report-btn { background:#FF4500; color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; }
 
-.profile-content { display: flex; flex-direction: column; gap: 10px; }
-.profile-content img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--primary-color); align-self: center; }
-.profile-content span, .profile-content p { text-align: center; margin: 0; }
+.hidden { display:none !important; }
 
-#report-partner-btn, #close-profile-btn {
-    padding: 10px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-#report-partner-btn {
-    background-color: #FF4500;
-    color: white;
-}
-
-#close-profile-btn {
-    background-color: #CCCCCC;
-    color: #333;
-}
-
-@media (max-width:768px){
+@media(max-width:768px){
     #app-container { max-width:100%; border-radius:0; height:100vh; }
     #sidebar { max-height:none; width:100%; }
-    #chat-area:not(.hidden) { position:absolute; top:0; left:0; width:100%; height:100%; z-index:20; }
+    #chat-area:not(.hidden) { position:absolute; top:0; left:0; width:100%; height:100%; z-index:20;}
 }
 </style>
 </head>
 <body>
-<script> const MY_USERNAME = "{{ request.user.username|default:'Guest' }}"; </script>
+
+<script> const MY_USERNAME="{{ request.user.username|default:'Guest' }}"; </script>
 
 <div id="app-container">
+    <!-- Sidebar -->
     <aside id="sidebar">
-        <header><h2><i class="fas fa-users-line"></i> 파트너 목록</h2></header>
+        <header><h2><i class="fas fa-users-line"></i> 파트너 매칭 목록</h2></header>
         <ul id="match-list" class="match-list">
             <li class="partner-card" data-room-id="1">
-                <img src="{% static 'images/default-avatar.png' %}" alt="파트너">
+                <img src="{% static 'img/ai.jpg' %}" alt="파트너">
                 <span class="partner-name">AI 파트너</span>
             </li>
         </ul>
     </aside>
 
+    <!-- Chat Area -->
     <main id="chat-area" class="hidden">
         <header class="chat-header">
             <div id="partner-info">
-                <img id="partner-avatar" src="{% static 'images/default-avatar.png' %}" alt="파트너">
+                <img id="partner-avatar" src="{% static 'img/ai.jpg' %}" alt="파트너">
                 <span id="partner-name">여행 파트너 선택</span>
             </div>
             <div class="chat-actions">
-                <button id="back-to-list-btn" class="action-btn"><i class="fas fa-arrow-left"></i></button>
+                <button id="back-to-list-btn" class="action-btn" title="목록으로"><i class="fas fa-arrow-left"></i></button>
             </div>
         </header>
 
@@ -244,21 +185,29 @@ body {
 
         <footer class="chat-input-form">
             <input type="text" id="msg-input" placeholder="메시지를 입력하세요..." autocomplete="off">
-            <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+            <button id="send-btn" title="전송"><i class="fas fa-paper-plane"></i></button>
         </footer>
     </main>
 </div>
 
-<!-- 프로필 팝업 -->
-<div id="partner-profile" class="hidden">
-    <div class="profile-content">
-        <img id="profile-avatar" src="{% static 'images/default-avatar.png' %}" alt="프로필">
-        <span id="profile-name"></span>
-        <span id="profile-age"></span>
-        <span id="profile-gender"></span>
-        <p id="profile-intro"></p>
-        <button id="report-partner-btn">신고하기</button>
-        <button id="close-profile-btn">닫기</button>
+<!-- Profile Popup -->
+<div id="profile-popup">
+    <span class="close-popup"><i class="fas fa-times"></i></span>
+    <img id="popup-avatar" src="{% static 'img/ai.jpg' %}" alt="프로필">
+    <h3 id="popup-name">파트너 이름</h3>
+    <p id="popup-age">나이: 25</p>
+    <p id="popup-gender">성별: 여</p>
+    <p id="popup-intro">소개: 안녕하세요!</p>
+
+    <div id="report-section">
+        <button id="open-report-btn">신고하기</button>
+        <form id="report-form" class="hidden">
+            <label><input type="checkbox" name="reason" value="욕설"> 욕설</label>
+            <label><input type="checkbox" name="reason" value="스팸"> 스팸</label>
+            <label><input type="checkbox" name="reason" value="기타"> 기타</label>
+            <textarea name="detail" placeholder="상세 내용을 입력하세요"></textarea>
+            <button type="submit">신고 제출</button>
+        </form>
     </div>
 </div>
 
@@ -271,100 +220,71 @@ const partnerNameDisplay = document.getElementById('partner-name');
 const chatArea = document.getElementById('chat-area');
 const partnerListContainer = document.getElementById('sidebar');
 const backToListBtn = document.getElementById('back-to-list-btn');
-const partnerInfo = document.getElementById('partner-info');
-const partnerProfile = document.getElementById('partner-profile');
-const closeProfileBtn = document.getElementById('close-profile-btn');
-const reportPartnerBtn = document.getElementById('report-partner-btn');
+const profilePopup = document.getElementById('profile-popup');
+const popupName = document.getElementById('popup-name');
+const popupAvatar = document.getElementById('popup-avatar');
+const popupAge = document.getElementById('popup-age');
+const popupGender = document.getElementById('popup-gender');
+const popupIntro = document.getElementById('popup-intro');
+const openReportBtn = document.getElementById('open-report-btn');
+const reportForm = document.getElementById('report-form');
 
 let currentPartnerId = null;
 
-function getCookie(name){
-    let cookieValue = null;
-    if(document.cookie && document.cookie!==''){
-        const cookies=document.cookie.split(';');
-        for(let i=0;i<cookies.length;i++){
-            const cookie=cookies[i].trim();
-            if(cookie.substring(0,name.length+1)===(name+'=')){
-                cookieValue=decodeURIComponent(cookie.substring(name.length+1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// 메시지 표시
-function displayMessage(message,sender,time=null){
+function displayMessage(message, sender, messageId=null, time=null) {
     const isSent = sender===MY_USERNAME;
-    const msgDiv=document.createElement('div');
-    msgDiv.classList.add('message');
-    msgDiv.classList.add(isSent?'sent':'received');
-    const timeStr = time || new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    msgDiv.innerHTML = `<span class="message-content">${message}</span><span class="message-time">${timeStr}</span>`;
-    chatBox.appendChild(msgDiv);
+    const div = document.createElement('div');
+    div.classList.add('message', isSent?'sent':'received');
+    div.innerHTML = `<span class="message-content">${message}</span>
+                     <span class="message-time">${time||new Date().toLocaleTimeString()}</span>`;
+    chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// 전송
-function sendMessage(){
-    const message=msgInput.value.trim();
-    if(!message) return;
-    displayMessage(message,MY_USERNAME);
+// Partner click -> show profile
+document.getElementById('partner-info').addEventListener('click', ()=>{
+    profilePopup.style.display='block';
+    popupName.textContent = partnerNameDisplay.textContent;
+});
+
+// Close popup
+profilePopup.querySelector('.close-popup').addEventListener('click', ()=>{
+    profilePopup.style.display='none';
+    reportForm.classList.add('hidden');
+});
+
+// Open report checklist
+openReportBtn.addEventListener('click', ()=>{ reportForm.classList.toggle('hidden'); });
+
+// Send message
+function sendMessage() {
+    const msg = msgInput.value.trim();
+    if(!msg) return;
+    displayMessage(msg, MY_USERNAME);
     msgInput.value='';
-    setTimeout(()=>displayMessage(message+' 👍','AI 파트너'),500);
+    setTimeout(()=>displayMessage(msg+' 👍','AI 파트너'),500);
 }
-
 sendBtn.addEventListener('click',sendMessage);
-msgInput.addEventListener('keypress',e=>{ if(e.key==='Enter') sendMessage(); });
+msgInput.addEventListener('keypress',e=>{if(e.key==='Enter') sendMessage();});
 
-// 파트너 선택
+// Select partner
 matchList.addEventListener('click', e=>{
-    const card=e.target.closest('.partner-card');
-    if(!card) return;
+    const card = e.target.closest('.partner-card'); if(!card) return;
     currentPartnerId = card.dataset.roomId;
-    partnerNameDisplay.textContent = card.querySelector('.partner-name').textContent;
     document.querySelectorAll('.partner-card').forEach(c=>c.classList.remove('active'));
     card.classList.add('active');
+    partnerNameDisplay.textContent = card.querySelector('.partner-name').textContent;
     chatBox.innerHTML='';
     chatArea.classList.remove('hidden');
     partnerListContainer.classList.add('hidden');
 });
 
-// 뒤로가기
-backToListBtn.addEventListener('click',()=>{
+// Back to list
+backToListBtn.addEventListener('click', ()=>{
     chatArea.classList.add('hidden');
     partnerListContainer.classList.remove('hidden');
 });
-
-// 프로필 팝업 열기
-partnerInfo.addEventListener('click', ()=>{
-    if(!currentPartnerId) return;
-    partnerProfile.classList.remove('hidden');
-    document.getElementById('profile-avatar').src = "{% static 'images/default-avatar.png' %}";
-    document.getElementById('profile-name').textContent = partnerNameDisplay.textContent;
-    document.getElementById('profile-age').textContent = "나이: 25";
-    document.getElementById('profile-gender').textContent = "성별: 여자";
-    document.getElementById('profile-intro').textContent = "안녕하세요!";
-});
-
-// 프로필 닫기
-closeProfileBtn.addEventListener('click', ()=>partnerProfile.classList.add('hidden'));
-
-// 프로필 신고
-reportPartnerBtn.addEventListener('click', ()=>{
-    const reason = prompt("신고 사유를 입력해주세요:");
-    if(!reason) return;
-    fetch("/report_user/",{
-        method:'POST',
-        headers:{
-            'Content-Type':'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({user_id: currentPartnerId, reason})
-    }).then(res=>res.json())
-    .then(data=>alert(data.message))
-    .catch(err=>alert("⚠️ 오류 발생"));
-});
 </script>
+
 </body>
 </html>

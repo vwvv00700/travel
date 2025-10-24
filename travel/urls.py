@@ -15,5 +15,4 @@ urlpatterns = [
         ),
         name='login'
     ),
-    path('chat/test/', views.test_chat_room, name='chat_test'),
 ]
