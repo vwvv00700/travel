@@ -18,10 +18,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from .views import main, select
+from travel import views
 
 urlpatterns = [
     path('', main, name='main'),
     path('/select', select, name='select'),
     path("travel/", include("travel.urls")),
+
     path("admin/", admin.site.urls),
 ]
