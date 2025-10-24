@@ -36,4 +36,7 @@ class DiaryRouter:
         """
         if app_label in self.route_app_labels:
             return db == 'diary_db'
+        # Allow auth app to migrate to both default and diary_db
+        if app_label == 'auth':
+            return True
         return None
