@@ -1,22 +1,33 @@
-{% extends 'base_main.html' %}
+{% extends 'base.html' %}
 
 {% block title %}여행 에이전트{% endblock %}
 
 {% block content %}
-<div class="hero-content">
-    <h2>당신만의 여행을 설계해주는 여행 에이전트</h2>
-    <p>목적지를 입력하면 AI가 나에게 꼭 맞는 여행지를 추천해줘요.</p>
+<div class="text-center py-20 md:py-32 bg-white">
+    <div class="container mx-auto px-4">
+        <h2 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4">당신만의 여행을 설계해주는 여행 에이전트</h2>
+        <p class="text-lg text-slate-600 mb-8 max-w-3xl mx-auto">목적지를 입력하면 AI가 나에게 꼭 맞는 여행지를 추천해줘요.</p>
 
-    <form method="post" action="{% url 'travel:travel_list' %}">
-        <div class="search-box">
+        <form method="post" action="{% url 'travel:travel_list' %}">
             {% csrf_token %}
-            <input type="text" name="searchBox" placeholder="예: 강남 2박3일 힐링 여행지, 제주 1박2일 커플 여행" />
-            <button type="submit">검색</button>
-        </div>
-    </form>
+            <div class="flex justify-center items-center max-w-2xl mx-auto">
+                <input type="text" name="searchBox" 
+                class="w-full px-5 h-12 text-base border border-slate-300 rounded-l-full focus:ring-sky-500 focus:border-sky-500 outline-none transition duration-300"
+                placeholder="예: 강남 2박3일 힐링 여행지, 제주 1박2일 커플 여행" />
+                    
+                <button type="submit" 
+                        class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-base px-8 h-12 rounded-r-full -ml-1 transition duration-300 border border-sky-600 hover:border-sky-700 whitespace-nowrap">
+                    검색
+                </button>
+            </div>
+        </form>
 
-    <p>AND</p>
+        <p class="text-slate-500 my-6">OR</p>
 
-    <a class="btn" href="{% url 'select' %}" style="display: inline-block;">AI 추천 코스</a>
+        <a href="{% url 'select' %}" 
+           class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full text-base transition duration-300">
+           AI 추천 코스
+        </a>
+    </div>
 </div>
 {% endblock %}

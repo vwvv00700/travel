@@ -230,6 +230,53 @@ footer {
 .distanceInfo{list-style:none;margin:0;padding:4px 8px;}
 .distanceInfo .label{display:inline-block;width:40px;color:#333;}
 
+/* SVG 맵 스타일링 */
+#map-svg-container {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+}
+
+#map-svg-container svg {
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+}
+
+#map-svg-container svg * {
+    all: revert;
+}
+
+#map-svg-container svg path {
+    fill: #FFFFFF !important;
+    stroke: #000000 !important;
+    stroke-width: 2px !important;
+    vector-effect: non-scaling-stroke;
+    transition: all 0.3s ease-in-out;
+}
+
+#map-svg-container svg path:hover {
+    fill: #E3F2FD !important;
+    cursor: pointer;
+    stroke: #2196F3 !important;
+    stroke-width: 3px !important;
+}
+
+#map-svg-container svg path.selected {
+    fill: #2196F3 !important;
+    stroke: #1976D2 !important;
+    stroke-width: 3px !important;
+}
+
+#map-svg-container svg text {
+    text-anchor: middle;
+    pointer-events: none;
+    font-size: 16px;
+    font-weight: bold;
+    fill: #000000;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
 
 /* ─────────── 반응형 ─────────── */
 @media (max-width: 768px) {
