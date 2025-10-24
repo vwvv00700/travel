@@ -27,6 +27,12 @@ class Place(models.Model):
     lat = models.CharField(max_length=50, blank=True, null=True)
     lon = models.CharField(max_length=50, blank=True, null=True)
 
+    # 이미지 경로
+    image_urls = models.TextField(blank=True, null=True)
+
+    # 오픈시간
+    opening_hours = models.TextField(blank=True, null=True)
+
     # 생성/수정
     regdate = models.DateTimeField(auto_now_add=True)
     chgdate = models.DateTimeField(auto_now=True)

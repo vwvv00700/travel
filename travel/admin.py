@@ -69,7 +69,7 @@ class UploadJSONForm(forms.Form):
 class PlaceAdmin(admin.ModelAdmin):
     list_display = (
         "name", "place_id", "category", "rating", "reviewCnt", "lat", "lon",
-        "city", "city_gu", "phone", "regdate", "chgdate",
+        "city", "city_gu", "phone", "image_urls", "opening_hours", "regdate", "chgdate",
     )
     search_fields = ("name", "place_id", "address", "city", "city_gu")
     list_filter = ("category", "city", "city_gu")
@@ -279,6 +279,9 @@ class UploadEntryAdmin(admin.ModelAdmin):
                     lat = it.get("latitude") or ""
                     lon = it.get("longitude") or ""
 
+                    image_urls_str = ", ".join(it.get("image_urls"))
+                    opening_hours_str = ", ".join(it.get("opening_hours"))
+                    
                     place_row = {
                         "name": place_name,
                         "place_id": pid,
@@ -291,6 +294,8 @@ class UploadEntryAdmin(admin.ModelAdmin):
                         "city_gu": city_gu,
                         "lat": lat,
                         "lon": lon,
+                        "image_urls": image_urls_str,
+                        "opening_hours": opening_hours_str,
                         "phone": it.get("phone"),
                         "website": it.get("website"),
                     }

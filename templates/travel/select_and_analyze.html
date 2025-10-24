@@ -7,6 +7,7 @@
 .tab-container {
   margin: 20px 0;
 }
+ul li {list-style: none;}
 
 .tab-buttons {display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .tab-buttons button { border: 1px solid #ccc; background-color: #f8f8f8; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; }
@@ -17,8 +18,12 @@
 .category-block.active {display: block;}
 
 /* 버튼 스타일 */
-.button { background-color: #333; color: white; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer;}
+.button, .btn-select-category, .btn-clear-category { background-color: #333; color: white; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer;}
 .button:hover {background-color: #333;}
+
+ul.list_place{display: flex; gap: 10px; flex-wrap: wrap;}
+label{padding: 5px 10px; border:solid 1px #417690; border-radius: 10px; color: #333; display: block; box-sizing: border-box;}
+
 </style>
 
 <div class="content" style="margin:20px;">
@@ -51,7 +56,7 @@
               <strong>선택 수: <span class="sel-count" data-category="{{ category }}">0</span> / 100</strong>
             </div>
 
-            <ul style="list-style:none; padding-left:10px;">
+            <ul style="list-style:none; padding-left:10px;" class="list_place">
               {% for place in places %}
               <li style="margin-bottom:4px;">
                 <label>
