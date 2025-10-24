@@ -3,323 +3,368 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 비서와의 여행 매칭 & 채팅</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #FFC0CB;
-            --secondary-color: #87CEEB;
-            --accent-color: #FFD700;
-            --bg-light: #F0F8FF;
-            --text-dark: #333333;
-            --border-light: #E0E0E0;
-            --chat-bubble-self: #FFEEEE;
-            --chat-bubble-partner: #FFFFFF;
-            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 여행 파트너 채팅</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-        body {
-            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, var(--bg-light) 0%, #E6E6FA 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: var(--text-dark);
-        }
+<style>
+:root {
+    --primary-color: #FFC0CB;
+    --secondary-color: #87CEEB;
+    --accent-color: #FFD700;
+    --bg-light: #F0F8FF;
+    --text-dark: #333333;
+    --border-light: #E0E0E0;
+    --chat-bubble-self: #FFEEEE;
+    --chat-bubble-partner: #FFFFFF;
+    --shadow-soft: 0 4px 12px rgba(0,0,0,0.1);
+}
 
-        #app-container {
-            display: flex;
-            width: 90%;
-            max-width: 1200px;
-            height: 80vh;
-            min-height: 600px;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: var(--shadow-soft);
-        }
+/* 기본 레이아웃 */
+body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, var(--bg-light) 0%, #E6E6FA 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: var(--text-dark);
+}
 
-        #sidebar {
-            width: 300px;
-            background-color: #F8F8FF;
-            border-right: 1px solid var(--border-light);
-            display: flex;
-            flex-direction: column;
-        }
+#app-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 420px;
+    height: 80vh;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+}
 
-        #sidebar header {
-            padding: 15px;
-            border-bottom: 3px solid var(--secondary-color);
-            background-color: var(--secondary-color);
-            color: white;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-        }
+/* 사이드바 */
+#sidebar {
+    width: 100%;
+    max-height: 200px;
+    background-color: #F8F8FF;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+}
 
-        #sidebar h2 { margin: 0; font-size: 1.2em; }
+#sidebar header {
+    padding: 15px;
+    border-bottom: 3px solid var(--secondary-color);
+    background-color: var(--secondary-color);
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
 
-        .match-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
+.match-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
 
-        .partner-card {
-            display: flex;
-            padding: 15px;
-            border-bottom: 1px solid var(--border-light);
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-        }
+.partner-card {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.partner-card:hover { background-color: var(--primary-color); }
+.partner-card.active { background-color: var(--primary-color); border-left: 5px solid var(--accent-color); }
 
-        .partner-card:hover {
-            background-color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            z-index: 1;
-        }
+.partner-card img {
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+}
 
-        .partner-card.active {
-            background-color: var(--primary-color);
-            border-left: 5px solid var(--accent-color);
-        }
+.partner-name { font-weight: bold; color: var(--text-dark); }
 
-        .partner-card img {
-            object-fit: cover;
-            border: 2px solid var(--primary-color);
-        }
+/* 채팅 영역 */
+#chat-area { flex-grow: 1; display: flex; flex-direction: column; }
 
-        .partner-name {
-            font-weight: bold;
-            color: var(--text-dark);
-        }
+.chat-header {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--secondary-color);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 10;
+}
 
-        #chat-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
+#partner-info { display: flex; align-items: center; cursor: pointer; }
+#partner-avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; border: 3px solid white; }
+#partner-name { font-weight: bold; font-size: 1.2em; }
 
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background-color: var(--secondary-color);
-            color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            z-index: 10;
-        }
+.chat-actions .action-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 50%;
+}
 
-        #partner-info {
-            display: flex;
-            align-items: center;
-        }
+.chat-box {
+    flex-grow: 1;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-light);
+}
 
-        #partner-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            margin-right: 15px;
-            border: 3px solid white;
-        }
+.message { display: flex; margin-bottom: 10px; align-items: flex-end; }
 
-        #partner-name {
-            font-weight: bold;
-            font-size: 1.2em;
-        }
+.message-content { max-width: 65%; padding: 10px 15px; border-radius: 20px; line-height: 1.4; box-shadow: 0 1px 3px rgba(0,0,0,0.08); position: relative; }
 
-        .chat-actions .action-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2em;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 50%;
-        }
+.sent { justify-content: flex-end; }
+.sent .message-content { background-color: var(--chat-bubble-self); border-radius: 20px 5px 20px 20px; }
+.sent .message-time { order: -1; margin-right: 5px; font-size: 0.7em; color:#888888; }
 
-        .chat-box {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background-color: var(--bg-light);
-        }
+.received { justify-content: flex-start; }
+.received .message-content { background-color: var(--chat-bubble-partner); border: 1px solid var(--primary-color); border-radius: 5px 20px 20px 20px; }
+.received .message-time { order: 1; margin-left: 5px; font-size: 0.7em; color:#888888; }
 
-        .message {
-            display: flex;
-            margin-bottom: 15px;
-        }
+.chat-input-form {
+    flex-shrink: 0;
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid var(--border-light);
+    background-color: white;
+}
 
-        .message-content {
-            max-width: 65%;
-            padding: 12px 18px;
-            border-radius: 20px;
-            line-height: 1.4;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
+#msg-input {
+    flex-grow: 1;
+    padding: 12px 18px;
+    border: 2px solid var(--primary-color);
+    border-radius: 25px;
+    font-size: 1em;
+    margin-right: 10px;
+}
 
-        .sent { justify-content: flex-end; }
-        .sent .message-content {
-            background-color: var(--chat-bubble-self);
-            border-bottom-right-radius: 5px;
-        }
+#send-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--secondary-color);
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+}
 
-        .received { justify-content: flex-start; }
-        .received .message-content {
-            background-color: var(--chat-bubble-partner);
-            border: 1px solid var(--primary-color);
-            border-bottom-left-radius: 5px;
-        }
+.hidden { display: none !important; }
 
-        .chat-input-form {
-            display: flex;
-            padding: 15px;
-            border-top: 1px solid var(--border-light);
-            background-color: white;
-        }
+/* ================== 프로필 팝업 디자인 ================== */
+#partner-profile {
+    position: absolute;
+    top: 100px; left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    max-width: 300px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: var(--shadow-soft);
+    z-index: 50;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#partner-profile.hidden { display: none; }
 
-        #msg-input {
-            flex-grow: 1;
-            padding: 10px 15px;
-            border: 2px solid var(--primary-color);
-            border-radius: 25px;
-            font-size: 1em;
-            margin-right: 10px;
-        }
+.profile-content { display: flex; flex-direction: column; gap: 10px; }
+.profile-content img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--primary-color); align-self: center; }
+.profile-content span, .profile-content p { text-align: center; margin: 0; }
 
-        #send-btn {
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            font-size: 1.2em;
-            cursor: pointer;
-        }
+#report-partner-btn, #close-profile-btn {
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
 
-        .hidden { display: none !important; }
+#report-partner-btn {
+    background-color: #FF4500;
+    color: white;
+}
 
-        @media (max-width: 768px) {
-            #app-container { width: 100%; height: 100vh; border-radius: 0; }
-            #sidebar { width: 100%; }
-            #chat-area:not(.hidden) {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                top: 0;
-                left: 0;
-                z-index: 20;
-            }
-        }
-    </style>
+#close-profile-btn {
+    background-color: #CCCCCC;
+    color: #333;
+}
+
+@media (max-width:768px){
+    #app-container { max-width:100%; border-radius:0; height:100vh; }
+    #sidebar { max-height:none; width:100%; }
+    #chat-area:not(.hidden) { position:absolute; top:0; left:0; width:100%; height:100%; z-index:20; }
+}
+</style>
 </head>
 <body>
-    <script>
-        const MY_USERNAME = "{{ request.user.username|default:'Guest' }}"; 
-    </script>
+<script> const MY_USERNAME = "{{ request.user.username|default:'Guest' }}"; </script>
 
-    <div id="app-container">
-        <aside id="sidebar" class="partner-list-container">
-            <header>
-                <h2><i class="fas fa-users-line"></i> 파트너 매칭 목록</h2>
-            </header>
-            <ul id="match-list" class="match-list">
-                <li class="partner-card" data-room-id="1">
-                    <div style="display:flex;align-items:center;">
-                        <img src="{% static 'images/default-avatar.png' %}" alt="파트너" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
-                        <div>
-                            <strong class="partner-name">AI 파트너</strong>
-                            <p style="margin:0;font-size:0.8em;color:#777;">서울 여행</p>
-                        </div>
-                    </div>
-                </li>
-            </ul>
-        </aside>
+<div id="app-container">
+    <aside id="sidebar">
+        <header><h2><i class="fas fa-users-line"></i> 파트너 목록</h2></header>
+        <ul id="match-list" class="match-list">
+            <li class="partner-card" data-room-id="1">
+                <img src="{% static 'images/default-avatar.png' %}" alt="파트너">
+                <span class="partner-name">AI 파트너</span>
+            </li>
+        </ul>
+    </aside>
 
-        <main id="chat-area" class="chat-main-container hidden">
-            <header class="chat-header">
-                <div id="partner-info">
-                    <img id="partner-avatar" src="{% static 'images/default-avatar.png' %}" alt="파트너 아바타">
-                    <span id="partner-name">여행 파트너 선택</span>
-                </div>
-                <div class="chat-actions">
-                    <button id="back-to-list-btn" class="action-btn back-btn" title="목록으로"><i class="fas fa-arrow-left"></i></button>
-                </div>
-            </header>
+    <main id="chat-area" class="hidden">
+        <header class="chat-header">
+            <div id="partner-info">
+                <img id="partner-avatar" src="{% static 'images/default-avatar.png' %}" alt="파트너">
+                <span id="partner-name">여행 파트너 선택</span>
+            </div>
+            <div class="chat-actions">
+                <button id="back-to-list-btn" class="action-btn"><i class="fas fa-arrow-left"></i></button>
+            </div>
+        </header>
 
-            <div id="chat-box" class="chat-box"></div>
+        <div id="chat-box" class="chat-box"></div>
 
-            <footer class="chat-input-form">
-                <input type="text" id="msg-input" placeholder="메시지를 입력하세요..." autocomplete="off">
-                <button id="send-btn" title="전송"><i class="fas fa-paper-plane"></i></button>
-            </footer>
-        </main>
+        <footer class="chat-input-form">
+            <input type="text" id="msg-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+            <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+        </footer>
+    </main>
+</div>
+
+<!-- 프로필 팝업 -->
+<div id="partner-profile" class="hidden">
+    <div class="profile-content">
+        <img id="profile-avatar" src="{% static 'images/default-avatar.png' %}" alt="프로필">
+        <span id="profile-name"></span>
+        <span id="profile-age"></span>
+        <span id="profile-gender"></span>
+        <p id="profile-intro"></p>
+        <button id="report-partner-btn">신고하기</button>
+        <button id="close-profile-btn">닫기</button>
     </div>
+</div>
 
-    <script>
-        const matchList = document.getElementById('match-list');
-        const chatBox = document.getElementById('chat-box');
-        const msgInput = document.getElementById('msg-input');
-        const sendBtn = document.getElementById('send-btn');
-        const partnerNameDisplay = document.getElementById('partner-name');
-        const chatArea = document.getElementById('chat-area');
-        const partnerListContainer = document.getElementById('sidebar');
-        const backToListBtn = document.getElementById('back-to-list-btn');
-        let chatSocket = null;
-        let currentPartnerId = null;
+<script>
+const matchList = document.getElementById('match-list');
+const chatBox = document.getElementById('chat-box');
+const msgInput = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+const partnerNameDisplay = document.getElementById('partner-name');
+const chatArea = document.getElementById('chat-area');
+const partnerListContainer = document.getElementById('sidebar');
+const backToListBtn = document.getElementById('back-to-list-btn');
+const partnerInfo = document.getElementById('partner-info');
+const partnerProfile = document.getElementById('partner-profile');
+const closeProfileBtn = document.getElementById('close-profile-btn');
+const reportPartnerBtn = document.getElementById('report-partner-btn');
 
-        function displayMessage(message, sender) {
-            const isSent = sender === MY_USERNAME;
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message');
-            messageDiv.classList.add(isSent ? 'sent' : 'received');
-            messageDiv.innerHTML = `<span class="message-content">${message}</span>`;
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+let currentPartnerId = null;
+
+function getCookie(name){
+    let cookieValue = null;
+    if(document.cookie && document.cookie!==''){
+        const cookies=document.cookie.split(';');
+        for(let i=0;i<cookies.length;i++){
+            const cookie=cookies[i].trim();
+            if(cookie.substring(0,name.length+1)===(name+'=')){
+                cookieValue=decodeURIComponent(cookie.substring(name.length+1));
+                break;
+            }
         }
+    }
+    return cookieValue;
+}
 
-        function setupWebSocket(partnerId) {
-            console.log(`(테스트용) 소켓 연결 준비: ${partnerId}`);
-        }
+// 메시지 표시
+function displayMessage(message,sender,time=null){
+    const isSent = sender===MY_USERNAME;
+    const msgDiv=document.createElement('div');
+    msgDiv.classList.add('message');
+    msgDiv.classList.add(isSent?'sent':'received');
+    const timeStr = time || new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    msgDiv.innerHTML = `<span class="message-content">${message}</span><span class="message-time">${timeStr}</span>`;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 
-        function sendMessage() {
-            const message = msgInput.value.trim();
-            if (!message) return;
-            displayMessage(message, MY_USERNAME);
-            msgInput.value = '';
-            setTimeout(() => displayMessage(message + " 👍", "AI 파트너"), 500);
-        }
+// 전송
+function sendMessage(){
+    const message=msgInput.value.trim();
+    if(!message) return;
+    displayMessage(message,MY_USERNAME);
+    msgInput.value='';
+    setTimeout(()=>displayMessage(message+' 👍','AI 파트너'),500);
+}
 
-        sendBtn.addEventListener('click', sendMessage);
-        msgInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+sendBtn.addEventListener('click',sendMessage);
+msgInput.addEventListener('keypress',e=>{ if(e.key==='Enter') sendMessage(); });
 
-        matchList.addEventListener('click', (e) => {
-            const card = e.target.closest('.partner-card');
-            if (!card) return;
-            const newPartnerId = card.dataset.roomId;
-            const newPartnerName = card.querySelector('.partner-name').textContent;
-            currentPartnerId = newPartnerId;
-            document.querySelectorAll('.partner-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            partnerNameDisplay.textContent = newPartnerName;
-            chatBox.innerHTML = '';
-            setupWebSocket(currentPartnerId);
-            chatArea.classList.remove('hidden');
-            partnerListContainer.classList.add('hidden');
-        });
+// 파트너 선택
+matchList.addEventListener('click', e=>{
+    const card=e.target.closest('.partner-card');
+    if(!card) return;
+    currentPartnerId = card.dataset.roomId;
+    partnerNameDisplay.textContent = card.querySelector('.partner-name').textContent;
+    document.querySelectorAll('.partner-card').forEach(c=>c.classList.remove('active'));
+    card.classList.add('active');
+    chatBox.innerHTML='';
+    chatArea.classList.remove('hidden');
+    partnerListContainer.classList.add('hidden');
+});
 
-        backToListBtn.addEventListener('click', () => {
-            chatArea.classList.add('hidden');
-            partnerListContainer.classList.remove('hidden');
-        });
-    </script>
+// 뒤로가기
+backToListBtn.addEventListener('click',()=>{
+    chatArea.classList.add('hidden');
+    partnerListContainer.classList.remove('hidden');
+});
+
+// 프로필 팝업 열기
+partnerInfo.addEventListener('click', ()=>{
+    if(!currentPartnerId) return;
+    partnerProfile.classList.remove('hidden');
+    document.getElementById('profile-avatar').src = "{% static 'images/default-avatar.png' %}";
+    document.getElementById('profile-name').textContent = partnerNameDisplay.textContent;
+    document.getElementById('profile-age').textContent = "나이: 25";
+    document.getElementById('profile-gender').textContent = "성별: 여자";
+    document.getElementById('profile-intro').textContent = "안녕하세요!";
+});
+
+// 프로필 닫기
+closeProfileBtn.addEventListener('click', ()=>partnerProfile.classList.add('hidden'));
+
+// 프로필 신고
+reportPartnerBtn.addEventListener('click', ()=>{
+    const reason = prompt("신고 사유를 입력해주세요:");
+    if(!reason) return;
+    fetch("/report_user/",{
+        method:'POST',
+        headers:{
+            'Content-Type':'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({user_id: currentPartnerId, reason})
+    }).then(res=>res.json())
+    .then(data=>alert(data.message))
+    .catch(err=>alert("⚠️ 오류 발생"));
+});
+</script>
 </body>
 </html>

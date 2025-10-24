@@ -120,8 +120,35 @@ class UploadEntry(Place):
         proxy = True
         verbose_name = "데이터 업로드"
         verbose_name_plural = "데이터 업로드"
-
-    # engine = create_engine("sqlite:///database.db") 
-    # ❌ Django ORM 사용 시 이 코드는 제거해야 합니다!
-    pass # 기존 코드에서 create_engine을 제거한 뒤 pass로 대체
+    pass
     
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    intro = models.CharField(max_length=255, blank=True, null=True)
+    interests = models.CharField(max_length=255, blank=True, null=True, default="")
+    
+    # 추가 필드
+    birth_date = models.DateField(blank=True, null=True)
+    gender = models.CharField(max_length=10, blank=True, null=True)  # '남성' / '여성' 등
+    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
+
+    def age(self):
+        if not self.birth_date:
+            return None
+        today = timezone.now().date()
+        return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+
+    def __str__(self):
+        return f"Profile of {self.user.username}"
+    
+    # =======================================================
+# 🚨 채팅 메시지 신고 기능
+# =======================================================
+class ChatReport(models.Model):
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')  # 신고한 사람
+    message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, related_name='reports')  # 신고 대상 메시지
+    reason = models.TextField(blank=True, null=True)  # 신고 사유
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.reporter.username} → {self.message.id}"
