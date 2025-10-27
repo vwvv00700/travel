@@ -20,6 +20,8 @@ from django.urls import path, include
 from .views import main, select, chat, signup_view
 from django.contrib.auth import views as auth_views
 from travel import views as travel_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # 1. 메인/홈 페이지
@@ -37,3 +39,8 @@ urlpatterns = [
     path('accounts/logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     path('chat/report/', travel_views.report_message, name='chat_report'),
 ]
+
+# 개발환경에서 정적/미디어 서빙
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
