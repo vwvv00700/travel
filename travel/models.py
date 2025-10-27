@@ -30,6 +30,16 @@ class Place(models.Model):
     phone = models.CharField(max_length=100, blank=True, null=True)
     website = models.URLField(blank=True, null=True)
 
+    # 위도 / 경도
+    lat = models.CharField(max_length=50, blank=True, null=True)
+    lon = models.CharField(max_length=50, blank=True, null=True)
+
+    # 이미지 경로
+    image_urls = models.TextField(blank=True, null=True)
+
+    # 오픈시간
+    opening_hours = models.TextField(blank=True, null=True)
+
     # 생성/수정
     regdate = models.DateTimeField(auto_now_add=True)
     chgdate = models.DateTimeField(auto_now=True)
