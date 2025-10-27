@@ -54,9 +54,22 @@ body {
     border-bottom: 3px solid var(--secondary-color);
     background: var(--secondary-color);
     color: white;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
-#sidebar h2 { margin: 0; font-size: 1.2em; }
+#sidebar h2 { margin: 0; font-size: 1.2em; display: flex; align-items: center; gap: 8px; }
+
+#back-to-main-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+#back-to-main-btn:hover { color: var(--accent-color); }
+
 .match-list {
     list-style: none;
     padding: 0;
@@ -160,7 +173,10 @@ body {
 <div id="app-container">
     <!-- Sidebar -->
     <aside id="sidebar">
-        <header><h2><i class="fas fa-users-line"></i> 파트너 매칭 목록</h2></header>
+        <header>
+            <h2><i class="fas fa-users-line"></i> 파트너 매칭 목록</h2>
+            <button id="back-to-main-btn" title="메인으로"><i class="fas fa-arrow-left"></i></button>
+        </header>
         <ul id="match-list" class="match-list">
             <li class="partner-card" data-room-id="1">
                 <img src="{% static 'img/ai.jpg' %}" alt="파트너">
@@ -228,10 +244,16 @@ const popupGender = document.getElementById('popup-gender');
 const popupIntro = document.getElementById('popup-intro');
 const openReportBtn = document.getElementById('open-report-btn');
 const reportForm = document.getElementById('report-form');
+const backToMainBtn = document.getElementById('back-to-main-btn');
 
 let currentPartnerId = null;
 
-function displayMessage(message, sender, messageId=null, time=null) {
+// ✅ 메인으로 이동 버튼
+backToMainBtn.addEventListener('click', ()=>{
+    window.location.href = "{% url 'travel:travel_list' %}";
+});
+
+function displayMessage(message, sender, time=null) {
     const isSent = sender===MY_USERNAME;
     const div = document.createElement('div');
     div.classList.add('message', isSent?'sent':'received');
@@ -241,22 +263,22 @@ function displayMessage(message, sender, messageId=null, time=null) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Partner click -> show profile
+// 프로필 보기
 document.getElementById('partner-info').addEventListener('click', ()=>{
     profilePopup.style.display='block';
     popupName.textContent = partnerNameDisplay.textContent;
 });
 
-// Close popup
+// 프로필 닫기
 profilePopup.querySelector('.close-popup').addEventListener('click', ()=>{
     profilePopup.style.display='none';
     reportForm.classList.add('hidden');
 });
 
-// Open report checklist
+// 신고 폼 열기
 openReportBtn.addEventListener('click', ()=>{ reportForm.classList.toggle('hidden'); });
 
-// Send message
+// 메시지 전송
 function sendMessage() {
     const msg = msgInput.value.trim();
     if(!msg) return;
@@ -267,7 +289,7 @@ function sendMessage() {
 sendBtn.addEventListener('click',sendMessage);
 msgInput.addEventListener('keypress',e=>{if(e.key==='Enter') sendMessage();});
 
-// Select partner
+// 파트너 선택
 matchList.addEventListener('click', e=>{
     const card = e.target.closest('.partner-card'); if(!card) return;
     currentPartnerId = card.dataset.roomId;
@@ -279,7 +301,7 @@ matchList.addEventListener('click', e=>{
     partnerListContainer.classList.add('hidden');
 });
 
-// Back to list
+// 목록으로 돌아가기
 backToListBtn.addEventListener('click', ()=>{
     chatArea.classList.add('hidden');
     partnerListContainer.classList.remove('hidden');

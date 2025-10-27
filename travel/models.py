@@ -42,6 +42,62 @@ class Place(models.Model):
     def __str__(self):
         return f"{self.name} ({self.category})"
 
+class PlaceAnalysis(models.Model):
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name="analyses")
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)  # 있으면 편함
+
+    # 추가: place_id와 name(읽기용 복제 컬럼)
+    place_code = models.CharField(max_length=50, db_index=True)  # FK id 복사본
+    place_title = models.CharField(max_length=200)  # 장소명 복사본
+
+    # 시즌별 점수
+    season_spring = models.IntegerField(null=True, blank=True)
+    season_summer = models.IntegerField(null=True, blank=True)
+    season_autumn = models.IntegerField(null=True, blank=True)
+    season_winter = models.IntegerField(null=True, blank=True)
+
+    # MBTI
+    mbti_E = models.IntegerField(null=True, blank=True)
+    mbti_I = models.IntegerField(null=True, blank=True)
+    mbti_S = models.IntegerField(null=True, blank=True)
+    mbti_N = models.IntegerField(null=True, blank=True)
+    mbti_T = models.IntegerField(null=True, blank=True)
+    mbti_F = models.IntegerField(null=True, blank=True)
+    mbti_J = models.IntegerField(null=True, blank=True)
+    mbti_P = models.IntegerField(null=True, blank=True)
+
+    # 방문자 그룹
+    group_couple = models.IntegerField(null=True, blank=True)
+    group_friends = models.IntegerField(null=True, blank=True)
+    group_family = models.IntegerField(null=True, blank=True)
+    group_solo = models.IntegerField(null=True, blank=True)
+
+    # 연령대
+    age_20s = models.IntegerField(null=True, blank=True)
+    age_30s = models.IntegerField(null=True, blank=True)
+    age_40s = models.IntegerField(null=True, blank=True)
+    age_50plus = models.IntegerField(null=True, blank=True)
+
+    # 성별
+    gender_female = models.IntegerField(null=True, blank=True)
+    gender_male = models.IntegerField(null=True, blank=True)
+
+    # 키워드/테마
+    keywords_csv = models.TextField(blank=True, default="")
+    themes_csv = models.TextField(blank=True, default="")
+
+    # 원본 JSON도 같이 저장
+    raw_json = models.JSONField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["place"], name="unique_analysis_per_place"),
+        ]
+
+    def __str__(self):
+        return f"{self.place.name} 분석 ({self.created_at:%Y-%m-%d})"
+
 
 class Review(models.Model):
     # 리뷰 작성자
@@ -66,20 +122,16 @@ class Review(models.Model):
         who = self.author or "anonymous"
         return f"{who} → {self.place_id}"
 
+class AnalysisTool(models.Model):
+    class Meta:
+        managed = False
+        verbose_name = "장소 성격 LLM"
+        verbose_name_plural = verbose_name
+        default_permissions = ()  # add/change/delete/view 자동권한 생성 안 함
 
 # =======================================================
 # 2. 인증/여행 계획 모델 (문법 오류 수정됨)
 # =======================================================
-
-class UserProfile(models.Model):
-    # 1:1 관계를 통해 Django의 기본 User와 연결
-    user = models.OneToOneField(User, on_delete=models.CASCADE) 
-    
-    intro = models.CharField(max_length=255, blank=True, null=True)
-    interests = models.CharField(max_length=255, blank=True, null=True, default="") # 배지 저장
-    
-    def __str__(self):
-        return f"Profile of {self.user.username}"
 
 
 class TravelPlan(models.Model):
