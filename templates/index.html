@@ -1,0 +1,166 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+{% include "head.html" %}
+
+<body class="index-page">
+    {% include "header.html" %}
+
+    <main class="main">
+
+        <!-- Travel Hero Section -->
+        <section id="travel-hero" class="travel-hero section dark-background">
+
+            <div class="hero-background">
+                <video autoplay="" muted="" loop="">
+                <source src="{% static 'img/travel/video-2.mp4' %}" type="video/mp4">
+                </video>
+                <div class="hero-overlay"></div>
+            </div>
+
+            <div class="container position-relative">
+                <div class="row align-items-center">
+                    <div class="col-lg">
+                        <div class="container position-relative tx-center keep-all">
+                            <h1>당신만의 여행을 설계해주는 여행 에이전트</h1>
+                            <p>AI가 나에게 꼭 맞는 여행 계획을 추천해줘요</p>
+                        </div>
+
+                        <form class="newsletter-form tx-center" action="" method="post">
+                            <div class="form-wrapper">
+                                <input type="text" name="text" class="text-input" placeholder="예: 강남, 마포 2박3일 힐링 여행지" required="">
+                                <button type="submit" class="subscribe-btn">
+                                <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </section><!-- /Travel Hero Section -->
+
+        <section id="featured-tours" class="featured-tours section">
+
+            <!-- Section Title -->
+            <div class="container section-title aos-init aos-animate" data-aos="fade-up">
+                <h2>Travel Plane</h2>
+                <div><span>사람들의</span> <span class="description-title">여행 플랜</span></div>
+            </div><!-- End Section Title -->
+
+            <div class="container aos-init aos-animate" data-aos="fade-up" data-aos-delay="100"> 
+
+                <div class="row gy-4">
+                    <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="200">
+                    <div class="tour-card">
+                        <div class="tour-image">
+                            <img src="assets/img/travel/tour-1.webp" alt="Serene Beach Retreat" class="img-fluid" loading="lazy">
+                        </div>
+                        <div class="tour-content">
+                        <h4>Serene Beach Retreat</h4>
+                        <div class="tour-meta">
+                            <span class="duration"><i class="bi bi-clock"></i> 8 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> Max 6</span>
+                        </div>
+                        <p>Mauris ipsum neque, cursus ac ipsum at, iaculis facilisis ligula. Suspendisse non sapien vel enim cursus semper.</p>
+                        <div class="tour-highlights">
+                            <span>Maldives</span>
+                            <span>Seychelles</span>
+                            <span>Bora Bora</span>
+                        </div>
+                        <div class="tour-action">
+                            <a href="booking.html" class="btn-book">Travel Plane</a>
+                                <div class="tour-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-half"></i>
+                                <span>4.8 (95)</span>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    </div><!-- End Tour Item -->
+
+                    <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="300">
+                    <div class="tour-card">
+                        <div class="tour-image">
+                            <img src="assets/img/travel/tour-2.webp" alt="Arctic Expedition" class="img-fluid" loading="lazy">
+                        </div>
+                        <div class="tour-content">
+                        <h4>Arctic Wilderness Expedition</h4>
+                        <div class="tour-meta">
+                            <span class="duration"><i class="bi bi-clock"></i> 10 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> Max 8</span>
+                        </div>
+                        <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Donec dictum non massa nec fermentum.</p>
+                        <div class="tour-highlights">
+                            <span>Greenland</span>
+                            <span>Iceland</span>
+                            <span>Norway</span>
+                        </div>
+                        <div class="tour-action">
+                            <a href="booking.html" class="btn-book">Travel Plane</a>
+                            <div class="tour-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star"></i>
+                                <span>4.6 (55)</span>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    </div><!-- End Tour Item -->
+
+                    <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="400">
+                    <div class="tour-card">
+                        <div class="tour-image">
+                            <img src="assets/img/travel/tour-4.webp" alt="Desert Safari" class="img-fluid" loading="lazy">
+                        </div>
+                        <div class="tour-content">
+                        <h4>Sahara Desert Discovery</h4>
+                        <div class="tour-meta">
+                            <span class="duration"><i class="bi bi-clock"></i> 5 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> Max 10</span>
+                        </div>
+                        <p>Pellentesque euismod tincidunt turpis ac tristique. Phasellus vitae lacus in enim mollis facilisis vel quis ex. In hac habitasse platea dictumst.</p>
+                        <div class="tour-highlights">
+                            <span>Morocco</span>
+                            <span>Egypt</span>
+                            <span>Dubai</span>
+                        </div>
+                        <div class="tour-action">
+                            <a href="booking.html" class="btn-book">Travel Plane</a>
+                            <div class="tour-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <span>4.9 (72)</span>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    </div><!-- End Tour Item -->
+                </div>
+
+                <div class="text-center mt-5 aos-init aos-animate" data-aos="fade-up" data-aos-delay="500">
+                    <a href="tours.html" class="btn-view-all">View All Tours</a>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    {% include "footer.html" %}
+
+</body>
+
+</html>

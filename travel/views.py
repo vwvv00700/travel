@@ -1,5 +1,5 @@
 # travel/views.py
-import json, re, time
+import json, re, time, os, requests
 from itertools import groupby
 from operator import attrgetter
 
@@ -10,6 +10,9 @@ from django.urls import reverse
 from .models import Place
 from .services.LLM_analyzer import analyze_place_with_LLM              # 네 함수 경로에 맞게 조정
 from .services.analysis_loader import create_or_update_analysis_from_json  # 앞서 만든 저장 함수
+
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.views.decorators.http import require_GET
 
 # Create your views here.
 def travel_list(request):
