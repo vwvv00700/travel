@@ -79,7 +79,7 @@
 {% endblock %}
 {% block content %}
     <section class="cont-wrap">
-        <form class="form-select" method="post" action="{% url 'travel:travel_list' %}">
+        <form class="form-select" method="post" action="{% url 'travel:travel_agent_viewer' %}">
             {% csrf_token %}
             <div class="form-wrap">
                 <div class="form-block" style="width:100%;">

@@ -14,4 +14,6 @@ urlpatterns = [
     path("diary/<int:pk>/edit/", views.edit_travel_diary, name="edit_travel_diary"),
     path("diary_entry/<int:pk>/edit/", views.edit_diary_entry, name="edit_diary_entry"),
     path("diary_entry/<int:pk>/delete/", views.delete_diary_entry, name="delete_diary_entry"),
+    path("agent_viewer/", views.travel_agent_viewer, name="travel_agent_viewer"),
+    path("agent_viewer/recommendations/", views.get_ai_recommendations, name="get_ai_recommendations"),
 ]
