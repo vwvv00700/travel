@@ -17,6 +17,5 @@ urlpatterns = [
         ),
         name='login'
     ),
-    path('llm-analysis/', views.analyze_selected_places_view, name='llm_analysis'),
     
 ]
