@@ -7,6 +7,7 @@ app_name = "travel"
 urlpatterns = [
     path("list/", views.travel_list, name="travel_list"),
     path('llm-analysis/', views.analyze_selected_places_view, name='llm_analysis'),
+    path("travel/create/", views.create_travel_plan, name="create_travel_plan"),
     path('chat/<str:room_name>/', views.chat_view, name='chat'),
     path(
         'login/',

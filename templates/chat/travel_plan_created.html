@@ -1,16 +1,27 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>여행 계획 생성 완료</title>
-</head>
-<body>
-    <h1>여행 계획이 생성되었습니다!</h1>
-    <p>도시: {{ plan.location_city }}</p>
-    <p>기간: {{ plan.start_date }} ~ {{ plan.end_date }}</p>
-    <p>{{ message }}</p>
+<h2>채팅방: {{ room.travel_plan.title }}</h2>
 
-    <a href="{% url 'travel:create_travel_plan' %}">다시 계획 생성</a>
-    <a href="{% url 'chat:chat_list' %}">채팅방 보기</a>
-</body>
-</html>
+<div id="chat-log">
+    {% for msg in messages %}
+        <p><strong>{{ msg.user.username }}:</strong> {{ msg.content }}</p>
+    {% endfor %}
+</div>
+
+<input id="chat-message-input" type="text">
+<button id="chat-message-submit">Send</button>
+
+<script>
+const roomId = "{{ room.id }}";
+const ws = new WebSocket(`ws://${window.location.host}/ws/chat/${roomId}/`);
+
+ws.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const chatLog = document.getElementById('chat-log');
+    chatLog.innerHTML += `<p><strong>${data.username}:</strong> ${data.message}</p>`;
+};
+
+document.getElementById('chat-message-submit').onclick = function() {
+    const input = document.getElementById('chat-message-input');
+    ws.send(JSON.stringify({'message': input.value}));
+    input.value = '';
+};
+</script>
