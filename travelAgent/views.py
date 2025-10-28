@@ -69,3 +69,5 @@ def signup_view(request):
     return render(request, 'chat/signup.html', {'form': form})
 
 
+
+

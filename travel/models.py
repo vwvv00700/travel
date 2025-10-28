@@ -5,10 +5,8 @@ from django.utils import timezone
 # Django 기본 User
 User = get_user_model()
 
-# =======================================================
-# 1. 장소 관련 모델
-# =======================================================
 
+# ----- 장소 테이블 ------------------------------------------
 class Place(models.Model):
     # 장소 기본 정보
     name = models.CharField(max_length=200)
@@ -51,12 +49,14 @@ class Place(models.Model):
     def __str__(self):
         return f"{self.name} ({self.category})"
 
+
+# ----- 장소별 성격 분석 테이블 ------------------------------------------
 class PlaceAnalysis(models.Model):
     place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name="analyses")
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # 읽기용 복제 컬럼
+    # 읽기용 복제 컬럼 (place id, name 복사)
     place_code = models.CharField(max_length=50, db_index=True)
     place_title = models.CharField(max_length=200)
 
@@ -107,6 +107,8 @@ class PlaceAnalysis(models.Model):
     def __str__(self):
         return f"{self.place.name} 분석 ({self.created_at:%Y-%m-%d})"
 
+
+# ----- 장소 리뷰 테이블 ------------------------------------------
 class Review(models.Model):
     author = models.CharField(max_length=200, blank=True, null=True)
     name = models.CharField(max_length=200, blank=True, null=True)
@@ -129,16 +131,11 @@ class Review(models.Model):
         who = self.author or "anonymous"
         return f"{who} → {self.place_id}"
 
-class AnalysisTool(models.Model):
-    class Meta:
-        managed = False
-        verbose_name = "장소 성격 LLM"
-        verbose_name_plural = verbose_name
-        default_permissions = ()
 
 # =======================================================
-# 2. 사용자, 여행 계획, 채팅 관련
+# 사용자, 여행 계획, 채팅 관련 모델
 # =======================================================
+
 
 class TravelPlan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -148,7 +145,9 @@ class TravelPlan(models.Model):
     is_seeking_partner = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.location_city}"
+        # user may be a custom user model; use str() to avoid attribute errors in tests
+        return f"{self.user} - {self.location_city}"
+
 
 class ChatRoom(models.Model):
     room_name = models.CharField(max_length=100, unique=True)
@@ -160,6 +159,7 @@ class ChatRoom(models.Model):
     def __str__(self):
         return f"ChatRoom({self.id}): {self.travel_plan1} <-> {self.travel_plan2}"
 
+
 class ChatMessage(models.Model):
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -167,7 +167,8 @@ class ChatMessage(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.sender.username}: {self.message[:20]}"
+        return f"{self.sender}: {self.message[:20]}"
+
 
 class ChatReport(models.Model):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
@@ -176,7 +177,8 @@ class ChatReport(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.reporter.username} → {self.message.id}"
+        return f"{self.reporter} → {self.message.id}"
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -193,11 +195,13 @@ class UserProfile(models.Model):
         return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
 
     def __str__(self):
-        return f"Profile of {self.user.username}"
+        return f"Profile of {self.user}"
+
 
 # =======================================================
-# 3. 데이터 업로드용 프록시 모델
+# 데이터 업로드용 프록시 모델
 # =======================================================
+
 
 class UploadEntry(Place):
     """Place 모델 상속, 데이터 업로드/관리용"""
@@ -205,3 +209,11 @@ class UploadEntry(Place):
         proxy = True
         verbose_name = "데이터 업로드"
         verbose_name_plural = "데이터 업로드"
+
+
+class AnalysisTool(models.Model):
+    class Meta:
+        managed = False
+        verbose_name = "장소 성격 LLM"
+        verbose_name_plural = verbose_name
+        default_permissions = ()  # add/change/delete/view 자동권한 생성 안 함

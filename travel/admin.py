@@ -13,7 +13,10 @@ from django.http import HttpRequest, HttpResponseRedirect
 from django.urls import reverse, path
 from django.shortcuts import redirect, render
 from django.template.response import TemplateResponse
+from .models import Place, Review, UploadEntry, AnalysisTool, PlaceAnalysis
 
+from .services.LLM_analyzer import analyze_place_with_LLM
+from .services.analysis_loader import create_or_update_analysis_from_json
 from .models import Place, Review, UploadEntry, AnalysisTool, PlaceAnalysis
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
@@ -74,18 +77,20 @@ class UploadJSONForm(forms.Form):
 # ── 5. Admin 클래스 정의 ────────────────────────────────────────────────────────
 
 # 일반 Place 어드민
+# ── 일반 Place 어드민 ────────────────────────────────────────────────
 @admin.register(Place)
 class PlaceAdmin(admin.ModelAdmin):
     # original list_display에서 Place 모델에 없는 필드(lat, lon, image_urls, opening_hours)를 제거하고 정리했습니다.
     list_display = (
-        "name", "place_id", "category", "rating", "reviewCnt",
-        "city", "city_gu", "phone", "website", "regdate", "chgdate",
+        "name", "place_id", "category", "rating", "reviewCnt", "lat", "lon",
+        "city", "city_gu", "phone", "image_urls", "opening_hours", "regdate", "chgdate",
     )
     search_fields = ("name", "place_id", "address", "city", "city_gu")
     list_filter = ("category", "city", "city_gu")
 
 
 # 일반 Review 어드민
+# ── 일반 Review 어드민 ────────────────────────────────────────────────
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ("name", "author", "place_id", "rating", "like", "short_content")
@@ -97,172 +102,7 @@ class ReviewAdmin(admin.ModelAdmin):
     short_content.short_description = "content"
 
 
-# 장소 성격 어드민
-@admin.register(PlaceAnalysis)
-class PlaceAnalysisAdmin(admin.ModelAdmin):
-    list_display = (
-        "id", "place_title", "place_code", "created_at",
-        "keywords_csv", "themes_csv",
-        "season_spring", "season_summer", "season_autumn", "season_winter",
-        "mbti_E", "mbti_I", "mbti_S", "mbti_N", "mbti_T", "mbti_F", "mbti_J", "mbti_P",
-        "group_couple", "group_friends", "group_family", "group_solo",
-        "age_20s", "age_30s", "age_40s", "age_50plus",
-        "gender_female", "gender_male",
-    )
-    search_fields = ("place_code", "place_title")
-    list_filter = ("created_at",)
-
-
-# 장소 성격 LLM 분석 도구 어드민
-@admin.register(AnalysisTool)
-class AnalysisToolAdmin(admin.ModelAdmin):
-    # "+ Add" 없애기
-    def has_add_permission(self, request):
-        return False
-
-    # 인덱스에 노출은 하되 Add는 감춤
-    def get_model_perms(self, request):
-        # 'travel:llm_analysis'로 리다이렉트되므로 change 권한만 남겨둠
-        return {"change": True}
-
-    # 리스트(모델 클릭/Change) → run 뷰로 리다이렉트
-    def changelist_view(self, request, extra_context=None):
-        # 'travel:llm_analysis'는 아래 get_urls에서 정의된 name입니다.
-        return redirect("travel:llm_analysis")
-
-    # 커스텀 URL 등록
-    def get_urls(self):
-        urls = super().get_urls()
-        # AdminSite에 커스텀 URL이 등록될 때 사용할 info 튜플을 준비합니다.
-        info = self.model._meta.app_label, self.model._meta.model_name 
-        
-        my = [
-            path(
-                "run/",
-                self.admin_site.admin_view(self.run_view), 
-                # name을 명확히 설정합니다. Django는 이것을 'admin:travel_analysistool_run'으로 등록합니다.
-                name="%s_%s_run" % info, 
-            ),
-            path(
-                "save/",
-                self.admin_site.admin_view(self.save_view),
-                name="%s_%s_save" % info,
-            ),
-        ]
-        
-        # ❌ 이 오류를 일으키는 비공개 속성 사용 코드를 제거합니다. ❌
-        # self.admin_site._wrapped_view_funcs["travel:llm_analysis"] = self.admin_site.admin_view(self.run_view)
-        
-        return my + urls
-
-    # 분석 실행/선택 뷰 (run_view)
-    def run_view(self, request):
-        """
-        GET: 카테고리별 장소 선택 화면
-        POST: 선택한 장소들 분석 실행 후 결과 렌더
-        템플릿: travel/select_and_analyze.html
-        """
-        base_ctx = self.admin_site.each_context(request)
-        run_name = "admin:%s_%s_run" % (self.model._meta.app_label, self.model._meta.model_name)
-        save_name = "admin:%s_%s_save" % (self.model._meta.app_label, self.model._meta.model_name)
-
-
-        # GET — 장소 그룹핑 화면 (선택 폼)
-        if request.method == "GET":
-            all_places = Place.objects.all().order_by("category", "name")
-            grouped_places = {}
-            for category, places_in_category in groupby(all_places, key=attrgetter("category")):
-                grouped_places[category] = list(places_in_category)
-
-            ctx = {
-                **base_ctx,
-                "title": "장소 성격 LLM 분석",
-                "grouped_places": grouped_places,
-                "post_url": reverse(run_name),
-                "save_url": reverse(save_name), # 저장 URL도 필요할 수 있으므로 추가
-                "opts": self.model._meta,
-            }
-            return render(request, "travel/select_and_analyze.html", ctx)
-
-        # POST — 분석 실행 및 결과 렌더링
-        if request.method == "POST":
-            results = []
-            selected_ids = request.POST.getlist("place_ids")
-
-            if not selected_ids:
-                messages.warning(request, "선택된 장소가 없습니다.")
-                return redirect(reverse(run_name))
-
-            selected_places = Place.objects.filter(id__in=selected_ids)
-
-            for place in selected_places:
-                # Place 데이터 기반으로 분석 요청
-                place_raw_data = f"장소 이름: {place.name}\n주소: {place.address}\n카테고리: {place.category}\n" 
-                analysis_result_dict = analyze_place_with_LLM(place_raw_data)
-
-                try:
-                    analysis_result_json = json.dumps(analysis_result_dict, ensure_ascii=False, indent=2)
-                except Exception:
-                    analysis_result_json = str(analysis_result_dict)
-
-                results.append({
-                    "place_id": place.id, # DB 저장을 위해 Place의 PK(ID)를 넘겨야 함
-                    "place_name": place.name,
-                    "raw_data": place_raw_data,
-                    "analysis_data": analysis_result_dict,
-                    "analysis_json": analysis_result_json,
-                })
-
-            ctx = {
-                **base_ctx,
-                "title": "분석 결과 확인",
-                "analysis_results": results,
-                "post_url": reverse(run_name),
-                "save_url": reverse(save_name),
-                "opts": self.model._meta,
-                "show_result": True, # 결과 화면임을 표시
-            }
-            return render(request, "travel/select_and_analyze.html", ctx)
-
-    # 분석 결과 DB 저장 뷰 (save_view)
-    def save_view(self, request):
-        if request.method != "POST":
-            return redirect(reverse("admin:travel_analysistool_run"))
-
-        saved = 0
-        errors = 0
-        
-        with transaction.atomic():
-            for key, val in request.POST.items():
-                if not key.startswith("payload_"):
-                    continue
-                try:
-                    # key는 'payload_{place_id}' 형태
-                    place_pk = int(key.split("_", 1)[1])
-                    place = Place.objects.get(pk=place_pk)
-                    data = json.loads(val)
-                    create_or_update_analysis_from_json(place, data)
-                    saved += 1
-                except Place.DoesNotExist:
-                    errors += 1
-                    messages.error(request, f"Place ID {place_pk}를 찾을 수 없습니다.")
-                except json.JSONDecodeError as e:
-                    errors += 1
-                    messages.error(request, f"JSON 디코딩 오류 (ID: {place_pk}): {e}")
-                except Exception as e:
-                    errors += 1
-                    messages.error(request, f"저장 중 알 수 없는 오류 (ID: {place_pk}): {e}")
-
-
-        if saved:
-            messages.success(request, f"DB 저장 완료: {saved}건")
-        if errors:
-            messages.error(request, f"저장 중 {errors}건의 오류가 발생했습니다.")
-            
-        return redirect(reverse("admin:travel_analysistool_run"))
-
-
-# 데이터 업로드 전용 어드민
+# ✅ 업로드 전용 어드민(프록시 모델: UploadEntry)
 @admin.register(UploadEntry)
 class UploadEntryAdmin(admin.ModelAdmin):
     """
@@ -351,8 +191,7 @@ class UploadEntryAdmin(admin.ModelAdmin):
                     review_total = it.get("reviews_total")
                     if review_total is None and isinstance(it.get("reviews"), list):
                         review_total = len(it["reviews"])
-                        
-                    # Place 모델 필드에 맞게 데이터 정리
+
                     place_row = {
                         "name": place_name,
                         "place_id": pid,
@@ -363,6 +202,10 @@ class UploadEntryAdmin(admin.ModelAdmin):
                         "country": country,
                         "city": city,
                         "city_gu": city_gu,
+                        "lat": lat,
+                        "lon": lon,
+                        "image_urls": image_urls_str,
+                        "opening_hours": opening_hours_str,
                         "phone": it.get("phone"),
                         "website": it.get("website"),
                     }
