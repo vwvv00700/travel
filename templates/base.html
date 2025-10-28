@@ -29,9 +29,15 @@
     <!-- Main CSS File -->
     <link href="{% static 'css/main.css' %}" rel="stylesheet">
 
-    {% block head_extra %}
+    {% block map_style %}
+    {% endblock %}
+
+    {% block diary_style %}
     {% endblock %}
     
+    {% block extra_style %}
+    {% endblock %}
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
         body { 
@@ -50,7 +56,47 @@
 </head>
 <body class="text-slate-700 ">
 
-    {% include "header.html" %}
+    {% block header %}
+    <header id="header" class="header d-flex align-items-center fixed-top">
+    {% endblock %}
+        <div class="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
+
+            <a href="{% url 'main' %}" class="logo d-flex align-items-center me-auto me-xl-0">
+                <!-- Uncomment the line below if you also wish to use an image logo -->
+                <!-- <img src="assets/img/logo.webp" alt=""> -->
+                <h1 class="sitename">Agent</h1>
+            </a>
+
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    <li><a href="{% url 'main' %}">Home</a></li>
+                    <li><a href="{% url 'select' %}">AI 코스 추천</a></li>
+                    <li><a href="{% url 'travel:diary_list' %}">내 다이어리</a></li>
+                    <li><a href="{% url 'main' %}">로그인</a></li>
+                    <li><a href="{% url 'main' %}">로그아웃</a></li>
+                    <li><a href="{% url 'main' %}">회원가입</a></li>
+                    <!-- <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">Dropdown 1</a></li>
+                            <li class="dropdown"><a href="#"><span>Deep Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                                <ul>
+                                <li><a href="#">Deep Dropdown 1</a></li>
+                                <li><a href="#">Deep Dropdown 2</a></li>
+                                <li><a href="#">Deep Dropdown 3</a></li>
+                                <li><a href="#">Deep Dropdown 4</a></li>
+                                <li><a href="#">Deep Dropdown 5</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#">Dropdown 2</a></li>
+                            <li><a href="#">Dropdown 3</a></li>
+                            <li><a href="#">Dropdown 4</a></li>
+                        </ul>
+                    </li> -->
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+        </div>
+    </header>
 
     <main>
         {% block content %}

@@ -1,0 +1,240 @@
+/* =============================
+   Travel List Page Styles
+   ============================= */
+
+/* 본문 - 왼쪽 일정 / 오른쪽 지도 */
+.planner-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+}
+
+/* 왼쪽 패널 */
+.itinerary-panel {
+    flex: 1 1 350px;
+    min-width: 340px;
+    background: #fafafa;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 1rem;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+/* ✅ 추천 플랜 버튼 */
+.plan-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.plan-label-btn {
+    border: 1px solid #333;
+    background: #333;
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.plan-label-btn:hover {
+    background-color: #555;
+    border-color: #555;
+}
+
+.plan-label-btn.active {
+    background-color: #000;
+    border-color: #000;
+    color: #fff;
+    transform: scale(1.05);
+}
+
+/* Day 블록 */
+.day-block {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.day-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+/* 개별 장소 아이템 */
+.spot-item {
+    display: flex;
+    align-items: flex-start;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 0.7rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.spot-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.spot-order {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #db4040;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.7rem;
+}
+
+.spot-meta {
+    flex: 1;
+}
+
+.spot-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 2px;
+}
+
+.spot-desc {
+    font-size: 0.8rem;
+    color: #666;
+    line-height: 1.3;
+}
+
+/* 지도 패널 */
+.map-panel {
+    flex: 2 1 600px;
+    min-width: 500px;
+
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+
+    display: flex;
+    flex-direction: column;
+
+    /* 💡 추가: 너무 세로로 길어지지 않게 제한하고 내부 스크롤 허용 */
+    max-height: 75vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 지도 헤더 (제목 + Day 버튼들) */
+.map-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #ddd;
+    background: #f8f8f8;
+
+    /* 헤더는 항상 보이게 */
+    flex-shrink: 0;
+}
+
+/* 지도 영역 */
+#mapArea {
+    flex: 1;
+    min-height: 360px; /* 기존 500px -> 낮췄음 */
+    /* max-height로 더 과도하게 길어지지 않게 */
+    max-height: 60vh;
+}
+
+/* 거리 박스는 지도 패널 기준으로 절대 위치 */
+#distanceInfoBox {
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+
+
+/* 가이드 카드 */
+.guide-wrap {
+    margin-top: 2rem;
+}
+
+.guide-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 1rem 1.2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.guide-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+}
+
+.guide-head h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.copy-btn {
+    border: 1px solid #333;
+    background: #fff;
+    color: #333;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.copy-btn:hover {
+    background: #333;
+    color: #fff;
+}
+
+.guide-body {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #444;
+    white-space: pre-wrap;
+}
+
+/* 반응형 */
+@media (max-width: 960px) {
+    .planner-body {
+        flex-direction: column;
+    }
+
+    .map-panel {
+        min-width: 100%;
+        height: 400px;
+    }
+
+    #mapArea {
+        min-height: 400px;
+    }
+}

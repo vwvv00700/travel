@@ -161,3 +161,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DATA_DIR = BASE_DIR / "data"
+# === Mapbox Directions API Token ===
+# .env 파일에 예:
+# MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoibXl1c2VyIi... (public access token)
+MAPBOX_ACCESS_TOKEN = os.getenv("MAPBOX_ACCESS_TOKEN", "")

@@ -5,6 +5,7 @@ from travel import views
 app_name = "travel"
 urlpatterns = [
     path("list/", views.travel_list, name="travel_list"),
+    path("test/", views.travel_test, name="travel_test"),
     path('llm-analysis/', views.analyze_selected_places_view, name='llm_analysis'),
     
     path("upload/", views.upload_diary_entry, name="upload_diary_entry"),
