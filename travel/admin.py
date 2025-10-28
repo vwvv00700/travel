@@ -19,7 +19,6 @@ from .models import Place, Review, UploadEntry, AnalysisTool, PlaceAnalysis
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
 
-
 # ── 주소 파서(대한민국 간단 규칙) ─────────────────────────────────────────────
 CITY_SUFFIXES = ("특별시", "광역시", "자치시", "특별자치시", "도", "특별자치도")
 GU_SUFFIXES = ("구", "군", "시")
@@ -192,6 +191,8 @@ class AnalysisToolAdmin(admin.ModelAdmin):
             return render(request, "travel/select_and_analyze.html", ctx)
         
 # ── 업로드 전용 어드민 ────────────────────────────────────────────────
+
+# ✅ 업로드 전용 어드민(프록시 모델: UploadEntry)
 @admin.register(UploadEntry)
 class UploadEntryAdmin(admin.ModelAdmin):
     """

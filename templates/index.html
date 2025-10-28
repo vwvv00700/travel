@@ -1,14 +1,9 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
 
-{% include "head.html" %}
+{% block title %}여행 에이전트{% endblock %}
 
-<body class="index-page">
-    {% include "header.html" %}
-
-    <main class="main">
-
+    {% block content %}
         <!-- Travel Hero Section -->
         <section id="travel-hero" class="travel-hero section dark-background">
 
@@ -22,12 +17,12 @@
             <div class="container position-relative">
                 <div class="row align-items-center">
                     <div class="col-lg">
-                        <div class="container position-relative tx-center keep-all">
+                        <div class="container position-relative tx-center keep-all title-wrap">
                             <h1>당신만의 여행을 설계해주는 여행 에이전트</h1>
                             <p>AI가 나에게 꼭 맞는 여행 계획을 추천해줘요</p>
                         </div>
 
-                        <form class="newsletter-form tx-center" action="" method="post">
+                        <form class="search-form tx-center" action="" method="post">
                             <div class="form-wrapper">
                                 <input type="text" name="text" class="text-input" placeholder="예: 강남, 마포 2박3일 힐링 여행지" required="">
                                 <button type="submit" class="subscribe-btn">
@@ -41,7 +36,7 @@
 
         </section><!-- /Travel Hero Section -->
 
-        <section id="featured-tours" class="featured-tours section">
+        <section id="card-list" class="card-list section">
 
             <!-- Section Title -->
             <div class="container section-title aos-init aos-animate" data-aos="fade-up">
@@ -54,20 +49,20 @@
                 <div class="row gy-4">
                     <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="200">
                     <div class="tour-card">
-                        <div class="tour-image">
+                        <!-- <div class="tour-image">
                             <img src="assets/img/travel/tour-1.webp" alt="Serene Beach Retreat" class="img-fluid" loading="lazy">
-                        </div>
+                        </div> -->
                         <div class="tour-content">
-                        <h4>Serene Beach Retreat</h4>
+                        <h4>이태원 할로윈 파티 투어</h4>
                         <div class="tour-meta">
-                            <span class="duration"><i class="bi bi-clock"></i> 8 Days</span>
-                            <span class="group-size"><i class="bi bi-people"></i> Max 6</span>
+                            <span class="duration"><i class="bi bi-clock"></i> 3 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> 커플</span>
                         </div>
-                        <p>Mauris ipsum neque, cursus ac ipsum at, iaculis facilisis ligula. Suspendisse non sapien vel enim cursus semper.</p>
+                        <!-- <p>Mauris ipsum neque, cursus ac ipsum at, iaculis facilisis ligula. Suspendisse non sapien vel enim cursus semper.</p> -->
                         <div class="tour-highlights">
-                            <span>Maldives</span>
-                            <span>Seychelles</span>
-                            <span>Bora Bora</span>
+                            <span>할로윈</span>
+                            <span>이태원</span>
+                            <span>ESFJ</span>
                         </div>
                         <div class="tour-action">
                             <a href="booking.html" class="btn-book">Travel Plane</a>
@@ -86,20 +81,20 @@
 
                     <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="300">
                     <div class="tour-card">
-                        <div class="tour-image">
+                        <!-- <div class="tour-image">
                             <img src="assets/img/travel/tour-2.webp" alt="Arctic Expedition" class="img-fluid" loading="lazy">
-                        </div>
+                        </div> -->
                         <div class="tour-content">
-                        <h4>Arctic Wilderness Expedition</h4>
+                        <h4>송리단길 맛집 투어</h4>
                         <div class="tour-meta">
-                            <span class="duration"><i class="bi bi-clock"></i> 10 Days</span>
-                            <span class="group-size"><i class="bi bi-people"></i> Max 8</span>
+                            <span class="duration"><i class="bi bi-clock"></i> 1 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> 혼자 </span>
                         </div>
-                        <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Donec dictum non massa nec fermentum.</p>
+                        <!-- <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Donec dictum non massa nec fermentum.</p> -->
                         <div class="tour-highlights">
-                            <span>Greenland</span>
-                            <span>Iceland</span>
-                            <span>Norway</span>
+                            <span>맛집</span>
+                            <span>INFJ</span>
+                            <span>분위기</span>
                         </div>
                         <div class="tour-action">
                             <a href="booking.html" class="btn-book">Travel Plane</a>
@@ -118,20 +113,20 @@
 
                     <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="400">
                     <div class="tour-card">
-                        <div class="tour-image">
+                        <!-- <div class="tour-image">
                             <img src="assets/img/travel/tour-4.webp" alt="Desert Safari" class="img-fluid" loading="lazy">
-                        </div>
+                        </div> -->
                         <div class="tour-content">
-                        <h4>Sahara Desert Discovery</h4>
+                        <h4>미용의 중심지 강남 투어</h4>
                         <div class="tour-meta">
-                            <span class="duration"><i class="bi bi-clock"></i> 5 Days</span>
-                            <span class="group-size"><i class="bi bi-people"></i> Max 10</span>
+                            <span class="duration"><i class="bi bi-clock"></i> 2 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> 친구 </span>
                         </div>
-                        <p>Pellentesque euismod tincidunt turpis ac tristique. Phasellus vitae lacus in enim mollis facilisis vel quis ex. In hac habitasse platea dictumst.</p>
+                        <!-- <p>Pellentesque euismod tincidunt turpis ac tristique. Phasellus vitae lacus in enim mollis facilisis vel quis ex. In hac habitasse platea dictumst.</p> -->
                         <div class="tour-highlights">
-                            <span>Morocco</span>
-                            <span>Egypt</span>
-                            <span>Dubai</span>
+                            <span>화려함</span>
+                            <span>ESTP</span>
+                            <span>미용</span>
                         </div>
                         <div class="tour-action">
                             <a href="booking.html" class="btn-book">Travel Plane</a>
@@ -157,10 +152,4 @@
 
         </section>
 
-    </main>
-
-    {% include "footer.html" %}
-
-</body>
-
-</html>
+    {% endblock %}

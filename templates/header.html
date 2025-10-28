@@ -10,12 +10,12 @@
 
         <nav id="navmenu" class="navmenu">
             <ul>
-                <li><a href="{% url 'main' %}" class="active">Home</a></li>
+                <li><a href="{% url 'main' %}">Home</a></li>
                 <li><a href="{% url 'select' %}">AI 코스 추천</a></li>
-                <li><a href="destinations.html">내 다이어리</a></li>
-                <li><a href="tours.html">로그인</a></li>
-                <li><a href="gallery.html">로그아웃</a></li>
-                <li><a href="blog.html">회원가입</a></li>
+                <li><a href="{% url 'travel:diary_list' %}">내 다이어리</a></li>
+                <li><a href="{% url 'main' %}">로그인</a></li>
+                <li><a href="{% url 'main' %}">로그아웃</a></li>
+                <li><a href="{% url 'main' %}">회원가입</a></li>
                 <!-- <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
                     <ul>
                         <li><a href="#">Dropdown 1</a></li>
