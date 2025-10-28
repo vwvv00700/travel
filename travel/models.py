@@ -1,18 +1,17 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-# SQLModel 관련 불필요한 import 및 코드는 모두 제거했습니다.
 
-# Django의 기본 사용자 모델을 가져옵니다.
-User = get_user_model() 
+# Django 기본 User
+User = get_user_model()
 
 # =======================================================
-# 1. 기존 모델 (Place, Review)
+# 1. 장소 관련 모델
 # =======================================================
 
 class Place(models.Model):
     # 장소 기본 정보
-    name = models.CharField(max_length=200)  # 장소명
+    name = models.CharField(max_length=200)
     place_id = models.CharField(max_length=120, blank=True, null=True, unique=True, db_index=True)
     category = models.CharField(max_length=40)  # attractions / restaurants / accommodations
 
@@ -55,11 +54,11 @@ class Place(models.Model):
 class PlaceAnalysis(models.Model):
     place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name="analyses")
     created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)  # 있으면 편함
+    updated_at = models.DateTimeField(auto_now=True)
 
-    # 추가: place_id와 name(읽기용 복제 컬럼)
-    place_code = models.CharField(max_length=50, db_index=True)  # FK id 복사본
-    place_title = models.CharField(max_length=200)  # 장소명 복사본
+    # 읽기용 복제 컬럼
+    place_code = models.CharField(max_length=50, db_index=True)
+    place_title = models.CharField(max_length=200)
 
     # 시즌별 점수
     season_spring = models.IntegerField(null=True, blank=True)
@@ -97,7 +96,7 @@ class PlaceAnalysis(models.Model):
     keywords_csv = models.TextField(blank=True, default="")
     themes_csv = models.TextField(blank=True, default="")
 
-    # 원본 JSON도 같이 저장
+    # 원본 JSON
     raw_json = models.JSONField()
 
     class Meta:
@@ -108,9 +107,7 @@ class PlaceAnalysis(models.Model):
     def __str__(self):
         return f"{self.place.name} 분석 ({self.created_at:%Y-%m-%d})"
 
-
 class Review(models.Model):
-    # 리뷰 작성자
     author = models.CharField(max_length=200, blank=True, null=True)
     name = models.CharField(max_length=200, blank=True, null=True)
     place_id = models.CharField(max_length=120, db_index=True)
@@ -137,12 +134,11 @@ class AnalysisTool(models.Model):
         managed = False
         verbose_name = "장소 성격 LLM"
         verbose_name_plural = verbose_name
-        default_permissions = ()  # add/change/delete/view 자동권한 생성 안 함
+        default_permissions = ()
 
 # =======================================================
-# 2. 인증/여행 계획 모델 (문법 오류 수정됨)
+# 2. 사용자, 여행 계획, 채팅 관련
 # =======================================================
-
 
 class TravelPlan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -173,25 +169,21 @@ class ChatMessage(models.Model):
     def __str__(self):
         return f"{self.sender.username}: {self.message[:20]}"
 
-class UploadEntry(Place):
-    """
-    Place 모델을 상속받는 프록시 모델입니다.
-    데이터 업로드/관리 목적으로 사용된 것으로 추정됩니다.
-    """
-    class Meta:
-        proxy = True
-        verbose_name = "데이터 업로드"
-        verbose_name_plural = "데이터 업로드"
-    pass
-    
+class ChatReport(models.Model):
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
+    message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, related_name='reports')
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.reporter.username} → {self.message.id}"
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     intro = models.CharField(max_length=255, blank=True, null=True)
     interests = models.CharField(max_length=255, blank=True, null=True, default="")
-    
-    # 추가 필드
     birth_date = models.DateField(blank=True, null=True)
-    gender = models.CharField(max_length=10, blank=True, null=True)  # '남성' / '여성' 등
+    gender = models.CharField(max_length=10, blank=True, null=True)
     profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
 
     def age(self):
@@ -202,15 +194,14 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.username}"
-    
-    # =======================================================
-# 🚨 채팅 메시지 신고 기능
-# =======================================================
-class ChatReport(models.Model):
-    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')  # 신고한 사람
-    message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, related_name='reports')  # 신고 대상 메시지
-    reason = models.TextField(blank=True, null=True)  # 신고 사유
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.reporter.username} → {self.message.id}"
+# =======================================================
+# 3. 데이터 업로드용 프록시 모델
+# =======================================================
+
+class UploadEntry(Place):
+    """Place 모델 상속, 데이터 업로드/관리용"""
+    class Meta:
+        proxy = True
+        verbose_name = "데이터 업로드"
+        verbose_name_plural = "데이터 업로드"

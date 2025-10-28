@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>여행 계획 생성 완료</title>
+</head>
+<body>
+    <h1>여행 계획이 생성되었습니다!</h1>
+    <p>도시: {{ plan.location_city }}</p>
+    <p>기간: {{ plan.start_date }} ~ {{ plan.end_date }}</p>
+    <p>{{ message }}</p>
+
+    <a href="{% url 'travel:create_travel_plan' %}">다시 계획 생성</a>
+    <a href="{% url 'chat:chat_list' %}">채팅방 보기</a>
+</body>
+</html>

@@ -13,13 +13,37 @@ from operator import attrgetter
 from django.contrib import messages
 from .services.LLM_analyzer import analyze_place_with_LLM              # 네 함수 경로에 맞게 조정
 from .services.analysis_loader import create_or_update_analysis_from_json  # 앞서 만든 저장 함수
-from .services.recommender import (
-    parse_user_request,
-    get_ranked_places,
-    split_into_days,
-    build_map_paths,
-)
+from .services.recommender import (parse_user_request, get_ranked_places, split_into_days, build_map_paths,)
 from .services.itinerary_llm_gemini import generate_itinerary_guide
+from .models import TravelPlan
+from .services.matching import create_chatroom_for_plan
+
+
+@login_required
+def create_travel_plan(request):
+    if request.method == "POST":
+        city = request.POST.get("location_city")
+        start_date = request.POST.get("start_date")
+        end_date = request.POST.get("end_date")
+        
+        plan = TravelPlan.objects.create(
+            user=request.user,
+            location_city=city,
+            start_date=start_date,
+            end_date=end_date,
+            is_seeking_partner=True
+        )
+        
+        # ✅ 자동 매칭 실행
+        new_rooms = create_chatroom_for_plan(plan)
+        if new_rooms:
+            message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!"
+        else:
+            message = "매칭 가능한 사용자가 아직 없습니다."
+        
+        return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
+    
+    return render(request, "travel/create_travel_plan.html")
 
 def _serialize_day_plans_for_js(day_plans):
     """
@@ -426,23 +450,17 @@ def signup_view(request):
 # ------------------------
 @login_required
 def chat_view(request, room_name):
-    # ChatRoom 모델에서 room_name을 찾아 가져옵니다. 없으면 404 에러를 반환합니다.
     room = get_object_or_404(ChatRoom, room_name=room_name)
-    
-    # 참가자 중 현재 사용자가 아닌 상대방을 찾습니다.
     participants = room.participants.exclude(id=request.user.id)
     partner = participants.first() if participants.exists() else None
-    
-    partner_profile = None
-    if partner:
-        # 상대방의 UserProfile을 가져옵니다. (UserProfile 모델이 User 모델에 연결되어 있다고 가정)
-        partner_profile = getattr(partner, 'userprofile', None)
+    partner_profile = getattr(partner, 'userprofile', None) if partner else None
 
     return render(request, 'chat/match_chat.html', {
         'room_name': room.room_name,
         'partner': partner,
         'partner_profile': partner_profile
     })
+
 
 
 # ------------------------
