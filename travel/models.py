@@ -381,6 +381,7 @@ class UserProfile(models.Model):
         blank=True,
         help_text="ex) 힐링 위주, 맛집 위주, 액티비티 위주 등"
     )
+    mbti = models.CharField(max_length=10, blank=True)
 
     def __str__(self):
         return self.nickname or self.user.username
