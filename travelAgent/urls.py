@@ -17,13 +17,23 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from .views import main, select
-from travel import views
+from .views import main, select, chat, signup_view
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    # 1. 메인/홈 페이지
     path('', main, name='main'),
-    path('/select', select, name='select'),
-    path("travel/", include("travel.urls")),
 
+    # 2. 채팅방 목록/매칭 페이지 (이 페이지에서 파트너를 선택)
+    # URL 경로 시작에 슬래시(/)를 넣지 않습니다.
+    path('chat/', chat, name='chat_list'),
+    path('chat/', chat, name='chat'),
+    path('select/', select, name='select'),
+    path("travel/", include("travel.urls")),
     path("admin/", admin.site.urls),
+    path('accounts/signup/', signup_view, name='signup'),
+    path('accounts/login/', auth_views.LoginView.as_view(template_name='chat/login.html'), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    
+    
 ]

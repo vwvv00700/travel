@@ -7,10 +7,43 @@
     <title>TravelMate | 여행 에이전트</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        /* 메시지 표시 스타일 */
+        .messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        .message {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            font-size: 14px;
+            transition: opacity 0.5s ease;
+        }
+        .message.error { background-color: #f44336; }
+        .message.warning { background-color: #ff9800; }
+        .message.info { background-color: #2196f3; }
+    </style>
 </head>
 <body>
     {% include "header.html" %}
 
+    <!-- ✅ 로그인 후 환영 메시지 표시 -->
+    {% if messages %}
+    <div class="messages" id="welcome-message">
+        {% for message in messages %}
+            <p class="message {{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 본문 영역 -->
     <section class="cont-wrap cont-main">
         <div class="hero-content">
             <h2>당신만의 여행을 설계해주는 여행 에이전트</h2>
@@ -25,11 +58,21 @@
             </form>
 
             <p>AND</p>
-
             <a class="btn" href="{% url 'select' %}" style="display: inline-block;">AI 추천 코스</a>
         </div>
     </section>
 
     <footer>&copy; 2025 TravelMate. All Rights Reserved.</footer>
+
+    <script>
+        // ✅ 3초 후 환영 메시지 자동 사라짐
+        setTimeout(() => {
+            const msgBox = document.getElementById('welcome-message');
+            if (msgBox) {
+                msgBox.style.opacity = '0';
+                setTimeout(() => msgBox.remove(), 500);
+            }
+        }, 3000);
+    </script>
 </body>
 </html>

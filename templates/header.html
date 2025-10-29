@@ -2,10 +2,20 @@
 <header>
     <h1><a href="{% url 'main' %}">TravelMate</a></h1>
     <nav>
+        <!-- 항상 보이는 메뉴 -->
+        <a href="{% url 'travel:chat' room_name='general' %}">채팅</a>
         <a href="{% url 'admin:index' %}">ADMIN</a>
         <a href="{% url 'select' %}">AI 추천 코스</a>
-        <a href="#">로그인</a>
-        <!-- <a href="#">로그아웃</a> -->
-        <a href="#">회원가입</a>
+
+        <!-- 로그인 상태 확인 -->
+        {% if user.is_authenticated %}
+            <!-- 로그인 상태일 때 -->
+            <span>{{ user.username }}님, 환영합니다!</span>
+            <a href="{% url 'travel:logout' %}">로그아웃</a>
+        {% else %}
+            <!-- 비로그인 상태일 때 -->
+            <a href="{% url 'travel:login' %}">로그인</a>
+            <a href="{% url 'travel:signup' %}">회원가입</a>
+        {% endif %}
     </nav>
 </header>
