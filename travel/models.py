@@ -120,7 +120,6 @@ def get_location_name(latitude, longitude):
         return f"위도: {latitude:.4f}, 경도: {longitude:.4f}"
 
 
-# ----- 장소 테이블 ------------------------------------------
 class Place(models.Model):
     # 장소 기본 정보
     name = models.CharField(max_length=200)

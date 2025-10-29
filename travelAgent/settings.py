@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # .env 파일에서 환경 변수 로드
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -23,8 +24,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-jhwxcwn0!34fw96ew$02n7)d1tcmjlathk3z&2al^n21_=rd+3"
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise Exception('SECRET_KEY 환경변수가 설정되어 있지 않습니다. .env 파일을 확인하세요.')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -62,19 +66,34 @@ ROOT_URLCONF = "travelAgent.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, 'templates')],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = "travelAgent.wsgi.application"
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
+
+WSGI_APPLICATION = 'travelAgent.wsgi.application'
 
 
 # Database
@@ -84,8 +103,14 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+    },
+    "diary_db": {  # New database for diary app
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "diary_db.sqlite3",
     }
 }
+
+DATABASE_ROUTERS = ['travelAgent.db_routers.DiaryRouter']
 
 
 # Password validation
@@ -155,7 +180,7 @@ TEMPLATES = [
     {
         # ...
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # ✅ 프로젝트 루트의 templates 폴더를 찾도록 설정
+        'DIRS': [BASE_DIR  / 'templates'], # ✅ 프로젝트 루트의 templates 폴더를 찾도록 설정
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -169,16 +194,3 @@ TEMPLATES = [
     },
 ]
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-}

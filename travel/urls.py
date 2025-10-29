@@ -6,6 +6,7 @@ from django.shortcuts import render
 app_name = "travel"
 urlpatterns = [
     path("list/", views.travel_list, name="travel_list"),
+    path("test/", views.travel_test, name="travel_test"),
     path('llm-analysis/', views.analyze_selected_places_view, name='llm_analysis'),
     path("upload/", views.upload_diary_entry, name="upload_diary_entry"),
     path("upload/<int:travel_id>/", views.upload_diary_entry, name="upload_diary_entry_to_travel"),
@@ -23,10 +24,9 @@ urlpatterns = [
     path(
         'login/',
         auth_views.LoginView.as_view(
-            template_name='chat/login.html',
+            template_name='registration/login.html',
             redirect_authenticated_user=True  # 이미 로그인 상태면 메인으로
         ),
         name='login'
     ),
-    
 ]

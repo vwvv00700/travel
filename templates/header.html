@@ -1,5 +1,7 @@
 {% load static %}
+{% block header %}
 <header id="header" class="header d-flex align-items-center fixed-top">
+{% endblock %}
     <div class="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
 
         <a href="{% url 'main' %}" class="logo d-flex align-items-center me-auto me-xl-0">
@@ -11,7 +13,7 @@
         <nav id="navmenu" class="navmenu">
             <ul>
                 <li><a href="{% url 'main' %}">Home</a></li>
-                <li><a href="{% url 'chat' %}">채팅</a></li>
+                <li><a href="{% url 'travel:chat' %}">채팅</a></li>
                 <li><a href="{% url 'select' %}">AI 코스 추천</a></li>
                 <li><a href="{% url 'travel:diary_list' %}">내 다이어리</a></li>
                 <li><a href="{% url 'main' %}">로그인</a></li>

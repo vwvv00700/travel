@@ -2,32 +2,6 @@
    Travel List Page Styles
    ============================= */
 
-/* 전체 레이아웃 */
-.page-wrap {
-    max-width: 1300px;
-    margin: 0 auto;
-    padding: 2rem 1rem 4rem;
-    font-family: 'Poppins', 'Pretendard', sans-serif;
-    color: #222;
-}
-
-/* 상단 요약 영역 */
-.summary-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.summary-header h2 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.summary-header p {
-    color: #666;
-    font-size: 0.95rem;
-}
-
 /* 본문 - 왼쪽 일정 / 오른쪽 지도 */
 .planner-body {
     display: flex;

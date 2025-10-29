@@ -3,160 +3,39 @@
 
 {% block title %}AI 여행 에이전트{% endblock %}
 
-{% block head_extra %}
+{% block diary_style %}
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/main.css' %}">
 <style>
-    .cont-wrap {
-        max-width: 960px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    h2 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-    }
-    .info-block {
-        margin-bottom: 20px;
-        padding: 15px;
-        border: 1px solid #eee;
-        border-radius: 5px;
-        background-color: #f9f9f9;
-    }
-    .info-block h3 {
-        color: #555;
-        margin-top: 0;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 10px;
-        margin-bottom: 10px;
-    }
-    .info-block p {
-        margin: 5px 0;
-        color: #666;
-    }
-    .info-block ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    .info-block ul li {
-        background-color: #eef;
-        margin-bottom: 5px;
-        padding: 8px 12px;
-        border-radius: 3px;
-        color: #444;
-    }
-
-    .button-container .btn {
-        margin: 0 10px;
-    }
-
-    .btn-primary {
-        background-color: #007bff;
-        color: white;
-        border-color: #007bff;
-    }
-
-    .btn-primary:hover {
-        background-color: #0056b3;
-        border-color: #0056b3;
-    }
-
-    .place-card {
-        display: flex;
-        margin-bottom: 20px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        overflow: hidden;
-        background-color: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .place-image {
-        width: 200px;
-        height: auto;
-        object-fit: cover;
-    }
-
-    .place-info {
-        padding: 15px;
-        flex-grow: 1;
-    }
-
-    .place-info h4 {
-        margin-top: 0;
-        margin-bottom: 10px;
-        color: #333;
-    }
-
-    .place-info p {
-        margin: 4px 0;
-        font-size: 0.9em;
-        color: #555;
-    }
-
-    .spinner {
-        border: 4px solid #f3f3f3; 
-        border-top: 4px solid #3498db; 
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 2s linear infinite;
-        margin: 20px auto;
-    }
-
+    .cont-wrap { max-width: 960px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    h2 { color: #333; text-align: center; margin-bottom: 30px; }
+    .info-block { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px; background-color: #f9f9f9; }
+    .info-block h3 { color: #555; margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 10px; }
+    .info-block p { margin: 5px 0; color: #666; }
+    .info-block ul { list-style: none; padding: 0; margin: 0; }
+    .info-block ul li { background-color: #eef; margin-bottom: 5px; padding: 8px 12px; border-radius: 3px; color: #444; }
+    .button-container .btn { margin: 0 10px; }
+    .btn-primary { background-color: #007bff; color: white; border-color: #007bff; }
+    .btn-primary:hover { background-color: #0056b3; border-color: #0056b3; }
+    .place-card { display: flex; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .place-image { width: 200px; height: auto; object-fit: cover; }
+    .place-info { padding: 15px; flex-grow: 1; }
+    .place-info h4 { margin-top: 0; margin-bottom: 10px; color: #333; }
+    .place-info p { margin: 4px 0; font-size: 0.9em; color: #555; }
+    .spinner { border: 4px solid #f3f3f3;  border-top: 4px solid #3498db;  border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 20px auto; }
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
 
     /* New Styles for Structured Plan */
-    .accommodation-section {
-        background-color: #e6f7ff; /* Light blue background */
-        border: 1px solid #91d5ff;
-    }
-
-    .day-plan {
-        margin-top: 25px;
-    }
-
-    .day-header {
-        background-color: #f0f2f5;
-        padding: 10px 15px;
-        border-radius: 5px;
-        margin-bottom: 15px;
-        border-left: 5px solid #1890ff;
-    }
-
-    .place-card h5 {
-        font-size: 1.1em;
-        color: #333;
-        margin-bottom: 10px;
-    }
-
-    .meals-section .place-card {
-        border-left: 3px solid #faad14; /* Orange for meals */
-        margin-left: 20px;
-    }
-
-    .attraction-card {
-        border-left: 3px solid #52c41a; /* Green for attraction */
-    }
-
-    .place-type {
-        font-size: 0.8em;
-        font-weight: normal;
-        color: #888;
-        background-color: #f0f0f0;
-        padding: 2px 6px;
-        border-radius: 4px;
-        margin-left: 8px;
-    }
-
+    .accommodation-section { background-color: #e6f7ff; /* Light blue background */ border: 1px solid #91d5ff; }
+    .day-plan { margin-top: 25px; }
+    .day-header { background-color: #f0f2f5; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; border-left: 5px solid #1890ff; }
+    .place-card h5 { font-size: 1.1em; color: #333; margin-bottom: 10px; }
+    .meals-section .place-card { border-left: 3px solid #faad14; /* Orange for meals */ margin-left: 20px; }
+    .attraction-card { border-left: 3px solid #52c41a; /* Green for attraction */ }
+    .place-type { font-size: 0.8em; font-weight: normal; color: #888; background-color: #f0f0f0; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
 </style>
 {% endblock %}
 

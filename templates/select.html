@@ -3,6 +3,15 @@
 
 {% block title %}여행 에이전트{% endblock %}
 
+{% block extra_style %}
+<style>
+    svg path { fill: #f5eded; stroke: #FFFFFF; stroke-width: 2px; transition: fill 0.2s ease-in-out; }
+    svg path:hover { fill: #d7d5d5; cursor: pointer; }
+    svg path.selected { fill: #ffc0c0; }
+    svg text { text-anchor: middle; pointer-events: none; font-size: 28px; font-weight: bold; fill: #333; }
+</style>
+{% endblock %}
+
 {% block content %}
 
     <!-- Page Title -->
@@ -27,7 +36,7 @@
             <div><span>나의 여행</span> <span class="description-title">선택</span></div>
         </div> -->
         
-        <form class="form-selects" method="post" action="{% url 'travel:travel_agent_viewer' %}">
+        <form class="form-selects" method="post" action="{% url 'travel:travel_list' %}">
             {% csrf_token %}
             <div class="form-wrap">
                 <div class="form-block" style="width:100%;">
@@ -215,12 +224,11 @@
                     }
 
                     if (!checkbox.checked && currentlySelectedCount >= MAX_SELECTIONS) {
-                        // const mapContainer = document.getElementById('map-container');
-                        // mapContainer.style.transition = 'transform 0.1s';
-                        // mapContainer.style.transform = 'translateX(5px)';
-                        // setTimeout(() => { mapContainer.style.transform = 'translateX(-5px)'; }, 100);
-                        // setTimeout(() => { mapContainer.style.transform = 'translateX(0)'; }, 200);
-                        alert('여행 지역은 최대 4개까지만 선택할 수 있습니다.');
+                        const mapContainer = document.getElementById('map-container');
+                        mapContainer.style.transition = 'transform 0.1s';
+                        mapContainer.style.transform = 'translateX(5px)';
+                        setTimeout(() => { mapContainer.style.transform = 'translateX(-5px)'; }, 100);
+                        setTimeout(() => { mapContainer.style.transform = 'translateX(0)'; }, 200);
                         return;
                     }
 
