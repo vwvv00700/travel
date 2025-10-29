@@ -1,0 +1,134 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>AI 추천 코스</title>
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=290f79b4e40a1efbcba07b2da4bd4d39&libraries=services,clusterer,drawing"></script>
+</head>
+<body>
+	
+	<div id="map" style="width:500px;height:500px;"></div>
+
+
+<script>
+    // 1) 기본 지도
+    const mapContainer = document.getElementById('map');
+    const mapOption = {
+        center: new kakao.maps.LatLng(37.5665, 126.9780),
+        level: 5
+    };
+    const map = new kakao.maps.Map(mapContainer, mapOption);
+
+    // 2) 정적 그리기에 쓸 전역 핸들들
+    let staticLine = null;         // 전체 경로 polyline
+    let staticDots = [];           // {circle: CustomOverlay, distance: CustomOverlay}
+
+    // 3) 유틸: 모두 지우기
+    function clearAll() {
+        if (staticLine) { staticLine.setMap(null); staticLine = null; }
+        staticDots.forEach(d => {
+        if (d.circle) d.circle.setMap(null);
+        if (d.distance) d.distance.setMap(null);
+        });
+        staticDots = [];
+    }
+
+    // 4) 유틸: 점 + 구간/누적 거리 오버레이 찍기
+    function addCircleDot(position, distance) {
+        const circleOverlay = new kakao.maps.CustomOverlay({
+        content: '<span class="dot"></span>',
+        position, zIndex: 1
+        });
+        circleOverlay.setMap(map);
+
+        let distanceOverlay = null;
+        if (distance > 0) {
+        distanceOverlay = new kakao.maps.CustomOverlay({
+            content: `<div class="dotOverlay">거리 <span class="number">${distance}</span>m</div>`,
+            position, yAnchor: 1, zIndex: 2
+        });
+        distanceOverlay.setMap(map);
+        }
+        staticDots.push({ circle: circleOverlay, distance: distanceOverlay });
+    }
+
+    // 6) 메인: 좌표 리스트로 경로/거리 그리기
+    //    latlngs: [kakao.maps.LatLng | {lat:number,lng:number}, ...]
+    function drawPath(latlngs) {
+        // 좌표 정규화
+        const path = (latlngs || []).map(p => p instanceof kakao.maps.LatLng ? p : new kakao.maps.LatLng(p.lat, p.lng));
+        if (path.length === 0) return;
+
+        clearAll();
+
+        // 전체 경로 polyline
+        staticLine = new kakao.maps.Polyline({
+            map,
+            path,
+            strokeWeight: 3,
+            strokeColor: '#db4040',
+            strokeOpacity: 1,
+            strokeStyle: 'solid'
+        });
+
+        // 화면에 꽉 차게 bounds 조정
+        const bounds = new kakao.maps.LatLngBounds();
+        path.forEach(ll => bounds.extend(ll));
+        map.setBounds(bounds);
+
+        // 누적거리 계산용 임시 polyline (점 하나씩 추가하며 getLength 사용)
+        const cumLine = new kakao.maps.Polyline({ path: [], strokeWeight: 0 });
+        let prevCumDist = 0;
+
+        for (let i = 0; i < path.length; i++) {
+            const partial = cumLine.getPath();
+            partial.push(path[i]);
+            cumLine.setPath(partial);
+                
+            console.log(partial)
+            // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+            var imageSrc = `/static/img/${i+1}.png`, // 마커이미지의 주소입니다    
+            imageSize = new kakao.maps.Size(30, 30), // 마커이미지의 크기입니다
+            imageOption = {offset: new kakao.maps.Point(15, 15)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+
+            // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+            var markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption)
+            var markerPosition = new kakao.maps.LatLng(path[i].Ma, path[i].La);
+
+            var marker = new kakao.maps.Marker({
+                position: markerPosition,
+                image: markerImage,
+                zIndex: 10 
+            });
+
+            // 마커가 지도 위에 표시되도록 설정합니다
+            marker.setMap(map);  
+
+            const cumDist = Math.round(cumLine.getLength()); // 누적(m)
+            const segDist = i === 0 ? 0 : (cumDist - prevCumDist); // 직전점~현재점 구간거리
+            prevCumDist = cumDist;
+
+            // 점/거리 오버레이
+            addCircleDot(path[i], i === 0 ? 0 : cumDist); // 원래 예제처럼 "여기까지 누적"을 보여주고 싶으면 cumDist
+            // 구간거리만 보여주고 싶다면 위 줄을 segDist로 바꿔도 됨
+        }
+
+    }
+
+    // 7) 사용 예시: 좌표 리스트 넣어서 바로 그리기
+    const samplePath = [
+        { lat: 37.5665, lng: 126.9780 }, // 서울시청
+        { lat: 37.5700, lng: 126.9920 }, // 종로 인근
+        { lat: 37.5796, lng: 126.9770 }  // 경복궁
+    ];
+    drawPath(samplePath);
+
+    // ▶ 네가 가진 좌표로 교체해서 호출하면 됨
+    // drawPath(yourCoordsArray);
+</script>
+
+</body>
+</html>
