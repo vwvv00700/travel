@@ -1,0 +1,186 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Login | TravelMate</title>
+
+  <!-- Bootstrap (grid, spacing만 활용) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+
+<body>
+  <section class="login_section">
+    <div class="container outer_container accounts_container">
+      <div class="row h-100">
+
+        <!-- LEFT: Illustration -->
+        <div class="col col-sm-12 col-md-12 col-lg-8 m-0 p-0 w-100 h-100 accounts_col">
+          <div class="accounts_image w-100 h-100">
+            <img src="https://img.freepik.com/free-photo/social-media-instagram-digital-marketing-concept-3d-rendering_106244-1717.jpg"
+                 alt="accounts_image"
+                 class="img-fluid w-100 h-100" />
+          </div>
+        </div>
+
+        <!-- RIGHT: Forms -->
+        <div class="col col-sm-12 col-md-12 col-lg-4 m-0 p-0 accounts_col">
+
+          {# ================= SIGN UP FORM ================= #}
+          <div class="accounts_forms signup_form w-100 h-100" id="signup">
+            <div class="title mt-4 p-4 w-100">
+              <h1>Sign Up</h1>
+              <p class="mt-3">TravelMate에 가입하고 나와 비슷한 여행 취향의 사람들과 연결돼 보세요.</p>
+
+              {# signup feedback messages #}
+              {% if messages %}
+                <ul class="auth-messages">
+                {% for message in messages %}
+                  {% if message.tags == "success" %}
+                    <li class="auth-msg-success">{{ message }}</li>
+                  {% else %}
+                    <li class="auth-msg-error">{{ message }}</li>
+                  {% endif %}
+                {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+
+            <form method="post" class="form w-100 p-4" action="/travel/signup/">
+              {% csrf_token %}
+              <div class="row">
+                <div class="col col-sm-12 col-md-12 col-lg-6 m-0">
+                  <div class="form-group">
+                    <label for="signup_username">Username</label>
+                    <input type="text"
+                           name="username"
+                           class="form-control"
+                           id="signup_username"
+                           required />
+                  </div>
+                </div>
+                <div class="col col-sm-12 col-md-12 col-lg-6 m-0">
+                  <div class="form-group">
+                    <label for="signup_email">Email</label>
+                    <input type="email"
+                           name="email"
+                           class="form-control"
+                           id="signup_email"
+                           required />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="signup_password">Password</label>
+                <i class="fa fa-eye-slash toggle-eye" id="eye_icon_signup"></i>
+                <input type="password"
+                       name="password"
+                       class="form-control"
+                       id="signup_password"
+                       required />
+              </div>
+
+              <div class="form-group">
+                <label for="cpass">Confirm Password</label>
+                <input type="password"
+                       class="form-control"
+                       id="cpass"
+                       required />
+              </div>
+
+              <div class="form-group">
+                <button type="submit" class="btn btn-primary register_btn w-100">
+                  Sign Up
+                </button>
+              </div>
+            </form>
+
+            <div class="already_member_box">
+              <p class="text-center" id="to_login">I am already a member</p>
+            </div>
+          </div>
+          <!-- /signup_form -->
+
+          {# ================= LOGIN FORM ================= #}
+          <div class="accounts_forms login_form_active w-100 h-100" id="login">
+            <div class="title mt-4 p-4 w-100">
+              <h1>Sign In</h1>
+              <p class="mt-3">저장한 여행 플랜을 불러오고 비슷한 취향 친구를 만나보세요.</p>
+
+              {# login feedback messages #}
+              {% if messages %}
+                <ul class="auth-messages">
+                {% for message in messages %}
+                  {% if message.tags == "success" %}
+                    <li class="auth-msg-success">{{ message }}</li>
+                  {% else %}
+                    <li class="auth-msg-error">{{ message }}</li>
+                  {% endif %}
+                {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+
+            <form method="post" class="form w-100 p-4" action="/travel/login/">
+              {% csrf_token %}
+
+              <div class="form-group">
+                <label for="login_username">Username</label>
+                <input type="text"
+                       name="username"
+                       class="form-control"
+                       id="login_username"
+                       required />
+              </div>
+
+              <div class="form-group">
+                <label for="login_password">Password</label>
+                <i class="fa fa-eye-slash toggle-eye" id="eye_icon_login"></i>
+                <input type="password"
+                       name="password"
+                       class="form-control"
+                       id="login_password"
+                       required />
+              </div>
+
+              <div class="form-group mb-0">
+                <button type="submit" class="btn btn-primary register_btn w-100">
+                  Sign In
+                </button>
+              </div>
+            </form>
+
+            <div class="already_member_box d-flex justify-content-between px-4">
+              <span class="text-center" id="to_signup">Create an account?</span>
+              <span class="text-center">Forgot password</span>
+            </div>
+          </div>
+          <!-- /login_form_active -->
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vendor JS -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Our JS -->
+  <script src="{% static 'js/login.js' %}"></script>
+
+</body>
+</html>
