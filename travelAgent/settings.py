@@ -107,10 +107,15 @@ DATABASES = {
     "diary_db": {  # New database for diary app
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "diary_db.sqlite3",
+    },
+    "chat_db": {  # New database for chat app
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "chat_db.sqlite3",
     }
 }
 
-DATABASE_ROUTERS = ['travelAgent.db_routers.DiaryRouter']
+DATABASE_ROUTERS = ['travelAgent.db_routers.DiaryRouter'
+                    , 'travelAgent.db_routers.ChatRouter']
 
 
 # Password validation
