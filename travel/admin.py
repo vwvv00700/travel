@@ -13,17 +13,45 @@ from django.http import HttpRequest, HttpResponseRedirect
 from django.urls import reverse, path
 from django.shortcuts import redirect, render
 from django.template.response import TemplateResponse
+from django.contrib.auth.decorators import login_required
 
 from .models import Place, Review, UploadEntry, AnalysisTool, PlaceAnalysis
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
-
+from travel.models import TravelPlan
+from travel.views import create_chatroom_for_plan
 # ── 3. 유틸리티 함수 정의 ───────────────────────────────────────────────────────
 
 # 주소 파서(대한민국 간단 규칙)
 CITY_SUFFIXES = ("특별시", "광역시", "자치시", "특별자치시", "도", "특별자치도")
 GU_SUFFIXES = ("구", "군", "시")
 
+
+@login_required
+def create_travel_plan(request):
+    if request.method == "POST":
+        city = request.POST.get("location_city")
+        start_date = request.POST.get("start_date")
+        end_date = request.POST.get("end_date")
+        
+        plan = TravelPlan.objects.create(
+            user=request.user,
+            location_city=city,
+            start_date=start_date,
+            end_date=end_date,
+            is_seeking_partner=True
+        )
+        
+        # ✅ 자동 매칭 실행
+        new_rooms = create_chatroom_for_plan(plan)
+        if new_rooms:
+            message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!"
+        else:
+            message = "매칭 가능한 사용자가 아직 없습니다."
+        
+        return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
+    
+    return render(request, "travel/create_travel_plan.html")
 
 def split_kr_address(addr: str) -> tuple[str | None, str | None, str | None]:
     if not addr:
@@ -114,7 +142,7 @@ class PlaceAnalysisAdmin(admin.ModelAdmin):
 
 
 # 장소 성격 LLM 분석 도구 어드민
-@admin.register(AnalysisTool)
+admin.register(AnalysisTool)
 class AnalysisToolAdmin(admin.ModelAdmin):
     # "+ Add" 없애기
     def has_add_permission(self, request):
@@ -122,52 +150,35 @@ class AnalysisToolAdmin(admin.ModelAdmin):
 
     # 인덱스에 노출은 하되 Add는 감춤
     def get_model_perms(self, request):
-        # 'travel:llm_analysis'로 리다이렉트되므로 change 권한만 남겨둠
         return {"change": True}
 
     # 리스트(모델 클릭/Change) → run 뷰로 리다이렉트
     def changelist_view(self, request, extra_context=None):
-        # 'travel:llm_analysis'는 아래 get_urls에서 정의된 name입니다.
         return redirect("travel:llm_analysis")
 
     # 커스텀 URL 등록
     def get_urls(self):
         urls = super().get_urls()
-        # AdminSite에 커스텀 URL이 등록될 때 사용할 info 튜플을 준비합니다.
-        info = self.model._meta.app_label, self.model._meta.model_name 
-        
         my = [
             path(
                 "run/",
-                self.admin_site.admin_view(self.run_view), 
-                # name을 명확히 설정합니다. Django는 이것을 'admin:travel_analysistool_run'으로 등록합니다.
-                name="%s_%s_run" % info, 
-            ),
-            path(
-                "save/",
-                self.admin_site.admin_view(self.save_view),
-                name="%s_%s_save" % info,
+                self.admin_site.admin_view(self.run_view),  # 권한/CSRF 자동
+                name="travel_analysis_tool_run",
             ),
         ]
-        
-        # ❌ 이 오류를 일으키는 비공개 속성 사용 코드를 제거합니다. ❌
-        # self.admin_site._wrapped_view_funcs["travel:llm_analysis"] = self.admin_site.admin_view(self.run_view)
-        
         return my + urls
 
-    # 분석 실행/선택 뷰 (run_view)
+    # === 여기 안에 네 analyze_selected_places_view 로직 이식 ===
     def run_view(self, request):
         """
         GET: 카테고리별 장소 선택 화면
         POST: 선택한 장소들 분석 실행 후 결과 렌더
-        템플릿: travel/select_and_analyze.html
+        템플릿: admin/travel/select_and_analyze.html
         """
+        # admin 공통 컨텍스트
         base_ctx = self.admin_site.each_context(request)
-        run_name = "admin:%s_%s_run" % (self.model._meta.app_label, self.model._meta.model_name)
-        save_name = "admin:%s_%s_save" % (self.model._meta.app_label, self.model._meta.model_name)
 
-
-        # GET — 장소 그룹핑 화면 (선택 폼)
+        # GET — 장소 그룹핑 화면
         if request.method == "GET":
             all_places = Place.objects.all().order_by("category", "name")
             grouped_places = {}
@@ -176,28 +187,25 @@ class AnalysisToolAdmin(admin.ModelAdmin):
 
             ctx = {
                 **base_ctx,
-                "title": "장소 성격 LLM 분석",
+                "title": "장소 성격 LLM",
                 "grouped_places": grouped_places,
-                "post_url": reverse(run_name),
-                "save_url": reverse(save_name), # 저장 URL도 필요할 수 있으므로 추가
-                "opts": self.model._meta,
+                "post_url": reverse("travel:llm_analysis"),
             }
             return render(request, "travel/select_and_analyze.html", ctx)
 
-        # POST — 분석 실행 및 결과 렌더링
+        # POST — 분석 실행
         if request.method == "POST":
             results = []
             selected_ids = request.POST.getlist("place_ids")
 
             if not selected_ids:
                 messages.warning(request, "선택된 장소가 없습니다.")
-                return redirect(reverse(run_name))
+                return redirect(reverse("travel:llm_analysis"))
 
             selected_places = Place.objects.filter(id__in=selected_ids)
 
             for place in selected_places:
-                # Place 데이터 기반으로 분석 요청
-                place_raw_data = f"장소 이름: {place.name}\n주소: {place.address}\n카테고리: {place.category}\n" 
+                place_raw_data = f"장소 이름: {place.name}\n"
                 analysis_result_dict = analyze_place_with_LLM(place_raw_data)
 
                 try:
@@ -219,7 +227,6 @@ class AnalysisToolAdmin(admin.ModelAdmin):
                 "post_url": reverse("travel:llm_analysis"),
             }
             return render(request, "travel/select_and_analyze.html", ctx)
-        
 # ── 업로드 전용 어드민 ────────────────────────────────────────────────
 @admin.register(UploadEntry)
 class UploadEntryAdmin(admin.ModelAdmin):

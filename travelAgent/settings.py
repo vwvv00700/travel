@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "import_export",
     "travel.apps.TravelConfig",
     'channels',       # 채널스 등록
+    "ai_planner",
 ]
 
 MIDDLEWARE = [
@@ -168,6 +169,16 @@ TEMPLATES = [
     },
 ]
 
-# 로그인 성공 후 리디렉션 URL (로그인 기능 사용 시)
-LOGIN_REDIRECT_URL = '/'  # 메인 화면 URL
-LOGIN_URL = '/accounts/login/'  # 로그인 필요 시 이동할 URL
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}

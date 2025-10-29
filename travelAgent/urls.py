@@ -34,7 +34,7 @@ urlpatterns = [
     path('chat/', chat, name='chat'),
     path('select/', select, name='select'),
     path("travel/", include("travel.urls")),
-
+    path("ai_planner/", include("ai_planner.urls")),
     path("admin/", admin.site.urls),
     path('accounts/signup/', signup_view, name='signup'),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='chat/login.html'), name='login'),
