@@ -3,7 +3,7 @@ class DiaryRouter:
     A router to control all database operations on models in the
     travel application.
     """
-    diary_models = {'travel', 'diaryentry'} # Explicitly list models that go to diary_db
+    diary_models = {'travel', 'diaryentry', 'diarylist', 'diarydetail'} # Explicitly list models that go to diary_db
 
     def db_for_read(self, model, **hints):
         """
@@ -42,15 +42,13 @@ class DiaryRouter:
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
         """
-        Make sure models that are part of the diary functionality only appear in the 'diary_db' database.
-        Other travel app models (Place, PlaceAnalysis) should migrate to 'default'.
+        - Diary models ('travel', 'diaryentry') migrate only to 'diary_db'.
+        - All other models (including other 'travel' models and framework apps
+          like 'auth') migrate only to the 'default' database.
         """
-        if app_label == 'travel':
-            if model_name in self.diary_models:
-                return db == 'diary_db'
-            else: # Place, PlaceAnalysis, etc.
-                return db == 'default'
-        # Allow auth app to migrate to both default and diary_db
-        if app_label == 'auth':
-            return True
-        return None
+        is_diary_model = app_label == 'travel' and model_name in self.diary_models
+
+        if db == 'diary_db':
+            return is_diary_model
+        else: # db == 'default' or any other db
+            return not is_diary_model

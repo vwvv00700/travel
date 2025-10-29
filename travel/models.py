@@ -311,11 +311,15 @@ class Travel(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = '다이어리 목록'
+        verbose_name_plural = '다이어리 목록'
+
     def __str__(self):
         return self.name
 
 class DiaryEntry(models.Model):
-    travel = models.ForeignKey(Travel, on_delete=models.CASCADE, related_name='diary_entries') # Added ForeignKey
+    diary = models.ForeignKey(Travel, on_delete=models.CASCADE, related_name='diary_entries') # Renamed from 'travel'
     photo = models.ImageField(upload_to='diary_photos/%Y/%m/%d/')
     location = models.CharField(max_length=200, blank=True)
     timestamp = models.DateTimeField(null=True, blank=True)
@@ -325,8 +329,12 @@ class DiaryEntry(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = '다이어리 상세'
+        verbose_name_plural = '다이어리 상세'
+
     def __str__(self):
-        return f'{self.travel.name} - {self.author.username}의 {self.created_at.strftime("%Y-%m-%d")} 기록'
+        return f'{self.diary.name} - {self.author.username}의 {self.created_at.strftime("%Y-%m-%d")} 기록'
 
     def save(self, *args, **kwargs):
         if self.photo and not self.pk: # Only process new images
