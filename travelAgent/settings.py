@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "import_export",
     "travel.apps.TravelConfig",
-    "ai_planner",
+    # "ai_planner",
 ]
 
 MIDDLEWARE = [
