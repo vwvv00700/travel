@@ -14,7 +14,7 @@ from django.http import HttpRequest, HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import reverse, path
 from django.shortcuts import redirect, render
-from .models import Place, Review, UploadEntry, AnalysisTool, PlaceAnalysis
+from .models import Place, Review, UploadEntry, AnalysisTool, PlaceAnalysis, Travel, DiaryEntry
 
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
@@ -364,3 +364,27 @@ class UploadEntryAdmin(admin.ModelAdmin):
             messages.error(request, f"저장 실패: {errors}건")
 
         return redirect(reverse("admin:travel_analysis_tool_run"))
+
+# ── 다이어리 어드민 ────────────────────────────────────────────────
+@admin.register(Travel)
+class TravelAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'author', 'start_date', 'end_date')
+    search_fields = ('name', 'description', 'author__username')
+    list_filter = ('author', 'start_date')
+
+@admin.register(DiaryEntry)
+class DiaryEntryAdmin(admin.ModelAdmin):
+    list_display = ('diary_id', 'diary_name', 'author', 'location', 'timestamp')
+    search_fields = ('location', 'comment', 'diary__name', 'author__username')
+    list_filter = ('author', 'timestamp', 'diary')
+    readonly_fields = ('latitude', 'longitude')
+
+    def diary_name(self, obj):
+        return obj.diary.name
+    diary_name.short_description = '다이어리' # Column header for the diary name
+    diary_name.admin_order_field = 'diary'
+
+    def diary_id(self, obj):
+        return obj.diary.id
+    diary_id.short_description = '다이어리 ID' # Column header for the diary ID
+    diary_id.admin_order_field = 'diary__id'
