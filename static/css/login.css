@@ -1,0 +1,161 @@
+/* 전체 레이아웃 */
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #f2f3f5;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 메인 섹션 wrapper */
+.login_section .accounts_container {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  max-width: 1100px;
+  min-height: 480px;
+}
+
+/* 왼쪽 이미지 영역 */
+.accounts_image {
+  background: #eef2ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.accounts_image img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+/* 오른쪽 폼 영역 */
+.accounts_col {
+  display: flex;
+  flex-direction: column;
+}
+.accounts_forms {
+  display: none;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  background: #fff;
+}
+.accounts_forms.login_form_active,
+.accounts_forms.signup_form_active {
+  display: flex;
+}
+
+/* 텍스트 영역 */
+.title h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #111;
+  margin: 0;
+}
+.title p {
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.4;
+  margin-bottom: 0;
+}
+
+/* form 스타일 */
+.form .form-group label {
+  font-size: 0.8rem;
+  color: #1a1a1a;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.form .form-group {
+  position: relative;
+}
+.form .form-control {
+  font-size: 0.9rem;
+  border-radius: 4px;
+  height: 44px;
+  box-shadow: none;
+  border: 1px solid #ccc;
+}
+.form .form-control:focus {
+  border-color: #4c8bf5;
+  box-shadow: 0 0 0 2px rgba(76,139,245,0.2);
+  outline: none;
+}
+
+/* eye 아이콘 */
+.toggle-eye {
+  position: absolute;
+  right: 12px;
+  top: 34px;
+  cursor: pointer;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+/* 버튼 */
+.register_btn {
+  height: 44px;
+  background: #0a61e8;
+  border: 0;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+}
+.register_btn:hover {
+  background: #084fc2;
+}
+
+/* 하단 스위치 라인 */
+.already_member_box {
+  font-size: 0.8rem;
+  color: #1a1a1a;
+  margin-top: 16px;
+  margin-bottom: 24px;
+  cursor: pointer;
+}
+.already_member_box span,
+.already_member_box p {
+  color: #1a1a1a;
+  margin-bottom: 0;
+}
+.already_member_box #to_signup,
+.already_member_box #to_login {
+  color: #0a61e8;
+  cursor: pointer;
+}
+.already_member_box #to_signup:hover,
+.already_member_box #to_login:hover {
+  text-decoration: underline;
+}
+
+/* 메시지 표시 */
+.auth-messages {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0.5rem;
+}
+.auth-msg-error {
+  color: #d62828;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.auth-msg-success {
+  color: #2e7d32;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* 반응형 */
+@media(max-width: 991px) {
+  .accounts_container {
+    max-width: 400px;
+    min-height: auto;
+  }
+  .accounts_image {
+    display: none;
+  }
+}

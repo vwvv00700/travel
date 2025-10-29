@@ -1,23 +1,25 @@
 // =============================
-// travel_list.js (MAPBOX DIRECTIONS VERSION)
+// 전역 상태
 // =============================
 
-// 기본 중심 좌표 (서울 시청 근처 정도)
+console.log("load");
+
+let currentPlanIdx = (typeof INITIAL_PLAN_IDX !== "undefined") ? INITIAL_PLAN_IDX : 0;
+
 const DEFAULT_CENTER = [37.5665, 126.9780];
 const DEFAULT_ZOOM = 13;
 
-// Leaflet 전역 객체
 let map;
 let routeLayerGroup;
-
-// 마지막으로 클릭했던 장소 DOM
 let lastClickedSpot = null;
 
-// Directions cache: { "<planIdx>-<dayIdx>": {geojson:..., distanceKm:...} }
+// Day별 경로 캐시 (Mapbox Directions 결과)
 const directionsCache = {};
 
 
-// ---------- 공통 유틸 ----------
+// =============================
+// 유틸
+// =============================
 
 function updateDistanceInfoBox(text) {
     const box = document.getElementById("distanceInfoBox");
@@ -25,37 +27,72 @@ function updateDistanceInfoBox(text) {
     box.textContent = text;
 }
 
-/**
- * m(미터) -> "x.xx km"
- */
+// km 라벨 (총 이동거리용)
 function metersToKmLabel(meters) {
     if (!meters || isNaN(meters)) return "";
     const km = meters / 1000;
     return `${km.toFixed(2)} km`;
 }
 
+// 개별 구간 거리 포맷 (리스트 옆에 붙는 "88 m", "1.2 km" 같은 것)
+function formatDistance(meters) {
+    if (!meters && meters !== 0) return "";
+    if (meters >= 1000) {
+        return (meters / 1000).toFixed(1) + " km";
+    } else {
+        return Math.round(meters) + " m";
+    }
+}
 
-// ---------- Mapbox Directions API ----------
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
+}
 
-/**
- * 하나의 Day(waypoints 배열)를 받아
- * Mapbox Directions API URL을 만든다.
- *
- * waypoints: [ {lat:..., lng:...}, {lat:..., lng:...}, ... ]
- * profile: "driving", "walking", "cycling" 등 (여기선 driving 가정)
- *
- * NOTE:
- * - Mapbox Directions API는 최소 2개의 좌표 필요.
- * - 경유지 여러 개 가능: /coords;coords;coords
- */
+// 라디안 변환
+function toRad(v){
+    return v * Math.PI / 180;
+}
+
+// Haversine (두 점 사이 직선거리 m)
+// - 리스트 왼쪽 "N번→N+1번 거리" 계산에 사용
+function haversineMeters(lat1, lon1, lat2, lon2){
+    const R = 6371000; // m
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*
+              Math.sin(dLon/2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // meters
+}
+
+// 왼쪽 패널 높이에 맞춰 지도 높이를 동기화
+function syncMapHeightToList() {
+    const left = document.querySelector(".itinerary-panel");
+    const right = document.querySelector(".map-panel");
+    const mapEl = document.getElementById("mapArea");
+    if (!left || !right || !mapEl) return;
+
+    const h = left.getBoundingClientRect().height;
+    right.style.height = h + "px";
+    mapEl.style.height = (h - 60) + "px"; // 지도 헤더(탭 영역) 높이만큼 뺌
+    if (map) map.invalidateSize();
+}
+
+
+// =============================
+// Mapbox Directions API
+// =============================
+
 function buildDirectionsURL(waypoints, profile = "driving") {
     if (!waypoints || waypoints.length < 2) return null;
     const coords = waypoints
-        .map(pt => `${pt.lng},${pt.lat}`) // lng,lat 순서 중요
+        .map(pt => `${pt.lng},${pt.lat}`)
         .join(";");
 
-    // steps=false로 한 번에 큰 라인(overview)만 받아도 되고
-    // overview=full 로 최대한 자세한 경로를 요청
     const base = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coords}`;
     const params = new URLSearchParams({
         geometries: "geojson",
@@ -67,9 +104,12 @@ function buildDirectionsURL(waypoints, profile = "driving") {
 }
 
 /**
- * Directions API 호출해서 GeoJSON LineString과 총 이동거리(m)를 얻는다.
- * 반환:
- *   { lineCoords: [[lat,lng], ...], distanceMeters: number }
+ * waypoints: [{lat, lng, ...}, ...] (문자열일 수도 있으니 parse 필요)
+ * return:
+ *  {
+ *    lineCoords: [ [lat,lng], [lat,lng], ... ], // 경로 폴리라인
+ *    distanceMeters: number                     // 전체 주행거리(m)
+ *  }
  */
 async function fetchRouteForDay(waypoints) {
     const url = buildDirectionsURL(waypoints, "driving");
@@ -88,10 +128,6 @@ async function fetchRouteForDay(waypoints) {
         }
 
         const data = await resp.json();
-
-        // Mapbox 응답 구조:
-        // data.routes[0].geometry.coordinates = [[lng,lat],[lng,lat],...]
-        // data.routes[0].distance = 총 거리 (m)
         if (!data.routes || !data.routes.length) {
             return { lineCoords: [], distanceMeters: 0 };
         }
@@ -100,7 +136,7 @@ async function fetchRouteForDay(waypoints) {
         const coordsLngLat = best.geometry.coordinates || [];
         const distanceMeters = best.distance || 0;
 
-        // Leaflet polyline은 [lat,lng] 필요하므로 변환
+        // Mapbox는 [lng, lat] 이라서 Leaflet은 [lat, lng]로 바꿔야 함
         const lineCoords = coordsLngLat.map(pair => [pair[1], pair[0]]);
 
         return {
@@ -114,11 +150,12 @@ async function fetchRouteForDay(waypoints) {
 }
 
 
-// ---------- 지도 초기화 / 라우팅 ----------
+// =============================
+// 지도 관련
+// =============================
 
 function initMap() {
-    if (map) return; // 이미 초기화했으면 스킵
-
+    if (map) return;
     const mapEl = document.getElementById("mapArea");
     if (!mapEl) {
         console.warn("mapArea element not found");
@@ -127,7 +164,7 @@ function initMap() {
 
     map = L.map(mapEl).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
-    // 타일은 OSM 기본 유지 (원하면 Mapbox 스타일 타일로 교체 가능)
+    // 타일: OSM
     L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
@@ -144,12 +181,42 @@ function clearRouteLayers() {
     routeLayerGroup.clearLayers();
 }
 
+// 지도 위 마커 (번호만 있는 동그라미)
+function addWaypointsMarkers(mapInstance, waypoints, layerGroup) {
+    for (let i = 0; i < waypoints.length; i++) {
+        const wp = waypoints[i];
+        const latNum = parseFloat(wp.lat);
+        const lngNum = parseFloat(wp.lng);
+        if (isNaN(latNum) || isNaN(lngNum)) continue;
+
+        const markerHtml = `
+            <div class="map-marker-circle">
+                <span class="map-marker-number">${i + 1}</span>
+            </div>
+        `;
+
+        const markerIcon = L.divIcon({
+            className: "custom-marker-basic",
+            html: markerHtml,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+        });
+
+        const marker = L.marker([latNum, lngNum], { icon: markerIcon })
+            .addTo(layerGroup);
+
+        marker.on("click", () => {
+            mapInstance.setView([latNum, lngNum], 15);
+        });
+    }
+}
+
 /**
- * 현재 currentPlanIdx, 선택 dayIdx(1부터 시작)
- * => PLANS[currentPlanIdx].day_waypoints[dayIdx-1] 를 이용해
- *    Mapbox Directions API로 실제 경로 polyline을 그림.
- *
- * 마커는 각 스톱마다 번호 divIcon으로 표시.
+ * dayIdx: 1부터 시작 (Day1 -> 1)
+ * - 마커
+ * - 경로 polyline
+ * - 지도 bounds
+ * - 총 이동거리(distanceInfoBox) 업데이트
  */
 async function renderMapForDay(dayIdx) {
     if (!PLANS || typeof currentPlanIdx === "undefined") return;
@@ -160,66 +227,44 @@ async function renderMapForDay(dayIdx) {
     if (!map) return;
     clearRouteLayers();
 
-    const dayWaypointsAll = planData.day_waypoints || [];
-    const waypoints = dayWaypointsAll[dayIdx - 1] || [];
+    const waypointsByDay = planData.day_waypoints || [];
+    const waypoints = waypointsByDay[dayIdx - 1] || [];
 
     if (!waypoints.length) {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-        updateDistanceInfoBox("위치 좌표 없음");
+        updateDistanceInfoBox("");
+        const totalKm = routeData.distanceMeters ? metersToKmLabel(routeData.distanceMeters) : "";
+        updateDistanceInfoBox(totalKm ? `예상 이동 거리 약 ${totalKm}` : "");
+        const dayTitleEl = document.querySelector(`.day-title[data-day="${dayIdx}"] .day-total-dist`);
+        if (dayTitleEl) {
+            dayTitleEl.textContent = totalKm ? `(${totalKm})` : "";
+        }
+        syncMapHeightToList();
         return;
     }
 
-    // 1) 모든 스팟에 번호 마커 찍기
+    // 마커들 찍기
+    addWaypointsMarkers(map, waypoints, routeLayerGroup);
+
+    // polyline을 그리기 위한 bounds 후보
     const latlngBoundsArr = [];
-    waypoints.forEach((pt, i) => {
+    waypoints.forEach(pt => {
         const latNum = parseFloat(pt.lat);
         const lngNum = parseFloat(pt.lng);
-        if (isNaN(latNum) || isNaN(lngNum)) return;
-
-        latlngBoundsArr.push([latNum, lngNum]);
-
-        // 번호 마커(divIcon)
-        const markerIcon = L.divIcon({
-            className: "",
-            html: `
-                <div style="
-                    width:28px;
-                    height:28px;
-                    border-radius:50%;
-                    background:#db4040;
-                    color:#fff;
-                    font-size:0.8rem;
-                    font-weight:600;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    border:2px solid #fff;
-                    box-shadow:0 0 4px rgba(0,0,0,.4);
-                ">${i + 1}</div>
-            `,
-            iconSize: [28, 28],
-            iconAnchor: [14, 14],
-        });
-
-        const marker = L.marker([latNum, lngNum], { icon: markerIcon })
-            .addTo(routeLayerGroup);
-
-        // 마커 클릭: 해당 좌표로 줌
-        marker.on("click", () => {
-            map.setView([latNum, lngNum], 15);
-        });
+        if (!isNaN(latNum) && !isNaN(lngNum)) {
+            latlngBoundsArr.push([latNum, lngNum]);
+        }
     });
 
-    // 2) Directions API 호출 (cache 먼저 확인)
+    // Mapbox Directions 결과 (캐싱)
     const cacheKey = `${currentPlanIdx}-${dayIdx}`;
     let routeData = directionsCache[cacheKey];
-
     if (!routeData) {
         routeData = await fetchRouteForDay(waypoints);
         directionsCache[cacheKey] = routeData;
     }
 
-    // 3) 경로 polyline 그리기
+    // polyline 라인 그리기
     if (routeData.lineCoords && routeData.lineCoords.length > 1) {
         L.polyline(routeData.lineCoords, {
             weight: 4,
@@ -227,11 +272,13 @@ async function renderMapForDay(dayIdx) {
             opacity: 0.9,
         }).addTo(routeLayerGroup);
 
-        // bounds에 라우트까지 포함
-        const combinedBounds = [...latlngBoundsArr, ...routeData.lineCoords];
+        const combinedBounds = [
+            ...latlngBoundsArr,
+            ...routeData.lineCoords,
+        ];
         map.fitBounds(combinedBounds, { padding: [20, 20] });
     } else {
-        // fallback: 여러 점 없으면 첫 점으로 이동
+        // fallback: 좌표만으로 fit
         if (latlngBoundsArr.length === 1) {
             map.setView(latlngBoundsArr[0], 15);
         } else if (latlngBoundsArr.length > 1) {
@@ -241,7 +288,7 @@ async function renderMapForDay(dayIdx) {
         }
     }
 
-    // 4) 총 이동거리 UI 업데이트
+    // 총 이동거리 박스 업데이트
     if (routeData.distanceMeters && routeData.distanceMeters > 0) {
         updateDistanceInfoBox(
             `예상 이동 거리 약 ${metersToKmLabel(routeData.distanceMeters)}`
@@ -249,94 +296,127 @@ async function renderMapForDay(dayIdx) {
     } else if (waypoints.length === 1) {
         updateDistanceInfoBox("단일 위치 안내");
     } else {
-        updateDistanceInfoBox("이동 거리 계산 불가");
+        updateDistanceInfoBox("");
     }
+
+    syncMapHeightToList();
 }
 
 
-// ---------- 왼쪽 일정 리스트 렌더 ----------
+// =============================
+// 왼쪽 리스트 렌더
+// =============================
 
 /**
- * 현재 currentPlanIdx 의 day_plans(=각 Day의 장소들)을
- * itineraryContainer 안에 다시 그린다.
- *  + 맨 위에 추천 플랜 버튼들도 다시 그린다.
+ * planIdx 플랜의 day_plans 구조를 읽어서
+ * #itineraryContainer 안을 전부 다시 만든다.
+ *
+ * 각 spot-item 안:
+ *   .spot-order-num  -> 순번
+ *   .spot-order-dist -> 이전 지점에서 여기까지의 거리
  */
-function renderItineraryList() {
-    if (!PLANS || typeof currentPlanIdx === "undefined") return;
+function renderItineraryListFromPlan(planIdx) {
+    if (!PLANS) return;
+    const planData = PLANS[planIdx];
+    if (!planData) return;
+
     const container = document.getElementById("itineraryContainer");
     if (!container) return;
 
-    const planData = PLANS[currentPlanIdx];
-    if (!planData) return;
+    const allDays = planData.day_plans || [];
 
-    const dayPlans = planData.day_plans || [];
+    let html = "";
 
-    // 1) 추천 플랜 버튼 렌더
-    let html = `<div class="plan-selector" id="planSelector">`;
-    PLANS.forEach((plan, idx) => {
+    allDays.forEach((dayStops, dayIndex) => {
         html += `
-        <button
-            class="plan-label-btn ${idx === currentPlanIdx ? "active" : ""}"
-            data-plan-idx="${idx}">
-            ${plan.name || ("플랜 " + (idx+1))}
-        </button>`;
-    });
-    html += `</div>`;
+            <div class="day-block">
+                <div class="day-title" data-day="${dayIndex + 1}">
+                    Day ${dayIndex + 1}
+                    <span class="day-total-dist"></span>
+                </div>
+        `;
 
-    // 2) Day별 블록 렌더
-    dayPlans.forEach((stops, dayIdx) => {
-        html += `<div class="day-block">`;
-        html += `<div class="day-title">Day ${dayIdx + 1}</div>`;
+        if (dayStops && dayStops.length) {
+            for (let i = 0; i < dayStops.length; i++) {
+                const stop = dayStops[i] || {};
+                const name = stop.name || "";
+                const category = stop.category || "";
+                const address = stop.address || "";
+                const themes_csv = stop.themes_csv || "";
+                const group_couple = stop.group_couple ? `· 커플선호 ${stop.group_couple}` : "";
+                const season_autumn = stop.season_autumn ? `· 가을매력 ${stop.season_autumn}` : "";
 
-        if (stops && stops.length > 0) {
-            stops.forEach((stop, orderIdx) => {
-                const couple = stop.group_couple ? ` · 커플선호 ${stop.group_couple}` : "";
-                const autumn = stop.season_autumn ? ` · 가을매력 ${stop.season_autumn}` : "";
-                const addrHtml = stop.address
-                    ? `<p class="spot-desc" style="margin-top:4px;">${stop.address}</p>`
-                    : "";
+                // i -> i+1 거리 (마지막 아이템은 없음)
+                let distText = "";
+                if (i < dayStops.length - 1) {
+                    const next = dayStops[i + 1];
+                    const meters = haversineMeters(
+                        parseFloat(stop.lat), parseFloat(stop.lng),
+                        parseFloat(next.lat), parseFloat(next.lng)
+                    );
+                    distText = formatDistance(meters);
+                }
 
                 html += `
                 <div class="spot-item"
-                     data-day="${dayIdx + 1}"
-                     data-order="${orderIdx}"
+                     data-day="${dayIndex + 1}"
+                     data-order="${i}"
                      data-lat="${stop.lat || ""}"
                      data-lng="${stop.lng || ""}">
-                    <div class="spot-order">${orderIdx + 1}</div>
+                    
+                    <div class="spot-order">
+                        <div class="spot-order-num">${i + 1}</div>
+                        ${
+                            distText
+                            ? `<div class="spot-order-dist">${distText}</div>`
+                            : ``
+                        }
+                    </div>
+
                     <div class="spot-meta">
                         <div class="spot-name">
-                            ${stop.name}
-                            <span style="font-weight:400;color:#888;font-size:0.7rem;">
-                                (${stop.category})
-                            </span>
+                            ${name}
+                            <span class="spot-cat">(${category})</span>
                         </div>
                         <p class="spot-desc">
-                            ${stop.themes_csv || ""}${couple}${autumn}
+                            ${themes_csv}
+                            ${group_couple}
+                            ${season_autumn}
                         </p>
-                        ${addrHtml}
+                        ${address
+                            ? `<p class="spot-desc spot-addr">${address}</p>`
+                            : ``
+                        }
                     </div>
-                </div>`;
-            });
+
+                </div>
+                `;
+            }
         } else {
-            html += `<div class="spot-desc">추천 장소가 부족합니다.</div>`;
+            html += `
+                <div class="spot-desc">추천 장소가 부족합니다.</div>
+            `;
         }
 
-        html += `</div>`; // .day-block
+        html += `</div>`;
     });
 
     container.innerHTML = html;
-
-    // 리스트 다시 그렸으니까 플랜 버튼 클릭 핸들러 재장착
-    setupPlanSelector();
 }
 
 
-/**
- * 장소 클릭 핸들러(지도 줌 / 다시 Day 경로 복귀)
- * 전역에 한 번만 붙인다.
- */
+// =============================
+// 이벤트 바인딩 (리스트 클릭, Day 탭, 플랜 선택 등)
+// =============================
+
+// 왼쪽 장소 카드 클릭 시:
+// - 첫 클릭: 해당 지점으로 지도 줌
+// - 같은 카드 다시 클릭: Day 전체 경로로 리셋
 function attachSpotClickHandler() {
-    document.addEventListener("click", (e) => {
+    const scrollArea = document.getElementById("itineraryContainer");
+    if (!scrollArea) return;
+
+    scrollArea.addEventListener("click", (e) => {
         const item = e.target.closest(".spot-item");
         if (!item) return;
         if (!map) return;
@@ -345,62 +425,33 @@ function attachSpotClickHandler() {
         const lng = parseFloat(item.dataset.lng);
 
         if (isNaN(lat) || isNaN(lng)) {
-            // 좌표 없으면 전체 뷰 복귀
             map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
             lastClickedSpot = null;
             return;
         }
 
         if (lastClickedSpot === item) {
-            // 같은 곳 다시 누르면 Day 경로 전체로 복귀
             const dayIdx = parseInt(item.dataset.day, 10) || 1;
             renderMapForDay(dayIdx);
             lastClickedSpot = null;
         } else {
-            // 해당 장소로 줌
             map.setView([lat, lng], 15);
             lastClickedSpot = item;
         }
     });
 }
 
-
-// ---------- Day 탭 렌더 ----------
-
-/**
- * 현재 플랜의 day_plans 길이에 맞게 Day1 / Day2 ... 버튼 다시 그림
- * 클릭하면 그 Day의 경로로 지도 redraw
- */
-function renderDayTabs() {
-    if (!PLANS || typeof currentPlanIdx === "undefined") return;
+// Day 탭 클릭 -> 해당 Day 경로/거리 지도에 반영
+function bindDayTabs() {
     const tabsWrap = document.getElementById("dayTabs");
     if (!tabsWrap) return;
 
-    const planData = PLANS[currentPlanIdx];
-    if (!planData) return;
-
-    const dayPlans = planData.day_plans || [];
-
-    let html = "";
-    dayPlans.forEach((_, dayIdx) => {
-        html += `
-        <button class="day-tab-btn ${dayIdx === 0 ? "active" : ""}"
-                data-day="${dayIdx + 1}">
-            Day ${dayIdx + 1}
-        </button>`;
-    });
-
-    tabsWrap.innerHTML = html;
-
-    // 이벤트 바인딩
     const buttons = tabsWrap.querySelectorAll(".day-tab-btn");
     buttons.forEach(btn => {
         btn.addEventListener("click", () => {
-            // active 토글
             buttons.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
 
-            // 해당 Day 경로 지도에 그림
             const d = parseInt(btn.getAttribute("data-day"), 10) || 1;
             renderMapForDay(d);
             lastClickedSpot = null;
@@ -408,68 +459,158 @@ function renderDayTabs() {
     });
 }
 
-
-// ---------- 가이드 텍스트 렌더 ----------
-
-function renderGuideText() {
+// 플랜 바뀌면 Day 탭 자체도 다시 만들어야 한다
+function redrawDayTabsFromPlans() {
+    const tabsWrap = document.getElementById("dayTabs");
+    if (!tabsWrap) return;
     if (!PLANS || typeof currentPlanIdx === "undefined") return;
-    const guideEl = document.getElementById("guideText");
-    if (!guideEl) return;
-
     const planData = PLANS[currentPlanIdx];
     if (!planData) return;
 
-    guideEl.textContent =
-        planData.guide_text ||
-        "가이드를 불러오는 중입니다...";
+    const dayPlans = planData.day_plans || [];
+    let html = "";
+    dayPlans.forEach((_, idx) => {
+        html += `
+        <button
+            class="day-tab-btn ${idx === 0 ? "active" : ""}"
+            data-day="${idx + 1}">
+            Day ${idx + 1}
+        </button>`;
+    });
+
+    tabsWrap.innerHTML = html;
+    bindDayTabs(); // 새 버튼들에 이벤트 다시 부여
 }
 
+function updateGuideText() {
+    const guideEl = document.getElementById("guideText");
+    if (!guideEl) return;
+    if (!PLANS || typeof currentPlanIdx === "undefined") return;
+    const planData = PLANS[currentPlanIdx];
+    if (!planData) return;
+    guideEl.textContent = planData.guide_text || "가이드를 불러오는 중입니다...";
+}
 
-// ---------- 플랜 선택 버튼 동작 ----------
+// 저장하기 버튼이 현재 플랜 id랑 맞게 동기화
+function syncSaveButtonPlanId() {
+    const saveBtn = document.getElementById("savePlanBtn");
+    if (!saveBtn) return;
+    if (!PLANS || typeof currentPlanIdx === "undefined") return;
+    const planData = PLANS[currentPlanIdx];
+    if (!planData) return;
+    saveBtn.dataset.planId = planData.id;
+}
 
-/**
- * plan-selector 안의 .plan-label-btn 들에 클릭 이벤트를 단다.
- * -> currentPlanIdx 바꾸고 전체 다시 그리기
- */
-function setupPlanSelector() {
+// 플랜 선택 버튼 (추천 플랜들 탭)
+function bindPlanSelector() {
     const selector = document.getElementById("planSelector");
     if (!selector) return;
 
     const buttons = selector.querySelectorAll(".plan-label-btn");
-
     buttons.forEach(btn => {
         btn.addEventListener("click", () => {
             const idx = parseInt(btn.getAttribute("data-plan-idx"), 10);
             currentPlanIdx = isNaN(idx) ? 0 : idx;
 
-            // 전체 리렌더
-            renderItineraryList();  // 왼쪽 리스트 + 플랜 버튼 다시 그림
-            renderGuideText();      // 가이드 갱신
-            renderDayTabs();        // Day 탭 갱신
-            renderMapForDay(1);     // 지도 Day1 경로 갱신
-            lastClickedSpot = null;
+            // 플랜 버튼 active 토글
+            buttons.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
 
-            // UX: 왼쪽 패널 맨 위로 스크롤
-            const panel = document.getElementById("itineraryContainer");
-            if (panel) panel.scrollTop = 0;
+            // 왼쪽 Day 리스트 다시 그림 (번호+구간거리까지 반영)
+            renderItineraryListFromPlan(currentPlanIdx);
+
+            // 새 리스트에 클릭 이벤트 다시 연결
+            attachSpotClickHandler();
+
+            // 가이드 텍스트 갱신
+            updateGuideText();
+
+            // Day 탭 갱신 후 Day1 활성화 상태
+            redrawDayTabsFromPlans();
+
+            // 지도 Day1 및 총 이동거리 갱신
+            renderMapForDay(1);
+
+            // 저장 버튼 plan_id 갱신
+            syncSaveButtonPlanId();
+
+            // 왼쪽 스크롤 맨 위로
+            const scrollArea = document.getElementById("itineraryContainer");
+            if (scrollArea) scrollArea.scrollTop = 0;
         });
     });
 }
 
 
-// ---------- 초기 구동 ----------
+// =============================
+// 저장 버튼 ajax
+// =============================
+
+function setupSaveButton() {
+    const saveBtn = document.getElementById("savePlanBtn");
+    if (!saveBtn) return;
+
+    saveBtn.addEventListener("click", () => {
+        const planId = saveBtn.dataset.planId;
+
+        fetch("/travel/select_plan/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: `plan_id=${encodeURIComponent(planId)}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "success") {
+                alert("플랜이 내 여행으로 저장됐어요 ✅");
+            } else if (data.status === "login_required") {
+                alert("로그인 후에 저장할 수 있어요.");
+                window.location.href = "/travel/login/";
+            } else {
+                alert("저장 중 오류가 발생했어요.");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 오류가 발생했어요.");
+        });
+    });
+}
+
+
+// =============================
+// 초기 구동
+// =============================
 
 window.addEventListener("DOMContentLoaded", () => {
-    // 지도 먼저 준비
+    // 1. 지도 초기화
     initMap();
 
-    // 첫 화면 렌더 (initial_plan_idx 값 기반으로 전역 currentPlanIdx는
-    // Django 템플릿에서 만들어준다고 가정)
-    renderItineraryList();  // 왼쪽 + 플랜버튼
-    renderGuideText();      // 가이드
-    renderDayTabs();        // Day 탭
-    renderMapForDay(1);     // 지도 Day1 (Directions fetch 포함)
-
-    // 전역 클릭 핸들러(spot-item용) 한 번만 세팅
+    // 2. 현재 플랜 기준으로
+    //    - 왼쪽 Day 리스트(번호/구간거리 포함) 렌더
+    //    - spot 클릭 핸들러
+    renderItineraryListFromPlan(currentPlanIdx);
     attachSpotClickHandler();
+
+    // 3. 가이드 텍스트 갱신
+    updateGuideText();
+
+    // 4. Day 탭 그리기 + 첫 번째 Day 활성화
+    redrawDayTabsFromPlans();
+    bindDayTabs();
+
+    // 5. 지도 Day1 렌더 (마커/라인/총 이동거리 distanceInfoBox 표시)
+    renderMapForDay(1);
+
+    // 6. 저장하기 버튼 동기화 + 클릭 이벤트
+    syncSaveButtonPlanId();
+    setupSaveButton();
+
+    // 7. 플랜 선택 버튼 (다른 추천 플랜 눌렀을 때 전부 다시 세팅)
+    bindPlanSelector();
+
+    // 8. 레이아웃 높이 동기화
+    syncMapHeightToList();
 });

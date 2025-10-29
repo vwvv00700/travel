@@ -1,15 +1,34 @@
-# travel/views.py
-import json, re, time, os, requests
+# views.py (정상화된 버전)
+import json, re, time
 from itertools import groupby
 from operator import attrgetter
+from openai import OpenAI # New import
 
+from django.conf import settings
 from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-from django.conf import settings  # ★ Mapbox token 템플릿에 넘기려고 추가
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.db.models import Q # New import
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.views.decorators.http import require_POST, require_GET
 from django.urls import reverse
+from django.shortcuts import get_object_or_404
 
-from django.http import JsonResponse, HttpResponseBadRequest
-from django.views.decorators.http import require_GET
+from .models import (
+    Place,
+    PlaceAnalysis,
+    UserProfile,
+    TravelPlan,
+    UserSelectedPlan,
+    DiaryEntry,
+    Travel,
+)
+
+from .services.LLM_analyzer import analyze_place_with_LLM
+from .services.analysis_loader import create_or_update_analysis_from_json
+from .services.itinerary_llm_gemini import generate_itinerary_guide
 from .services.recommender import (
     parse_user_request,
     get_ranked_places,
@@ -17,27 +36,25 @@ from .services.recommender import (
     build_map_paths,
 )
 
-from openai import OpenAI # New import
-from django.contrib.auth.models import User # Import User model
 from .forms import DiaryEntryForm, TravelForm # Import TravelForm
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q # New import
-from .models import DiaryEntry, Travel, Place, PlaceAnalysis # Modified import for Place, PlaceAnalysis
 from collections import defaultdict # Import defaultdict
 
-from .services.LLM_analyzer import analyze_place_with_LLM              # 네 함수 경로에 맞게 조정
-from .services.analysis_loader import create_or_update_analysis_from_json  # 앞서 만든 저장 함수
-from .services.itinerary_llm_gemini import generate_itinerary_guide
+
+
+# -------------------------------------------------------------------
+# 내부 유틸
+# -------------------------------------------------------------------
 
 def _serialize_day_plans_for_js(day_plans):
     """
-    day_plans: [
-      [ { "place": <Place>, "analysis": <PlaceAnalysis>, "score": ... }, ... ],  # Day1
-      [ { ... }, ... ],  # Day2
-      ...
-    ]
+    day_plans 형태:
+      [
+        [ { "place": <Place>, "analysis": <PlaceAnalysis>, "score": ... }, ... ],  # Day1
+        [ { ... }, ... ],  # Day2
+        ...
+      ]
 
-    -> JS에서 바로 쓸 수 있게 안전한 자료형(dict/str/float 등)만 남겨줌
+    JS로 내려보낼 때 안전한 값만 추리는 함수.
     """
     safe_days = []
     for stops in day_plans:
@@ -55,20 +72,13 @@ def _serialize_day_plans_for_js(day_plans):
                 "group_couple": a.group_couple if a else None,
                 "season_autumn": a.season_autumn if a else None,
             })
-        safe_stops.append  # (no-op line kept to mirror original structure / avoid lint error)
         safe_days.append(safe_stops)
     return safe_days
 
 
-# -----------------------
-# 플랜 변형 전략들
-# -----------------------
-
 def _pick_chunk(items, start_idx, size):
     """
-    items: 추천 후보 리스트
-    start_idx부터 size개 만큼 잘라서 반환.
-    범위를 넘어가면 있는 만큼만 반환.
+    추천 장소들 중 start_idx부터 size개 잘라서 반환.
     """
     end_idx = start_idx + size
     return items[start_idx:end_idx]
@@ -76,10 +86,7 @@ def _pick_chunk(items, start_idx, size):
 
 def _boost_and_sort(items, keywords):
     """
-    keywords 중 하나라도 들어있는 장소일수록 점수를 크게 올려서
-    (원래 score + bonus) 기준으로 다시 정렬한 목록을 만든다.
-
-    반환값: score 반영된 entry들만 (entry 그대로) 리스트로 돌려준다.
+    keywords 안의 단어가 많이 매칭될수록 score에 보너스를 줘서 재정렬.
     """
     boosted = []
     for entry in items:
@@ -109,8 +116,7 @@ def _boost_and_sort(items, keywords):
 
 def _strategy_plan_A(items):
     """
-    기본 플랜:
-    전체 랭킹 상위 위주를 그대로 사용.
+    기본 플랜: 상위 랭킹 위주
     """
     CHUNK_START = 0
     CHUNK_SIZE = 10
@@ -119,13 +125,13 @@ def _strategy_plan_A(items):
 
 def _strategy_plan_B(items):
     """
-    힐링/데이트/잔잔한 분위기 위주 플랜.
+    힐링 / 데이트 / 잔잔한 분위기 위주
     """
     healing_keywords = (
         "힐링", "휴식", "온천", "공원", "산책", "뷰", "조용", "분위기",
-        "감성", "데이트", "편안한", "따뜻한", "잔잔"
+        "감성", "야경", "카페", "데이트", "로맨틱", "분위기좋은",
+        "드라이브", "한적", "산책코스"
     )
-
     boosted_sorted = _boost_and_sort(items, healing_keywords)
 
     CHUNK_START = 3
@@ -140,17 +146,16 @@ def _strategy_plan_B(items):
 
 def _strategy_plan_C(items):
     """
-    핫플/이색/액티비티 위주 플랜.
+    핫플 / 이색 / 액티비티 위주
     """
     active_keywords = (
         "핫플", "핫플레이스", "SNS", "인스타", "액티비티", "체험",
         "독특", "이색", "야경", "맛집투어", "트렌디", "핫스팟"
     )
-
     boosted_sorted = _boost_and_sort(items, active_keywords)
 
     CHUNK_START = 6
-    CHUNK_SIZE  = 10
+    CHUNK_SIZE = 10
     chunk = _pick_chunk(boosted_sorted, CHUNK_START, CHUNK_SIZE)
 
     if not chunk:
@@ -161,21 +166,17 @@ def _strategy_plan_C(items):
 
 def _extract_day_waypoints(day_plans):
     """
-    Leaflet + Mapbox Directions API에서 사용할 waypoints만 추출.
-    day_plans: [ [ {place,...}, {place,...} ],  # Day1
-                 [ {place,...}, ... ], ... ]
+    day_plans -> [ [ {place,...}, {place,...} ], [ ... ], ... ]
 
-    return:
-      [
-        [ {"lat":..., "lng":...}, {"lat":..., "lng":...}, ... ],  # Day1 waypoints
-        [ {...}, {...}, ... ],                                   # Day2 waypoints
-        ...
-      ]
+    Leaflet + Mapbox Directions API 에서 사용할 경유지 좌표만 뽑아서
+    day_waypoints 형태로 만든다.
 
-    기존 build_map_paths()는 단순 직선 polyline 좌표용.
-    Mapbox Directions는 실제 경로를 만들어주므로,
-    이제 프론트에서 그릴 때는 단순 polyline 대신
-    "이 순서대로 이동해줘" 라는 waypoints만 주면 된다.
+    결과 예:
+    [
+      [ {"lat": "...", "lng": "..."} , ... ],  # Day1
+      [ {"lat": "...", "lng": "..."} , ... ],  # Day2
+      ...
+    ]
     """
     all_days = []
     for stops in day_plans:
@@ -192,14 +193,14 @@ def _extract_day_waypoints(day_plans):
 
 def _build_plan_variant(user_query, ranked_places, variant_name, filter_strategy):
     """
-    플랜 1개(A/B/C) 생성
+    주어진 전략(filter_strategy)으로 하나의 플랜 변형을 만든다.
     """
     custom_ranked = filter_strategy(ranked_places)
 
     total_days = user_query["total_days"]
     day_plans = split_into_days(custom_ranked, total_days)
 
-    # ★ map_paths 대신 day_waypoints 추출
+    # Mapbox Directions용 waypoints만 추출
     day_waypoints = _extract_day_waypoints(day_plans)
 
     guide_text = generate_itinerary_guide(user_query, day_plans)
@@ -207,68 +208,80 @@ def _build_plan_variant(user_query, ranked_places, variant_name, filter_strategy
     return {
         "name": variant_name,
         "day_plans": day_plans,
-        "day_waypoints": day_waypoints,  # ★ 프론트에서 Directions API 호출용
+        "day_waypoints": day_waypoints,
         "guide_text": guide_text,
     }
 
-def travel_test(request):
-    print(request)
 
+# -------------------------------------------------------------------
+# 실제 화면 뷰
+# -------------------------------------------------------------------
 
-# Create your views here.
 def travel_list(request):
     """
-    사용자 선택(취향/계절/동행 등)을 받아서
-    - 추천 플랜 A/B/C 3가지 버전 생성
-    - 첫 화면은 A로 렌더
-    - JS에 모든 플랜(plans_json)도 내려줘서 프론트에서 버튼 클릭으로 전환
+    1) 유저 요청 파싱
+    2) 후보 장소 점수화
+    3) 추천 플랜 A/B/C 생성
+    4) TravelPlan 모델에도 저장 (id 부여)
+    5) 템플릿 + JS용 context 내려주기
     """
 
-    # 1. 사용자 요청 파싱
+    # 1. 유저 요청 해석 (ex. 도시, 취향, 동행, 일정일수 등)
     user_query = parse_user_request(request)
 
-    # 2. 전체 후보 장소 점수화
+    # 2. 전체 후보 장소 스코어링
     ranked_all = get_ranked_places(user_query)
 
-    # 3. 세 개의 플랜(A/B/C)
+    # 3. A/B/C 플랜 구성
     plan_A = _build_plan_variant(user_query, ranked_all, "추천 플랜 A", _strategy_plan_A)
     plan_B = _build_plan_variant(user_query, ranked_all, "추천 플랜 B", _strategy_plan_B)
     plan_C = _build_plan_variant(user_query, ranked_all, "추천 플랜 C", _strategy_plan_C)
+    plan_dicts = [plan_A, plan_B, plan_C]
 
-    plans = [plan_A, plan_B, plan_C]
+    # 4. TravelPlan 모델로 저장(or 재사용)
+    saved_models = []
+    for p in plan_dicts:
+        tp_obj, _created = TravelPlan.objects.get_or_create(
+            title=p["name"],
+            defaults={
+                "data": {
+                    "guide_text": p["guide_text"],
+                    "day_waypoints": p["day_waypoints"],
+                    "day_plans": _serialize_day_plans_for_js(p["day_plans"]),
+                }
+            }
+        )
+        # 이미 있는 title이라면 최신 data로 덮고 싶으면 여길 수정:
+        # tp_obj.data = {...}; tp_obj.save()
 
-    # 4. 프론트에서 쓰는 경량 버전(JSON 직렬화)
+        saved_models.append(tp_obj)
+
+    # 5. 프론트 JS가 쓸 가벼운 PLANS 배열 구성
     plans_light = []
-    for p in plans:
+    for tp_obj, p_dict in zip(saved_models, plan_dicts):
         plans_light.append({
-            "name": p["name"],
-            "guide_text": p["guide_text"],
-            "day_waypoints": p["day_waypoints"],                 # ★ Directions용
-            "day_plans": _serialize_day_plans_for_js(p["day_plans"]),
+            "id": tp_obj.id,
+            "name": p_dict["name"],
+            "guide_text": p_dict["guide_text"],
+            "day_waypoints": p_dict["day_waypoints"],
+            "day_plans": _serialize_day_plans_for_js(p_dict["day_plans"]),
         })
 
     plans_json = json.dumps(plans_light, ensure_ascii=False)
 
-    # 5. 초기 렌더는 A 플랜
+    # 첫 노출은 플랜 A 기준
     initial_plan_idx = 0
-    guide_text_initial = plan_A["guide_text"]
-    day_plans_initial = plan_A["day_plans"]
-    day_waypoints_initial = plan_A["day_waypoints"]  # ★
-
-    day_waypoints_json = json.dumps(day_waypoints_initial, ensure_ascii=False)
 
     context = {
+        # JS 전역으로 내려줄 것들
         "plans_json": plans_json,
-        "day_waypoints_json": day_waypoints_json,    # ★ JS에서 첫 로드에 사용
         "initial_plan_idx": initial_plan_idx,
-
-        "plans": plans,
-        "day_plans": day_plans_initial,
-        "guide_text": guide_text_initial,
-        "user_query_summary": user_query.get("raw_text") or "맞춤 여행 플랜",
-
-        # ★ Mapbox public token을 템플릿/JS에 주입
         "MAPBOX_ACCESS_TOKEN": settings.MAPBOX_ACCESS_TOKEN,
+
+        # 템플릿 서버 렌더에 바로 쓸 것들
+        "plans": plans_light,
+        "day_plans": plan_A["day_plans"],
+        "guide_text": plan_A["guide_text"],
     }
 
     return render(request, "travel/travel_list.html", context)
@@ -773,3 +786,85 @@ def get_ai_recommendations(request):
         logger.error(f"An error occurred in get_ai_recommendations: {e}")
         return JsonResponse({"error": f"AI 추천을 생성하는 중 오류가 발생했습니다: {e}"}, status=500)
 
+# -------------------------------------------------------------------
+# 로그인 / 회원가입 / 로그아웃 / 플랜 선택 저장
+# -------------------------------------------------------------------
+
+def login_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            messages.error(request, "아이디 또는 비밀번호가 올바르지 않습니다.")
+            return render(request, "travel/login.html")
+
+        login(request, user)
+        return redirect("/")
+
+    return render(request, "travel/login.html")
+
+
+def signup_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        email    = request.POST.get("email")
+        password = request.POST.get("password")
+
+        # 아이디 중복 체크
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "이미 존재하는 아이디입니다.")
+            return render(request, "travel/login.html")
+
+        # User 생성
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+        )
+
+        # UserProfile 생성
+        UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                "nickname": username,
+                "preferred_style": "",
+                "bio": "",
+            }
+        )
+
+        messages.success(request, "회원가입이 완료되었습니다! 로그인해주세요 🙌")
+        return redirect("/travel/login/")
+
+    # GET이면 그냥 로그인 페이지로
+    return render(request, "travel/login.html")
+
+
+def logout_view(request):
+    logout(request)
+    return redirect("/")
+
+
+@require_POST
+def select_plan(request):
+    # 로그인 안 한 경우
+    if not request.user.is_authenticated:
+        return JsonResponse({"status": "login_required"})
+
+    plan_id = request.POST.get("plan_id")
+    if not plan_id:
+        return JsonResponse({"status": "error", "msg": "no plan_id"})
+
+    try:
+        plan = TravelPlan.objects.get(id=plan_id)
+    except TravelPlan.DoesNotExist:
+        return JsonResponse({"status": "error", "msg": "plan_not_found"})
+
+    # 유저-플랜 매핑 (중복 저장 방지)
+    UserSelectedPlan.objects.get_or_create(
+        user=request.user,
+        plan=plan,
+    )
+
+    return JsonResponse({"status": "success"})

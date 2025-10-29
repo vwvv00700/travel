@@ -161,7 +161,16 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DATA_DIR = BASE_DIR / "data"
+
 # === Mapbox Directions API Token ===
 # .env 파일에 예:
 # MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoibXl1c2VyIi... (public access token)
 MAPBOX_ACCESS_TOKEN = os.getenv("MAPBOX_ACCESS_TOKEN", "")
+
+
+# === 로그인 / 로그아웃 경로 설정 ===
+LOGIN_REDIRECT_URL = "/travel/"     # 로그인 성공 시 이동할 기본 페이지
+LOGOUT_REDIRECT_URL = "/login/"     # 로그아웃 후 이동할 페이지
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 1800  # 1800초 = 30분
+SESSION_SAVE_EVERY_REQUEST = True

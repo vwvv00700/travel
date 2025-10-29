@@ -118,6 +118,8 @@ def get_location_name(latitude, longitude):
         return f"위도: {latitude:.4f}, 경도: {longitude:.4f}"
 
 
+
+# ----- 장소 테이블 ------------------------------------------
 class Place(models.Model):
     # 장소 기본 정보
     name = models.CharField(max_length=200)  # 장소명
@@ -358,3 +360,49 @@ class DiaryEntry(models.Model):
                 # or set a default value for fields that failed to process.
 
         super().save(*args, **kwargs)
+        
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="profile"
+    )
+    nickname = models.CharField(max_length=30, blank=True)
+    bio = models.TextField(blank=True)
+    # 예: 선호 여행 타입, 관심 도시 등 자유롭게 확장 가능
+    preferred_style = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="ex) 힐링 위주, 맛집 위주, 액티비티 위주 등"
+    )
+
+    def __str__(self):
+        return self.nickname or self.user.username
+    
+class TravelPlan(models.Model):
+    title = models.CharField(max_length=200)
+    data = models.JSONField()  # 전체 플랜 구조 (day_plans, day_waypoints, guide_text 등 저장 가능)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class UserSelectedPlan(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="selected_plans"
+    )
+    plan = models.ForeignKey(
+        TravelPlan,
+        on_delete=models.CASCADE,
+        related_name="chosen_by"
+    )
+    selected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "plan")  # 같은 플랜 중복 저장 방지
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.plan.title}"

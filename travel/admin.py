@@ -14,10 +14,120 @@ from django.http import HttpRequest, HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import reverse, path
 from django.shortcuts import redirect, render
-from .models import Place, Review, UploadEntry, AnalysisTool, PlaceAnalysis
+from django.utils.safestring import mark_safe  # ### 추가: plan_preview HTML 렌더용
+
+from .models import (
+    Place,
+    Review,
+    UploadEntry,
+    AnalysisTool,
+    PlaceAnalysis,
+    UserProfile,
+    TravelPlan,
+    UserSelectedPlan,
+)
 
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "nickname", "preferred_style")
+    search_fields = ("user__username", "nickname")
+
+
+# ─────────────────────────────────────────────
+# TravelPlan Admin
+#   - data(JSONField)를 사람이 보기 편하게 pretty print 해주는 read-only 필드 추가
+# ─────────────────────────────────────────────
+@admin.register(TravelPlan)
+class TravelPlanAdmin(admin.ModelAdmin):
+    list_display = ("id", "title", "created_at")
+    search_fields = ("title",)
+    readonly_fields = ("created_at", "data_pretty")  # ### 수정: data_pretty 추가
+
+    # admin detail 화면에서 예쁘게 보여주기용
+    def data_pretty(self, obj):
+        if not obj or not obj.data:
+            return "(no data)"
+        pretty = json.dumps(obj.data, ensure_ascii=False, indent=2)
+        # pre 태그로 가독성
+        return mark_safe(
+            "<pre style='white-space:pre-wrap; font-size:12px; "
+            "line-height:1.4; background:#111; color:#ddd; padding:12px; "
+            "border:1px solid #444; border-radius:4px; max-width:800px;'>"
+            f"{pretty}</pre>"
+        )
+
+    data_pretty.short_description = "data (pretty JSON)"
+
+
+# ─────────────────────────────────────────────
+# UserSelectedPlan Admin
+#   - plan_preview: 이 유저가 고른 플랜 안의 Day1/Day2별 장소 리스트,
+#                   장소명 / 카테고리 / 키워드 / 점수 / 주소까지 한번에 표시
+#   - 관리자 화면에서 바로 두번째 스샷 같은 정보 확인 가능
+# ─────────────────────────────────────────────
+@admin.register(UserSelectedPlan)
+class UserSelectedPlanAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "plan", "selected_at")
+    search_fields = ("user__username", "plan__title")
+    readonly_fields = ("selected_at", "plan_preview")  # ### 수정: plan_preview 추가
+
+    def plan_preview(self, obj):
+        """
+        이 유저가 선택한 플랜의 실제 일정 요약.
+        TravelPlan.data 안에 있는 day_plans 를 읽어서
+        Day별로 장소명, 카테고리, 키워드(themes_csv 등), 점수, 주소를 출력.
+        """
+        if not obj or not obj.plan or not obj.plan.data:
+            return "(no plan data)"
+
+        data = obj.plan.data  # dict (JSONField)
+        day_plans = data.get("day_plans", [])
+
+        html_parts = []
+
+        # day_plans 는 [ [spot1, spot2, ...], [spot1, ...], ... ] 구조라고 가정
+        for day_idx, stops in enumerate(day_plans, start=1):
+            html_parts.append(
+                f"<h3 style='margin-top:16px; color:#fff;'>Day {day_idx}</h3>"
+            )
+
+            if not isinstance(stops, list):
+                continue
+
+            for order_idx, stop in enumerate(stops, start=1):
+                name = stop.get("name", "")
+                category = stop.get("category", "")
+                address = stop.get("address", "")
+
+                # 우리가 serialize_day_plans_for_js 에서 넣어줬던 필드들
+                themes_csv = stop.get("themes_csv", "")  # 예: 힐링/휴식, 인스타감성, ...
+                group_couple = stop.get("group_couple", "")  # 커플선호 80 같은 수치
+                season_autumn = stop.get("season_autumn", "")  # 가을매력 90 같은 수치
+
+                # 카드 스타일 비슷하게
+                html_parts.append(
+                    "<div style='margin:8px 0; padding:10px 12px; "
+                    "border:1px solid #444; border-radius:6px; background:#1a1a1a;'>"
+                    f"<div style='font-size:14px; font-weight:bold; color:#fff;'>{order_idx}. {name} "
+                    f"<span style='font-weight:normal; color:#999;'>({category})</span></div>"
+                    f"<div style='font-size:12px; color:#ccc; margin-top:4px;'>{themes_csv}</div>"
+                    "<div style='font-size:12px; color:#888; margin-top:2px;'>"
+                    f"{('커플선호 ' + str(group_couple)) if group_couple else ''}"
+                    f"{(' / ' if group_couple and season_autumn else '')}"
+                    f"{('가을매력 ' + str(season_autumn)) if season_autumn else ''}"
+                    "</div>"
+                    f"<div style='font-size:12px; color:#aaa; margin-top:6px;'>{address}</div>"
+                    "</div>"
+                )
+
+        return mark_safe("".join(html_parts))
+
+    plan_preview.short_description = "플랜 상세(장소/키워드)"
+
 
 # ── 주소 파서(대한민국 간단 규칙) ─────────────────────────────────────────────
 CITY_SUFFIXES = ("특별시", "광역시", "자치시", "특별자치시", "도", "특별자치도")
@@ -72,6 +182,7 @@ class PlaceAdmin(admin.ModelAdmin):
     )
     search_fields = ("name", "place_id", "address", "city", "city_gu")
     list_filter = ("category", "city", "city_gu")
+
 
 # ── 일반 Review 어드민 ────────────────────────────────────────────────
 @admin.register(Review)

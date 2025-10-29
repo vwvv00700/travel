@@ -22,7 +22,7 @@
                             <p>AI가 나에게 꼭 맞는 여행 계획을 추천해줘요</p>
                         </div>
 
-                        <form class="search-form tx-center" action="{% url 'travel:travel_test' %}" method="post">
+                        <form class="search-form tx-center" action="" method="post">
                             {% csrf_token %}
                             <div class="form-wrapper">
                                 <input type="text" name="text" class="text-input" placeholder="예: 강남, 마포 2박3일 힐링" required="">

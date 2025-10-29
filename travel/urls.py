@@ -5,7 +5,6 @@ from travel import views
 app_name = "travel"
 urlpatterns = [
     path("list/", views.travel_list, name="travel_list"),
-    path("test/", views.travel_test, name="travel_test"),
     path('llm-analysis/', views.analyze_selected_places_view, name='llm_analysis'),
     
     path("upload/", views.upload_diary_entry, name="upload_diary_entry"),
@@ -19,4 +18,10 @@ urlpatterns = [
     path("diary_entry/<int:pk>/delete/", views.delete_diary_entry, name="delete_diary_entry"),
     path("agent_viewer/", views.travel_agent_viewer, name="travel_agent_viewer"),
     path("agent_viewer/recommendations/", views.get_ai_recommendations, name="get_ai_recommendations"),
+
+    # ✅ 신규: 인증 관련
+    path("login/", views.login_view, name="login"),
+    path("signup/", views.signup_view, name="signup"),
+    path("logout/", views.logout_view, name="logout"),
+    path("select_plan/", views.select_plan, name="select_plan"),
 ]
