@@ -3,39 +3,290 @@
 
 {% block title %}AI 여행 에이전트{% endblock %}
 
-{% block diary_style %}
+{% block head_extra %}
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/main.css' %}">
 <style>
-    .cont-wrap { max-width: 960px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    h2 { color: #333; text-align: center; margin-bottom: 30px; }
-    .info-block { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px; background-color: #f9f9f9; }
-    .info-block h3 { color: #555; margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 10px; }
-    .info-block p { margin: 5px 0; color: #666; }
-    .info-block ul { list-style: none; padding: 0; margin: 0; }
-    .info-block ul li { background-color: #eef; margin-bottom: 5px; padding: 8px 12px; border-radius: 3px; color: #444; }
-    .button-container .btn { margin: 0 10px; }
-    .btn-primary { background-color: #007bff; color: white; border-color: #007bff; }
-    .btn-primary:hover { background-color: #0056b3; border-color: #0056b3; }
-    .place-card { display: flex; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .place-image { width: 200px; height: auto; object-fit: cover; }
-    .place-info { padding: 15px; flex-grow: 1; }
-    .place-info h4 { margin-top: 0; margin-bottom: 10px; color: #333; }
-    .place-info p { margin: 4px 0; font-size: 0.9em; color: #555; }
-    .spinner { border: 4px solid #f3f3f3;  border-top: 4px solid #3498db;  border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 20px auto; }
+    .cont-wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    h2 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .info-block {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    .info-block h3 {
+        color: #555;
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+    }
+    .info-block p {
+        margin: 5px 0;
+        color: #666;
+    }
+    .info-block ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .info-block ul li {
+        background-color: #eef;
+        margin-bottom: 5px;
+        padding: 8px 12px;
+        border-radius: 3px;
+        color: #444;
+    }
+
+    .button-container .btn {
+        margin: 0 10px;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+    .place-card {
+        display: flex; /* Use flexbox for alignment */
+        align-items: center; /* Vertically center items */
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        cursor: pointer; /* Make the whole card clickable */
+    }
+
+    .place-card:hover {
+        border-color: #4A90E2;
+    }
+
+    .place-checkbox {
+        padding: 0 15px;
+    }
+
+    .place-checkbox input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .place-info {
+        padding: 15px;
+        flex-grow: 1;
+        cursor: pointer;
+    }
+
+    label.place-info {
+        margin-bottom: 0; /* Override default label margin */
+    }
+
+    .place-info h4 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .place-info p {
+        margin: 4px 0;
+        font-size: 0.9em;
+        color: #555;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+
+    .btn-large {
+        padding: 15px 30px;
+        font-size: 1.25em;
+        font-weight: 600;
+    }
+
+    /* Main content wrapper styles */
+    .cont-wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    /* Ensure content has proper spacing from header and footer */
+    body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #main-content {
+        flex: 1;
+        padding: 20px 0;
+        margin-bottom: 80px; /* Space for footer */
+    }
+
+    /* Create Itinerary button container styles */
+    #create-itinerary-container {
+        width: 100%;
+        max-width: 960px;
+        margin: 40px auto;
+        text-align: center;
+        display: none; /* default; JS will toggle to 'block' when needed */
+        padding: 20px;
+    }
+
+    #create-itinerary-container .btn {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+        #create-itinerary-container {
+            padding: 15px;
+        }
+        #create-itinerary-container .btn {
+            width: 100%;
+        }
+    }
+
+    /* Tab Styles */
+    .nav-tabs {
+        display: flex;
+        list-style: none;
+        padding-left: 0;
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 15px;
+    }
+
+    .nav-item {
+        margin-bottom: -2px; /* Overlap border */
+    }
+
+    .nav-link {
+        display: block;
+        padding: 10px 15px;
+        border: 2px solid transparent;
+        border-top-left-radius: .25rem;
+        border-top-right-radius: .25rem;
+        color: #007bff;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .nav-link:hover {
+        border-color: #e9ecef #e9ecef #dee2e6;
+        background-color: #e9ecef;
+    }
+
+    .nav-link.active {
+        color: #495057;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+        font-weight: 600;
+    }
+
+    .tab-content .tab-pane {
+        display: none;
+    }
+
+    .tab-content .tab-pane.active {
+        display: block;
+    }
+
+    .district-header {
+        border-left: none;
+        background-color: transparent;
+        padding: 0;
+        margin-bottom: 15px;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3; 
+        border-top: 4px solid #3498db; 
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 2s linear infinite;
+        margin: 20px auto;
+    }
+
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
 
     /* New Styles for Structured Plan */
-    .accommodation-section { background-color: #e6f7ff; /* Light blue background */ border: 1px solid #91d5ff; }
-    .day-plan { margin-top: 25px; }
-    .day-header { background-color: #f0f2f5; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; border-left: 5px solid #1890ff; }
-    .place-card h5 { font-size: 1.1em; color: #333; margin-bottom: 10px; }
-    .meals-section .place-card { border-left: 3px solid #faad14; /* Orange for meals */ margin-left: 20px; }
-    .attraction-card { border-left: 3px solid #52c41a; /* Green for attraction */ }
-    .place-type { font-size: 0.8em; font-weight: normal; color: #888; background-color: #f0f0f0; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+    .accommodation-section {
+        background-color: #e6f7ff; /* Light blue background */
+        border: 1px solid #91d5ff;
+    }
+
+    .day-plan {
+        margin-top: 25px;
+    }
+
+    .day-header {
+        background-color: #f0f2f5;
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        border-left: 5px solid #1890ff;
+    }
+
+    .place-card h5 {
+        font-size: 1.1em;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .meals-section .place-card {
+        border-left: 3px solid #faad14; /* Orange for meals */
+        margin-left: 20px;
+    }
+
+    .attraction-card {
+        border-left: 3px solid #52c41a; /* Green for attraction */
+    }
+
+    .place-type {
+        font-size: 0.8em;
+        font-weight: normal;
+        color: #888;
+        background-color: #f0f0f0;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 8px;
+    }
+
 </style>
 {% endblock %}
 
@@ -92,6 +343,11 @@
     </div>
 </section>
 
+<!-- 'Create Itinerary' button, initially hidden -->
+<div id="create-itinerary-container">
+    <button id="create-itinerary-btn" class="btn btn-success btn-large">선택한 장소로 최종 일정 생성하기</button>
+</div>
+
 <script>
 function getCookie(name) {
     let cookieValue = null;
@@ -108,62 +364,34 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Helper function to render a single place card
-function renderPlace(place, type) {
+// Helper function to render a single place card with a checkbox
+function renderPlace(place) {
     if (!place || !place.name) return '';
+    const placeId = `${place.type}-${place.name.replace(/\s+/g, '-')}`.toLowerCase();
     return `
-        <div class="place-card ${type}-card">
-            <div class="place-info">
-                <h4>${place.name} <span class="place-type">(${type})</span></h4>
+        <div class="place-card ${place.type}-card">
+            <div class="place-checkbox">
+                <input type="checkbox" id="${placeId}" name="selected_places" data-place="${encodeURIComponent(JSON.stringify(place))}">
+            </div>
+            <label for="${placeId}" class="place-info">
+                <h4>${place.name}</h4>
                 ${place.address ? `<p><strong>주소:</strong> ${place.address}</p>` : ''}
                 ${place.recommendation_reason ? `<p><strong>추천 이유:</strong> ${place.recommendation_reason}</p>` : ''}
                 ${place.rating ? `<p><strong>평점:</strong> ${place.rating}</p>` : ''}
-            </div>
+            </label>
         </div>`;
 }
 
-// Function to render the suggested accommodation
-function renderAccommodation(accommodation) {
-    if (!accommodation) return '';
-    let html = '<div class="info-block accommodation-section"><h3>⭐ 추천 숙소</h3>';
-    html += renderPlace(accommodation, '숙소');
-    html += '</div>';
-    return html;
-}
-
-// Function to render the day-by-day trip plan
-function renderTripPlan(tripPlan) {
-    if (!tripPlan || tripPlan.length === 0) return '';
-    let html = '';
-    tripPlan.forEach(dayPlan => {
-        html += '<div class="info-block day-plan">';
-        html += `<h3 class="day-header">Day ${dayPlan.day} | ${dayPlan.district}</h3>`;
-        
-        if (dayPlan.attraction) {
-            html += '<h5>대표 관광지</h5>';
-            html += renderPlace(dayPlan.attraction, '관광지');
-        }
-
-        if (dayPlan.meals) {
-            html += '<h5>추천 식사</h5>';
-            html += '<div class="meals-section">';
-            if(dayPlan.meals.lunch) html += renderPlace(dayPlan.meals.lunch, '점심');
-            if(dayPlan.meals.dinner) html += renderPlace(dayPlan.meals.dinner, '저녁');
-            html += '</div>';
-        }
-
-        html += '</div>'; // Close day-plan
-    });
-    return html;
-}
-
 document.getElementById('get-recommendations-btn').addEventListener('click', function() {
+    console.log('Get Recommendations button clicked.');
     const container = document.getElementById('recommendations-container');
+    const createBtnContainer = document.getElementById('create-itinerary-container');
     const spinner = document.getElementById('loading-spinner');
     const button = this;
 
     spinner.style.display = 'block';
     container.innerHTML = '';
+    createBtnContainer.style.display = 'none';
     container.appendChild(spinner);
     button.disabled = true;
 
@@ -175,12 +403,7 @@ document.getElementById('get-recommendations-btn').addEventListener('click', fun
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => { throw new Error(err.error || '서버에서 오류가 발생했습니다.'); });
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         spinner.style.display = 'none';
         button.disabled = false;
@@ -190,10 +413,56 @@ document.getElementById('get-recommendations-btn').addEventListener('click', fun
             return;
         }
 
-        if (data.trip_plan && data.trip_plan.length > 0) {
-            let accommodationHtml = renderAccommodation(data.suggested_accommodation);
-            let tripPlanHtml = renderTripPlan(data.trip_plan);
-            container.innerHTML = accommodationHtml + tripPlanHtml;
+        if (data.district_recommendations && data.district_recommendations.length > 0) {
+            let html = '';
+            data.district_recommendations.forEach((districtRec, index) => {
+                const districtId = districtRec.district_name.replace(/\s+/g, '-').toLowerCase();
+                
+                // Sort places by type
+                const attractions = districtRec.places.filter(p => p.type === 'attraction');
+                const restaurants = districtRec.places.filter(p => p.type === 'restaurant');
+                const accommodations = districtRec.places.filter(p => p.type === 'accommodation');
+
+                html += `<div class="info-block district-plan">
+                            <h3 class="district-header">${districtRec.district_name} 추천</h3>
+                            <ul class="nav-tabs">
+                                <li class="nav-item"><a class="nav-link active" data-tab="${districtId}-attractions">관광지 (${attractions.length})</a></li>
+                                <li class="nav-item"><a class="nav-link" data-tab="${districtId}-restaurants">식당 (${restaurants.length})</a></li>
+                                <li class="nav-item"><a class="nav-link" data-tab="${districtId}-accommodations">숙소 (${accommodations.length})</a></li>
+                            </ul>
+                            <div class="tab-content">
+                                <div class="tab-pane active" id="${districtId}-attractions">
+                                    ${attractions.map(renderPlace).join('') || '<p>추천 관광지가 없습니다.</p>'}
+                                </div>
+                                <div class="tab-pane" id="${districtId}-restaurants">
+                                    ${restaurants.map(renderPlace).join('') || '<p>추천 식당이 없습니다.</p>'}
+                                </div>
+                                <div class="tab-pane" id="${districtId}-accommodations">
+                                    ${accommodations.map(renderPlace).join('') || '<p>추천 숙소가 없습니다.</p>'}
+                                </div>
+                            </div>
+                         </div>`;
+            });
+            container.innerHTML = html;
+            createBtnContainer.style.display = 'block';
+
+            // Add event listeners for the new tabs
+            document.querySelectorAll('.nav-link').forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                    const targetId = this.getAttribute('data-tab');
+                    const targetPane = document.getElementById(targetId);
+
+                    // Deactivate other tabs in the same group
+                    this.closest('.nav-tabs').querySelectorAll('.nav-link').forEach(t => t.classList.remove('active'));
+                    targetPane.closest('.tab-content').querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+                    // Activate clicked tab and its content
+                    this.classList.add('active');
+                    targetPane.classList.add('active');
+                });
+            });
+
         } else {
             container.innerHTML = '<p style="text-align: center;">AI가 추천할 장소를 찾지 못했습니다. 다른 테마나 지역을 선택해 보세요.</p>';
         }
@@ -204,6 +473,43 @@ document.getElementById('get-recommendations-btn').addEventListener('click', fun
         container.innerHTML = `<p style="color: red; text-align: center;">오류: ${error.message}</p>`;
         console.error('Error fetching recommendations:', error);
     });
+});
+
+// Activate the event listener for the create itinerary button
+document.getElementById('create-itinerary-btn').addEventListener('click', function() {
+    console.log('Create Itinerary button clicked.');
+    const selectedPlaces = Array.from(document.querySelectorAll('input[name="selected_places"]:checked')).map(cb => JSON.parse(decodeURIComponent(cb.dataset.place)));
+    
+    if (selectedPlaces.length === 0) {
+        alert('최종 일정을 생성하려면 최소 하나 이상의 장소를 선택해야 합니다.');
+        console.log('No places selected.');
+        return;
+    }
+
+    console.log('Selected Places:', selectedPlaces);
+
+    // Dynamically create and submit a form to navigate to the final plan page
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = "{% url 'travel:create_final_plan' %}";
+
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = getCookie('csrftoken');
+    form.appendChild(csrfInput);
+
+    // Add selected places data
+    const placesInput = document.createElement('input');
+    placesInput.type = 'hidden';
+    placesInput.name = 'selected_places_json'; // Use a different name to avoid confusion
+    placesInput.value = JSON.stringify(selectedPlaces);
+    form.appendChild(placesInput);
+
+    document.body.appendChild(form);
+    console.log('Submitting form...');
+    form.submit();
 });
 </script>
 {% endblock %}

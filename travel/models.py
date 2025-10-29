@@ -363,9 +363,7 @@ class DiaryEntry(models.Model):
                 if timestamp is not None:
                     self.timestamp = timestamp
             except Exception as e:
-                logger.error(f"DiaryEntry save() - 이미지 처리 중 오류 발생: {e}")
-                # Optionally, you might want to raise a ValidationError here
-                # or set a default value for fields that failed to process.
+                logger.error(f"DiaryEntry save() - 이미지 메타데이터(EXIF) 처리 중 오류 발생: {e}. GPS/시간 정보 없이 저장됩니다.")
 
         super().save(*args, **kwargs)
         

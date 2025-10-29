@@ -14,6 +14,7 @@ class DiaryEntryForm(forms.ModelForm):
             self.fields['diary'].queryset = Travel.objects.filter(author=user)
         if travel_diary:
             self.fields['diary'].initial = travel_diary
+            self.fields['diary'].widget = forms.HiddenInput()
 
 class TravelForm(forms.ModelForm):
     class Meta:

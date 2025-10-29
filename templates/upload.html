@@ -35,14 +35,19 @@
                 <div class="form-group">
                     <label class="block text-sm font-medium text-slate-700">선택된 여행 다이어리:</label>
                     <p class="text-lg font-semibold text-slate-800">{{ travel_diary.name }}</p>
-                    {{ form.travel.as_hidden }}
+                    {# The form's __init__ method turns this into a hidden input with the correct value #}
+                    {{ form.diary }}
                 </div>
             {% else %}
                 <div class="form-group">
-                    <label for="id_travel" class="block text-sm font-medium text-slate-700">여행 다이어리 선택:</label>
-                    {{ form.travel }}
-                    {% if form.travel.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.travel.errors }}</p>
+                    <label for="id_diary" class="block text-sm font-medium text-slate-700">여행 다이어리 선택:</label>
+                    {{ form.diary }}
+                    {% if form.diary.errors %}
+                        <div class="text-red-500 text-xs mt-1">
+                            {% for error in form.diary.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
                     {% endif %}
                 </div>
             {% endif %}

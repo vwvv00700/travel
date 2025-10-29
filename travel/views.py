@@ -494,8 +494,10 @@ def upload_diary_entry(request, travel_id=None):
             entry = form.save(commit=False)
             entry.author = request.user
             if travel_diary:
-                entry.travel = travel_diary
+                entry.diary = travel_diary
             entry.save()
+            if not entry.latitude and not entry.timestamp:
+                messages.warning(request, "사진은 업로드되었지만, 위치나 시간 정보를 읽어올 수 없었습니다.")
             if travel_diary:
                 return redirect('travel:travel_diary_detail', pk=travel_diary.pk)
             else:
@@ -523,7 +525,7 @@ def edit_travel_diary(request, pk):
 @login_required
 def edit_diary_entry(request, pk):
     diary_entry = get_object_or_404(DiaryEntry, pk=pk, author=request.user)
-    travel_diary = diary_entry.travel
+    travel_diary = diary_entry.diary
 
     if request.method == 'POST':
         form = DiaryEntryForm(request.POST, request.FILES, instance=diary_entry, user=request.user, travel_diary=travel_diary)
@@ -531,6 +533,8 @@ def edit_diary_entry(request, pk):
             entry = form.save(commit=False)
             entry.author = request.user
             entry.save()
+            if not entry.latitude and not entry.timestamp:
+                messages.warning(request, "다이어리 항목이 수정되었지만, 사진에서 위치나 시간 정보를 읽어올 수 없었습니다.")
             return redirect('travel:travel_diary_detail', pk=travel_diary.pk)
         else:
             print(f"DiaryEntryForm errors during edit: {form.errors}")  # Changed to print for debugging
@@ -541,7 +545,7 @@ def edit_diary_entry(request, pk):
 @login_required
 def delete_diary_entry(request, pk):
     diary_entry = get_object_or_404(DiaryEntry, pk=pk, author=request.user)
-    travel_diary = diary_entry.travel
+    travel_diary = diary_entry.diary
 
     if request.method == 'POST':
         diary_entry.delete()
