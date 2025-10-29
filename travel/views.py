@@ -247,79 +247,6 @@ def travel_list(request):
     print(f"request =======> {request.POST}")
     return render(request, "travel/travel_list.html")
 
-# ------------------------
-# 회원가입 뷰
-# ------------------------
-def signup_view(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('travel:login')
-    else:
-        form = UserCreationForm()
-    return render(request, 'chat/signup.html', {'form': form})
-    """
-    사용자 선택(취향/계절/동행 등)을 받아서
-    - 추천 플랜 A/B/C 3가지 버전 생성
-    - 첫 화면은 A로 렌더
-    - JS에 모든 플랜(plans_json)도 내려줘서 프론트에서 버튼 클릭으로 전환
-    """
-
-    # 1. 사용자 요청 파싱
-    user_query = parse_user_request(request)
-
-    print("==========================================================")  # 디버그용
-    print(f"{user_query}")  # 디버그용
-    print("==========================================================")  # 디버그용
-
-    # 2. 전체 후보 장소 점수화
-    ranked_all = get_ranked_places(user_query)
-
-    # 3. 세 개의 플랜(A/B/C)
-    plan_A = _build_plan_variant(user_query, ranked_all, "추천 플랜 A", _strategy_plan_A)
-    plan_B = _build_plan_variant(user_query, ranked_all, "추천 플랜 B", _strategy_plan_B)
-    plan_C = _build_plan_variant(user_query, ranked_all, "추천 플랜 C", _strategy_plan_C)
-
-    plans = [plan_A, plan_B, plan_C]
-
-    # 4. 프론트에서 쓰는 경량 버전(JSON 직렬화)
-    plans_light = []
-    for p in plans:
-        plans_light.append({
-            "name": p["name"],
-            "guide_text": p["guide_text"],
-            "day_waypoints": p["day_waypoints"],                 # ★ Directions용
-            "day_plans": _serialize_day_plans_for_js(p["day_plans"]),
-        })
-
-    plans_json = json.dumps(plans_light, ensure_ascii=False)
-
-    # 5. 초기 렌더는 A 플랜
-    initial_plan_idx = 0
-    guide_text_initial = plan_A["guide_text"]
-    day_plans_initial = plan_A["day_plans"]
-    day_waypoints_initial = plan_A["day_waypoints"]  # ★
-
-    day_waypoints_json = json.dumps(day_waypoints_initial, ensure_ascii=False)
-
-    context = {
-        "plans_json": plans_json,
-        "day_waypoints_json": day_waypoints_json,    # ★ JS에서 첫 로드에 사용
-        "initial_plan_idx": initial_plan_idx,
-
-        "plans": plans,
-        "day_plans": day_plans_initial,
-        "guide_text": guide_text_initial,
-        "user_query_summary": user_query.get("raw_text") or "맞춤 여행 플랜",
-
-        # ★ Mapbox public token을 템플릿/JS에 주입
-        "MAPBOX_ACCESS_TOKEN": settings.MAPBOX_ACCESS_TOKEN,
-    }
-
-    return render(request, "travel/travel_list.html", context)
-
-
 
 
 # ------------------------
@@ -332,7 +259,7 @@ def chat_view(request, room_name):
     partner = participants.first() if participants.exists() else None
     partner_profile = getattr(partner, 'userprofile', None) if partner else None
 
-    return render(request, 'chat/match_chat.html', {
+    return render(request, 'travel/match_chat.html', {
         'room_name': room.room_name,
         'partner': partner,
         'partner_profile': partner_profile

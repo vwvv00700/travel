@@ -155,7 +155,7 @@ def chat(request):
     try:
         current_plan = TravelPlan.objects.get(user=current_user)
     except TravelPlan.DoesNotExist:
-        return render(request, 'chat/match_chat.html', {
+        return render(request, 'travel/match_chat.html', {
             'partners': [],
             'current_user': current_user.username,
             'message': '여행 계획이 없습니다. 여행 계획을 먼저 등록해주세요.',
@@ -185,24 +185,11 @@ def chat(request):
             'trip': f"{plan.location_city} ({plan.start_date.strftime('%m/%d')}~{plan.end_date.strftime('%m/%d')})"
         })
 
-    return render(request, 'chat/match_chat.html', {
+    return render(request, 'travel/match_chat.html', {
         'partners': partners_list,
         'current_user': current_user.username,
         'message': None,
     })
-
-
-def signup_view(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, '회원가입이 완료되었습니다. 로그인 해주세요.')
-            return redirect('login')  # urls.py에서 name='login' 확인
-    else:
-        form = UserCreationForm()
-    return render(request, 'chat/signup.html', {'form': form})
-
 
 
 
