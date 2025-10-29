@@ -1,0 +1,222 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>맞춤 여행 플랜 | TravelMate</title>
+
+    <!-- 폰트 / 공통 스타일 -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/travel_list.css' %}">
+
+    <!-- Leaflet CSS -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    />
+</head>
+<body>
+
+    {% include "header.html" %}
+
+    <div class="page-wrap">
+
+        <!-- 상단 안내 -->
+        <section class="summary-header">
+            <h2>맞춤 여행 플랜</h2>
+            <p>아래는 취향/계절/동행 정보를 고려해 만든 맞춤 여행 플랜이에요.</p>
+        </section>
+
+        <!-- 본문 두 칸 레이아웃 -->
+        <section class="planner-body">
+
+            <!-- 왼쪽 패널 -->
+            <aside class="itinerary-panel">
+
+                <!-- 플랜 선택 버튼 영역 -->
+                {% if plans %}
+                <div class="plan-selector" id="planSelector">
+                    {% for p in plans %}
+                        <button
+                            class="plan-label-btn {% if forloop.first %}active{% endif %}"
+                            data-plan-idx="{{ forloop.counter0 }}">
+                            {{ p.name }}
+                        </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- 저장 버튼 -->
+                <div class="plan-action-wrap">
+                    <button
+                        class="save-plan-btn"
+                        id="savePlanBtn"
+                        data-plan-id="{% if plans %}{{ plans.0.id|default:'0' }}{% else %}0{% endif %}">
+                        이 플랜으로 저장하기
+                    </button>
+                </div>
+
+                <!-- 일정 스크롤 영역 -->
+                <div class="itinerary-scroll" id="itineraryContainer">
+                    {# 초기 출력: JS가 로드시 갈아끼우므로 단순 프리렌더 #}
+                    {% if day_plans %}
+                        {% for stops in day_plans %}
+                        <div class="day-block">
+                            <div class="day-title" data-day="{{ forloop.counter }}">
+                                Day {{ forloop.counter }}
+                                <span class="day-total-dist"></span>
+                            </div>
+
+                            {% if stops %}
+                                {% for stop in stops %}
+                                    {% with place=stop.place analysis=stop.analysis %}
+                                    <div class="spot-item"
+                                         data-day="{{ forloop.parentloop.counter }}"
+                                         data-order="{{ forloop.counter0 }}"
+                                         data-lat="{{ place.lat }}"
+                                         data-lng="{{ place.lon }}">
+                                        <div class="spot-order">
+                                            <div class="spot-order-num">{{ forloop.counter }}</div>
+                                            {# 거리 라벨은 JS에서 넣음 #}
+                                        </div>
+                                        <div class="spot-meta">
+                                            <div class="spot-name">
+                                                {{ place.name }}
+                                                <span class="spot-cat">
+                                                    ({{ place.category }})
+                                                </span>
+                                            </div>
+                                            <p class="spot-desc">
+                                                {{ analysis.themes_csv }}
+                                                {% if analysis.group_couple %}
+                                                    · 커플선호 {{ analysis.group_couple }}
+                                                {% endif %}
+                                                {% if analysis.season_autumn %}
+                                                    · 가을매력 {{ analysis.season_autumn }}
+                                                {% endif %}
+                                            </p>
+                                            {% if place.address %}
+                                                <p class="spot-desc spot-addr">
+                                                    {{ place.address }}
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endwith %}
+                                {% endfor %}
+                            {% else %}
+                                <div class="spot-desc">추천 장소가 부족합니다.</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="day-block">
+                            <div class="spot-desc">추천 결과가 없습니다.</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </aside>
+
+            <!-- 오른쪽 패널 -->
+            <section class="map-panel" id="mapPanel">
+                <div class="map-header">
+                    <p class="map-title">동선 미리보기</p>
+
+                    <div class="day-tabs" id="dayTabs">
+                        {% if day_plans %}
+                            {% for stops in day_plans %}
+                                <button
+                                    class="day-tab-btn {% if forloop.first %}active{% endif %}"
+                                    data-day="{{ forloop.counter }}">
+                                    Day {{ forloop.counter }}
+                                </button>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 지도 + 총 거리 정보 -->
+                <div class="map-wrapper">
+                    <div id="mapArea" class="map-area"></div>
+
+                    <!-- 총 이동 거리 / 안내 -->
+                    <div id="distanceInfoBox" class="route-summary-box"></div>
+                </div>
+            </section>
+
+        </section>
+
+        <!-- 가이드 텍스트 -->
+        <section class="guide-wrap">
+            <div class="guide-card">
+                <div class="guide-head">
+                    <h3>여행 가이드</h3>
+                    <button class="copy-btn" id="copyGuideBtn">가이드 복사</button>
+                </div>
+                <div class="guide-body" id="guideText">
+                    {% if guide_text %}
+                        {{ guide_text }}
+                    {% elif plans %}
+                        {{ plans.0.guide_text }}
+                    {% else %}
+                        가이드를 불러오는 중입니다...
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="site-footer">
+        © 2025 TravelMate. All Rights Reserved.
+    </footer>
+
+    <!-- Leaflet JS -->
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin="">
+    </script>
+
+    <!-- 서버 변수 -> JS 로 주입 -->
+    <script>
+        {% if plans_json %}
+            const PLANS = {{ plans_json|safe }};
+            const INITIAL_PLAN_IDX = {{ initial_plan_idx|default:0 }};
+        {% else %}
+            const PLANS = null;
+            const INITIAL_PLAN_IDX = 0;
+        {% endif %}
+
+        const MAPBOX_TOKEN = "{{ MAPBOX_ACCESS_TOKEN }}";
+
+        // distanceInfoBox 초기 텍스트 정리
+        const distanceBoxEl = document.getElementById("distanceInfoBox");
+        if (distanceBoxEl && !distanceBoxEl.textContent.trim()) {
+            distanceBoxEl.textContent = "";
+        }
+    </script>
+
+    <!-- 페이지 전용 JS -->
+    <script src="{% static 'js/travel_list.js' %}"></script>
+
+    <!-- 가이드 복사 -->
+    <script>
+        document.addEventListener("click", (e) => {
+            if (e.target && e.target.id === "copyGuideBtn") {
+                const guideBox = document.getElementById("guideText");
+                if (!guideBox) return;
+                const text = guideBox.textContent || guideBox.innerText || "";
+                navigator.clipboard.writeText(text).then(() => {
+                    alert("가이드 텍스트가 복사되었습니다.");
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>

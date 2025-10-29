@@ -1,0 +1,15 @@
+{% load static %}
+<header>
+    <h1><a href="{% url 'main' %}">TravelMate</a></h1>
+    <nav>
+        <a href="{% url 'admin:index' %}">ADMIN</a>
+        <a href="{% url 'select' %}">AI 추천 코스</a>
+
+        {% if user.is_authenticated %}
+            <a href="{% url 'travel:logout' %}">로그아웃</a>
+        {% else %}
+            <a href="{% url 'travel:login' %}">로그인</a>
+            <a href="{% url 'travel:login' %}#signup">회원가입</a>
+        {% endif %}
+    </nav>
+</header>
