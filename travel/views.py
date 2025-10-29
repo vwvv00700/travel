@@ -227,10 +227,6 @@ def travel_list(request):
     # 1. 사용자 요청 파싱
     user_query = parse_user_request(request)
 
-    print("==========================================================")  # 디버그용
-    print(f"{user_query}")  # 디버그용
-    print("==========================================================")  # 디버그용
-
     # 2. 전체 후보 장소 점수화
     ranked_all = get_ranked_places(user_query)
 

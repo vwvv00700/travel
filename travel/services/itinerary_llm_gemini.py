@@ -1,5 +1,6 @@
 import os
 import google.generativeai as genai
+# from travel.models import Place, PlaceAnalysis
 
 # ✅ 동행 유형/계절/지역 코드 → 한글 라벨 매핑
 GROUP_LABELS = {
@@ -63,7 +64,8 @@ def _label_area_list(areas: list[str]) -> str:
     for x in labeled:
         if x not in deduped:
             deduped.append(x)
-    return ", ".join(deduped)
+    # return ", ".join(deduped)
+    return deduped
 
 
 # ---------- 추천 동선 요약 ----------
