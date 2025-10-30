@@ -504,15 +504,15 @@ class UploadEntryAdmin(admin.ModelAdmin):
 # ── 다이어리 어드민 ────────────────────────────────────────────────
 @admin.register(Travel)
 class TravelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'author', 'start_date', 'end_date')
-    search_fields = ('name', 'description', 'author__username')
-    list_filter = ('author', 'start_date')
+    list_display = ('id', 'name', 'author_id', 'start_date', 'end_date')
+    search_fields = ('name', 'description')
+    list_filter = ('author_id', 'start_date')
 
 @admin.register(DiaryEntry)
 class DiaryEntryAdmin(admin.ModelAdmin):
-    list_display = ('diary_id', 'diary_name', 'author', 'location', 'timestamp')
-    search_fields = ('location', 'comment', 'diary__name', 'author__username')
-    list_filter = ('author', 'timestamp', 'diary')
+    list_display = ('diary_id', 'diary_name', 'author_id', 'location', 'timestamp')
+    search_fields = ('location', 'comment', 'diary__name')
+    list_filter = ('author_id', 'timestamp', 'diary')
     readonly_fields = ('latitude', 'longitude')
 
     def diary_name(self, obj):

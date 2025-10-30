@@ -16,6 +16,9 @@ urlpatterns = [
     path("diary/<int:pk>/edit/", views.edit_travel_diary, name="edit_travel_diary"),
     path("diary_entry/<int:pk>/edit/", views.edit_diary_entry, name="edit_diary_entry"),
     path("diary_entry/<int:pk>/delete/", views.delete_diary_entry, name="delete_diary_entry"),
+    path("diary_entry/<int:pk>/generate_tags/", views.generate_tags_view, name="generate_tags"),
+    path("generate_tags_from_text/", views.generate_tags_from_text_view, name="generate_tags_from_text"),
+    path("diary/<int:pk>/summarize/", views.summarize_diary_view, name="summarize_diary"),
     path("agent_viewer/", views.travel_agent_viewer, name="travel_agent_viewer"),
     path("agent_viewer/recommendations/", views.get_ai_recommendations, name="get_ai_recommendations"),
 

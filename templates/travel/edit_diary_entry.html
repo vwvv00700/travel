@@ -34,21 +34,24 @@
         <div class="form-group">
             <label class="block text-sm font-medium text-slate-700">소속 다이어리:</label>
             <p class="text-lg font-semibold text-slate-800">{{ travel_diary.name }}</p>
-            {{ form.travel.as_hidden }}
+            {{ form.diary.as_hidden }}
         </div>
 
         <div class="form-group">
-            <label for="id_photo" class="block text-sm font-medium text-slate-700">사진:</label>
-            {{ form.photo }}
-            {% if form.photo.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.photo.errors }}</p>
+            <label for="id_media_file" class="block text-sm font-medium text-slate-700">사진 또는 동영상:</label>
+            {{ form.media_file }}
+            {% if form.media_file.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ form.media_file.errors }}</p>
             {% endif %}
-            <div class="mt-4 border border-slate-300 rounded-lg p-2 flex justify-center items-center min-h-[200px] bg-slate-50">
-                {% if diary_entry.photo %}
-                    <img id="image-preview" src="{{ diary_entry.photo.url }}" alt="업로드 미리보기" class="max-w-full max-h-[300px] object-contain">
+            <div id="preview-container" class="mt-4 border border-slate-300 rounded-lg p-2 flex justify-center items-center min-h-[200px] bg-slate-50">
+                {% if diary_entry.media_file %}
+                    {% if diary_entry.media_type == 'image' %}
+                        <img src="{{ diary_entry.media_file.url }}" alt="미리보기" class="max-w-full max-h-[300px] object-contain">
+                    {% elif diary_entry.media_type == 'video' %}
+                        <video controls src="{{ diary_entry.media_file.url }}" class="max-w-full max-h-[300px] object-contain"></video>
+                    {% endif %}
                 {% else %}
-                    <img id="image-preview" src="#" alt="업로드 미리보기" class="max-w-full max-h-[300px] object-contain hidden">
-                    <span id="preview-placeholder" class="text-slate-400">이미지 미리보기</span>
+                     <span id="preview-placeholder" class="text-slate-400">미리보기</span>
                 {% endif %}
             </div>
         </div>
@@ -59,6 +62,23 @@
                 <p class="text-red-500 text-xs mt-1">{{ form.comment.errors }}</p>
             {% endif %}
         </div>
+
+        <div class="form-group">
+            <label for="id_tag_string" class="block text-sm font-medium text-slate-700">태그:</label>
+            <div class="flex items-center space-x-2">
+                {{ form.tag_string }}
+                <button type="button" id="ai-generate-tags-btn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-3 rounded-lg text-sm transition duration-300 ease-in-out flex-shrink-0">
+                    <i class="fa-solid fa-magic-wand-sparkles mr-1"></i> AI 태그 생성
+                </button>
+            </div>
+            {% if form.tag_string.help_text %}
+                <p class="text-xs text-slate-500 mt-1">{{ form.tag_string.help_text }}</p>
+            {% endif %}
+            {% if form.tag_string.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ form.tag_string.errors }}</p>
+            {% endif %}
+        </div>
+
         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out">수정 완료</button>
         <a href="{% url 'travel:travel_diary_detail' pk=travel_diary.pk %}" class="w-full block text-center bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out mt-2">취소</a>
     </form>
@@ -66,26 +86,101 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const photoInput = document.getElementById('id_photo');
-        const imagePreview = document.getElementById('image-preview');
-        const previewPlaceholder = document.getElementById('preview-placeholder');
+        const mediaInput = document.getElementById('id_media_file');
+        const previewContainer = document.getElementById('preview-container');
+        const aiGenerateTagsBtn = document.getElementById('ai-generate-tags-btn');
+        const tagStringInput = document.getElementById('id_tag_string');
+        const commentInput = document.getElementById('id_comment');
+        const diaryEntryPk = "{{ diary_entry.pk }}";
 
-        photoInput.addEventListener('change', function(event) {
+
+        mediaInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
+            
+            // Clear previous preview
+            previewContainer.innerHTML = '';
+
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.classList.remove('hidden');
-                    if (previewPlaceholder) previewPlaceholder.classList.add('hidden');
+                    let previewElement;
+                    if (file.type.startsWith('image/')) {
+                        previewElement = document.createElement('img');
+                        previewElement.src = e.target.result;
+                        previewElement.alt = '이미지 미리보기';
+                        previewElement.className = 'max-w-full max-h-[300px] object-contain';
+                    } else if (file.type.startsWith('video/')) {
+                        previewElement = document.createElement('video');
+                        previewElement.src = e.target.result;
+                        previewElement.controls = true;
+                        previewElement.className = 'max-w-full max-h-[300px] object-contain';
+                    }
+
+                    if (previewElement) {
+                        previewContainer.appendChild(previewElement);
+                    } else {
+                        const placeholder = document.createElement('span');
+                        placeholder.className = 'text-slate-400';
+                        placeholder.textContent = '지원하지 않는 파일 형식입니다.';
+                        previewContainer.appendChild(placeholder);
+                    }
                 };
                 reader.readAsDataURL(file);
             } else {
-                imagePreview.src = "#";
-                imagePreview.classList.add('hidden');
-                if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
+                const placeholder = document.createElement('span');
+                placeholder.className = 'text-slate-400';
+                placeholder.textContent = '미리보기';
+                previewContainer.appendChild(placeholder);
             }
         });
+
+        if (aiGenerateTagsBtn) {
+            aiGenerateTagsBtn.addEventListener('click', function() {
+                const comment = commentInput.value.trim();
+                if (!comment) {
+                    alert('태그를 생성할 코멘트 내용이 없습니다.');
+                    return;
+                }
+
+                aiGenerateTagsBtn.disabled = true;
+                const originalButtonHtml = aiGenerateTagsBtn.innerHTML; // Save original HTML
+                aiGenerateTagsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 생성 중...';
+
+                // Get CSRF token for POST request
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch(`/travel/diary_entry/${diaryEntryPk}/generate_tags/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    // For now, backend only uses comment from DiaryEntry, not custom POST data
+                    // body: JSON.stringify({ comment: comment }) 
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('AI 태그 생성 중 오류 발생. 응답 코드: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.tags) {
+                        tagStringInput.value = data.tags;
+                    } else {
+                        alert('AI가 태그를 생성하지 못했습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error generating AI tags:', error);
+                    alert('AI 태그 생성 중 오류가 발생했습니다: ' + error.message);
+                })
+                .finally(() => {
+                    aiGenerateTagsBtn.disabled = false;
+                    aiGenerateTagsBtn.innerHTML = originalButtonHtml;
+                });
+            });
+        }
     });
 </script>
 {% endblock %}

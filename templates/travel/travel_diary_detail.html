@@ -24,6 +24,13 @@
         <p class="text-slate-600 mb-6">{{ travel_diary.start_date|date:"Y년 m월 d일" }} - {{ travel_diary.end_date|date:"Y년 m월 d일" }}</p>
         <p class="text-slate-700 mb-8">{{ travel_diary.description|default:"설명이 없습니다." }}</p>
 
+        <div class="my-6 text-center">
+            <button id="ai-summary-btn" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 ease-in-out">
+                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> AI 요약 보기
+            </button>
+        </div>
+
+
         <div class="flex justify-between items-center mb-6">
             <div>
                 <a href="{% url 'travel:upload_diary_entry_to_travel' travel_id=travel_diary.pk %}" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center inline-flex">
@@ -39,6 +46,25 @@
             </div>
         </div>
 
+<!-- AI Summary Modal -->
+<div id="ai-summary-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <!-- Modal header -->
+        <div class="flex justify-between items-center pb-3">
+            <h3 class="text-2xl font-bold text-gray-900">AI 여행 요약</h3>
+            <button id="ai-summary-close-btn" class="text-gray-400 hover:text-gray-600 text-2xl font-semibold">&times;</button>
+        </div>
+        <!-- Modal body -->
+        <div class="mt-2 mb-4">
+            <p id="ai-summary-modal-content" class="text-gray-700 whitespace-pre-wrap"></p>
+        </div>
+        <!-- Modal footer -->
+        <div class="flex justify-end pt-2">
+            <button id="ai-summary-ok-btn" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">확인</button>
+        </div>
+    </div>
+</div>
+
         <div id="time-sort-view" class="diary-view">
             {% if entries_by_date %}
                 <div class="relative border-l-4 border-gray-200 ml-4 pl-4">
@@ -51,12 +77,27 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ml-8">
                                 {% for entry in entries_for_date %}
                                     <div class="bg-slate-50 p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col">
-                                        {% if entry.photo %}
-                                            <img src="{{ entry.photo.url }}" alt="{{ entry.location }}" class="w-full h-48 object-cover rounded-md mb-4">
+                                        {% if entry.media_file %}
+                                            {% if entry.media_type == 'image' %}
+                                                <img src="{{ entry.media_file.url }}" alt="{{ entry.location }}" class="w-full h-48 object-cover rounded-md mb-4">
+                                            {% elif entry.media_type == 'video' %}
+                                                <video controls class="w-full h-48 object-cover rounded-md mb-4">
+                                                    <source src="{{ entry.media_file.url }}" type="video/mp4">
+                                                    Your browser does not support the video tag.
+                                                </video>
+                                            {% endif %}
                                         {% endif %}
                                         <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ entry.location|default:"위치 정보 없음" }}</h3>
                                         <p class="text-sm text-slate-500 mb-3">{{ entry.timestamp|date:"H시 i분" }}</p>
                                         <p class="text-slate-700 text-base flex-grow">{{ entry.comment|default:"감상평이 없습니다." }}</p>
+
+                                        <!-- Tags -->
+                                        <div class="mt-4">
+                                            {% for tag in entry.tags.all %}
+                                                <span class="inline-block bg-sky-100 text-sky-800 rounded-full px-3 py-1 text-sm font-semibold mr-2 mb-2">#{{ tag.name }}</span>
+                                            {% endfor %}
+                                        </div>
+
                                         <div class="mt-4 text-right flex justify-end space-x-2">
                                             <a href="{% url 'travel:edit_diary_entry' pk=entry.pk %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">편집</a>
                                             <a href="{% url 'travel:delete_diary_entry' pk=entry.pk %}" class="text-red-600 hover:text-red-800 text-sm font-medium">삭제</a>
@@ -97,6 +138,55 @@
         const mapContainer = document.getElementById('map');
         const locationPhotosContainer = document.getElementById('location-photos');
 
+        const summaryBtn = document.getElementById('ai-summary-btn');
+        const aiSummaryModal = document.getElementById('ai-summary-modal');
+        const aiSummaryModalContent = document.getElementById('ai-summary-modal-content');
+        const aiSummaryCloseBtn = document.getElementById('ai-summary-close-btn');
+        const aiSummaryOkBtn = document.getElementById('ai-summary-ok-btn');
+
+        function closeModal() {
+            aiSummaryModal.classList.add('hidden');
+            aiSummaryModalContent.textContent = ''; // Clear content
+        }
+
+        if (summaryBtn) {
+            summaryBtn.addEventListener('click', function() {
+                aiSummaryModal.classList.remove('hidden'); // Show modal
+                aiSummaryModalContent.textContent = 'AI가 여행 기록을 요약하는 중입니다. 잠시만 기다려주세요...';
+                summaryBtn.disabled = true;
+
+                fetch(`{% url 'travel:summarize_diary' pk=travel_diary.pk %}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            aiSummaryModalContent.textContent = '오류: ' + data.error;
+                        } else {
+                            aiSummaryModalContent.textContent = data.summary;
+                        }
+                        summaryBtn.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching AI summary:', error);
+                        aiSummaryModalContent.textContent = '요약을 가져오는 중 오류가 발생했습니다. 다시 시도해주세요.';
+                        summaryBtn.disabled = false;
+                    });
+            });
+        }
+
+        // Close modal listeners
+        aiSummaryCloseBtn.addEventListener('click', closeModal);
+        aiSummaryOkBtn.addEventListener('click', closeModal);
+        aiSummaryModal.addEventListener('click', function(event) {
+            if (event.target === aiSummaryModal) { // Close if clicked outside modal content
+                closeModal();
+            }
+        });
+
         let map = null;
         let clusterer = null; // Initialize clusterer
         let markers = [];
@@ -129,7 +219,7 @@
                 clusterer = new kakao.maps.MarkerClusterer({
                     map: map,
                     averageCenter: true,
-                    minLevel: 10,
+                    minLevel: 5, // Adjusted minLevel for less aggressive clustering
                     disableClickZoom: true // Disable click zoom to handle click event manually
                 });
             }
@@ -171,11 +261,19 @@
                     if (currentInfowindow) {
                         currentInfowindow.close();
                     }
-                                    const infowindow = new kakao.maps.InfoWindow({
-                                        content: `<div style="padding:5px;font-size:12px;">사진: ${locationData.entries.length}개</div>`
-                                    });                    infowindow.open(map, marker);
+                    // Collect unique tags for this location
+                    const allTags = new Set();
+                    locationData.entries.forEach(entry => {
+                        entry.tags.forEach(tag => allTags.add(tag));
+                    });
+                    const tagsHtml = allTags.size > 0 ? 
+                        `<div style="margin-top:5px;font-size:10px;color:#666;">태그: ${Array.from(allTags).map(tag => `#${tag}`).join(', ')}</div>` : '';
+
+                    const infowindow = new kakao.maps.InfoWindow({
+                        content: `<div style="padding:5px;font-size:12px;">사진: ${locationData.entries.length}개${tagsHtml}</div>`
+                    });                    infowindow.open(map, marker);
                     currentInfowindow = infowindow;
-                    displayLocationPhotos(locationData.lat, locationData.lon);
+                    displayLocationPhotos(locationData.entries, locationData.name);
                 });
 
                 markers.push(marker);
@@ -193,9 +291,16 @@
                         // Manually trigger the marker's click event
                         kakao.maps.event.trigger(marker, 'click');
                     } else {
-                        // Zoom to the cluster's bounds to reveal individual markers
-                        const level = map.getLevel() - 1;
-                        map.setLevel(level, {anchor: cluster.getCenter()});
+                        // Gather all entries from markers within this cluster
+                        let clusterEntries = [];
+                        cluster.getMarkers().forEach(marker => {
+                            // Each marker's locationData contains an 'entries' array
+                            if (marker.locationData && marker.locationData.entries) {
+                                clusterEntries = clusterEntries.concat(marker.locationData.entries);
+                            }
+                        });
+                        // Display all entries from the cluster in the side panel
+                        displayLocationPhotos(clusterEntries, `클러스터 (${clusterEntries.length}개)`);
                     }
                 });
             }
@@ -205,19 +310,46 @@
             }
         }
 
-        function displayLocationPhotos(lat, lon) {
+        function displayLocationPhotos(entriesToShow, locationName = "여러 위치") {
             locationPhotosContainer.innerHTML = ''; // Clear previous photos
-            const filteredEntries = diaryEntries.filter(entry => entry.latitude === lat && entry.longitude === lon);
+            const entries = entriesToShow; // Rename for clarity
+            
+            // Sort by timestamp (newest first)
+            entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); 
 
-            if (filteredEntries.length > 0) {
-                const locationName = filteredEntries[0].location;
-                let photosHtml = `<h3 class="text-xl font-bold text-slate-800 mb-4">${locationName} (${filteredEntries.length}개)</h3>`;
+            if (entries.length > 0) {
+                // Use provided locationName or derive it
+                const displayTitle = locationName === "여러 위치" ? 
+                                     `선택된 위치 (${entries.length}개)` : 
+                                     `${locationName} (${entries.length}개)`;
+
+                let photosHtml = `<h3 class="text-xl font-bold text-slate-800 mb-4">${displayTitle}</h3>`;
                 photosHtml += '<div class="grid grid-cols-1 gap-4">';
-                filteredEntries.forEach(entry => {
+                entries.forEach(entry => {
+                    let mediaHtml = '';
+                    if (entry.media_url) {
+                        if (entry.media_type === 'image') {
+                            mediaHtml = `<img src="${entry.media_url}" alt="${entry.location}" class="w-full h-40 object-cover rounded-md mb-2">`;
+                        } else if (entry.media_type === 'video') {
+                            // Ensure proper video type is provided for source tag
+                            const videoType = entry.media_url.endsWith('.mp4') ? 'video/mp4' : 'video/webm'; // Example, ideally get from backend
+                            mediaHtml = `
+                                <video controls class="w-full h-40 object-cover rounded-md mb-2">
+                                    <source src="${entry.media_url}" type="${videoType}">
+                                    Your browser does not support the video tag.
+                                </video>`;
+                        }
+                    }
+
+                    // Generate tags HTML
+                    const entryTagsHtml = entry.tags.length > 0 ?
+                        `<div class="mt-2">${entry.tags.map(tag => `<span class="inline-block bg-sky-100 text-sky-800 rounded-full px-2 py-0.5 text-xs font-semibold mr-1 mb-1">#${tag}</span>`).join('')}</div>` : '';
+
                     photosHtml += `
                         <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
-                            <img src="${entry.photo_url}" alt="${entry.location}" class="w-full h-40 object-cover rounded-md mb-2">
+                            ${mediaHtml}
                             <p class="text-sm text-slate-700">${entry.comment}</p>
+                            ${entryTagsHtml} <!-- Add tags here -->
                             <p class="text-xs text-slate-500 mt-1">${entry.timestamp}</p>
                             <div class="mt-4 text-right flex justify-end space-x-2">
                                 <a href="/travel/diary_entry/${entry.id}/edit/" class="text-blue-600 hover:text-blue-800 text-sm font-medium">편집</a>
