@@ -456,7 +456,7 @@ def travel_diary_detail(request, pk):
         diary_entries_data.append({
             'id': entry.id,
             'location': entry.location,
-            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %i분") if entry.timestamp else '',
+            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %M분") if entry.timestamp else '',
             'latitude': entry.latitude,
             'longitude': entry.longitude,
             'photo_url': entry.photo.url if entry.photo else '',
