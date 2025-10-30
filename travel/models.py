@@ -245,50 +245,6 @@ class Review(models.Model):
         who = self.author or "anonymous"
         return f"{who} → {self.place_id}"
 
-# class PlaceAnalysis(models.Model):
-#     place = models.OneToOneField(
-#         'Place',
-#         on_delete=models.CASCADE,
-#         related_name='analysis'
-#     )
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     place_code = models.CharField(max_length=50)
-#     place_title = models.CharField(max_length=200)
-#     season_spring = models.IntegerField(null=True, blank=True)
-#     season_summer = models.IntegerField(null=True, blank=True)
-#     season_autumn = models.IntegerField(null=True, blank=True)
-#     season_winter = models.IntegerField(null=True, blank=True)
-#     mbti_E = models.IntegerField(null=True, blank=True)
-#     mbti_I = models.IntegerField(null=True, blank=True)
-#     mbti_S = models.IntegerField(null=True, blank=True)
-#     mbti_N = models.IntegerField(null=True, blank=True)
-#     mbti_T = models.IntegerField(null=True, blank=True)
-#     mbti_F = models.IntegerField(null=True, blank=True)
-#     mbti_J = models.IntegerField(null=True, blank=True)
-#     mbti_P = models.IntegerField(null=True, blank=True)
-#     group_couple = models.IntegerField(null=True, blank=True)
-#     group_friends = models.IntegerField(null=True, blank=True)
-#     group_family = models.IntegerField(null=True, blank=True)
-#     group_solo = models.IntegerField(null=True, blank=True)
-#     age_20s = models.IntegerField(null=True, blank=True)
-#     age_30s = models.IntegerField(null=True, blank=True)
-#     age_40s = models.IntegerField(null=True, blank=True)
-#     age_50plus = models.IntegerField(null=True, blank=True)
-#     gender_female = models.IntegerField(null=True, blank=True)
-#     gender_male = models.IntegerField(null=True, blank=True)
-#     keywords_csv = models.TextField()
-#     themes_csv = models.TextField()
-#     raw_json = models.TextField(null=True, blank=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     class Meta:
-#         db_table = 'travel_placeanalysis'
-#         verbose_name = "Place Analysis"
-#         verbose_name_plural = "Place Analyses"
-
-#     def __str__(self):
-#         return f"Analysis for {self.place.name}"
-
 
 class UploadEntry(Place):
     class Meta:

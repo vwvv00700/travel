@@ -48,9 +48,21 @@ def create_or_update_analysis_from_json(place, data: Dict[str, Any]):
         "mbti_T": 0, "mbti_F": 0, "mbti_J": 0, "mbti_P": 0,
     }
     # 예: "E(70%) / I(30%)" 같은 문자열 전체에서 퍼센트 뽑기
-    for text in (data.get("mbti_profile") or {}).values():
-        for letter, val in re.findall(r"([EIFSTJNP])\((\d+)%\)", str(text)):
-            mbti_defaults[f"mbti_{letter}"] = int(val)
+    # for text in (data.get("mbti_profile") or {}).values():
+    #     # print(f"MBTI text: {text}")
+    #     for letter, val in text.items():
+    #         mbti_defaults[f"mbti_{letter}"] = int(val)
+
+    mbti_data = data.get("mbti_profile") or {}
+
+    for k, v in mbti_data.items():
+        # 예: k = "I_E", v = {"I": 40, "E": 60}
+        if isinstance(v, dict):
+            for letter, val in v.items():
+                try:
+                    mbti_defaults[f"mbti_{letter.lower()}"] = int(val)
+                except Exception as e:
+                    print(f"⚠️ MBTI 변환 실패: {letter}={val} ({e})")
 
     # ----- 방문자 그룹/연령/성별 (기본 0) -----
     visitor = data.get("visitor_analysis") or {}

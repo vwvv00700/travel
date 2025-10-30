@@ -42,7 +42,7 @@ from collections import defaultdict # Import defaultdict
 
 
 # -------------------------------------------------------------------
-# 내부 유틸
+# 여행 Plane 뷰 -------- START
 # -------------------------------------------------------------------
 
 def _serialize_day_plans_for_js(day_plans):
@@ -212,11 +212,6 @@ def _build_plan_variant(user_query, ranked_places, variant_name, filter_strategy
         "guide_text": guide_text,
     }
 
-
-# -------------------------------------------------------------------
-# 실제 화면 뷰
-# -------------------------------------------------------------------
-
 def travel_list(request):
     """
     1) 유저 요청 파싱
@@ -285,6 +280,15 @@ def travel_list(request):
     }
 
     return render(request, "travel/travel_list.html", context)
+
+# -------------------------------------------------------------------
+# 여행 Plane 뷰 -------- END
+# -------------------------------------------------------------------
+
+
+# -------------------------------------------------------------------
+# 실제 화면 뷰
+# -------------------------------------------------------------------
 
 def _render_select_page(request):
     """분석 대상 선택 화면(GET)"""
@@ -449,6 +453,14 @@ def travel_diary_detail(request, pk):
 
     # Prepare data for template: list of (date, entries_for_date) tuples
     entries_by_date = [(date, grouped_entries[date]) for date in sorted_dates]
+    
+    if entry.timestamp:
+        dt = entry.timestamp
+        # strftime으로 날짜/시간의 숫자 부분만 추출하고, f-string으로 한글을 붙입니다.
+        # %Y(4자리 년도), %m(2자리 월), %d(2자리 일), %H(24시), %M(분)
+        timestamp_str = f"{dt.strftime('%Y')}년 {dt.strftime('%m')}월 {dt.strftime('%d')}일 {dt.strftime('%H')}시 {dt.strftime('%M')}분"
+    else:
+        timestamp_str = ""
 
     # Prepare data for JavaScript map (ensure photo__url is correctly accessed)
     diary_entries_data = []
@@ -456,7 +468,8 @@ def travel_diary_detail(request, pk):
         diary_entries_data.append({
             'id': entry.id,
             'location': entry.location,
-            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %i분") if entry.timestamp else '',
+            # 'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %i분") if entry.timestamp else '',
+            'timestamp': timestamp_str,
             'latitude': entry.latitude,
             'longitude': entry.longitude,
             'photo_url': entry.photo.url if entry.photo else '',

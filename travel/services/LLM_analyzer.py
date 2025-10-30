@@ -11,7 +11,6 @@ if not API_KEY:
 client = OpenAI(api_key=API_KEY)
 
 # ----- JSON 파싱 가드 -----
-
 def _strip_code_fences(text: str) -> str:
     """```json ... ``` 같은 코드블록 제거"""
     return re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.I | re.S)
@@ -63,12 +62,15 @@ def _safe_json_loads(text: str) -> dict:
     t2 = (inner or t).replace("“", '"').replace("”", '"').replace("’", "'").replace("‘", "'")
     return json.loads(t2)
 
+
 # ----- 메인 함수 -----
 def analyze_place_with_LLM(place_raw_data: str) -> dict:
     system_instruction = (
         "당신은 장소 데이터 전문가 AI입니다. 제공된 장소의 데이터를 분석하여 "
         "다음 항목을 JSON 형식으로 추출해 주세요. 답변은 JSON 코드 블록만 포함해야 하며, "
         "다른 설명은 절대 포함하지 마세요."
+        "출력은 반드시 올바른 JSON 형태로만 응답해줘."
+        "JSON 외의 텍스트나 설명은 절대 포함하지 마세요"
     )
 
     # JSON 스키마 (기존 그대로)
@@ -113,10 +115,49 @@ def analyze_place_with_LLM(place_raw_data: str) -> dict:
                     "additionalProperties": False
                 }
             },
+            # "mbti_profile": {
+            #     "type": "object",
+            #     "properties": {"EI":{"type":"string"},"SN":{"type":"string"},"TF":{"type":"string"},"JP":{"type":"string"}},
+            #     "required": ["EI","SN","TF","JP"],
+            #     "additionalProperties": False
+            # },
             "mbti_profile": {
                 "type": "object",
-                "properties": {"EI":{"type":"string"},"SN":{"type":"string"},"TF":{"type":"string"},"JP":{"type":"string"}},
-                "required": ["EI","SN","TF","JP"],
+                "properties": {
+                    "EI": {
+                        "type": "object",
+                        "properties": {
+                            "I": {"type": "integer"},
+                            "E": {"type": "integer"}
+                        },
+                        "required": ["I", "E"]
+                    },
+                    "SN": {
+                        "type": "object",
+                        "properties": {
+                            "S": {"type": "integer"},
+                            "N": {"type": "integer"}
+                        },
+                        "required": ["S", "N"]
+                    },
+                    "TF": {
+                        "type": "object",
+                        "properties": {
+                            "T": {"type": "integer"},
+                            "F": {"type": "integer"}
+                        },
+                        "required": ["T", "F"]
+                    },
+                    "JP": {
+                        "type": "object",
+                        "properties": {
+                            "J": {"type": "integer"},
+                            "P": {"type": "integer"}
+                        },
+                        "required": ["J", "P"]
+                    }
+                },
+                "required": ["EI", "SN", "TF", "JP"],
                 "additionalProperties": False
             },
             "visitor_analysis": {
@@ -130,7 +171,7 @@ def analyze_place_with_LLM(place_raw_data: str) -> dict:
                                 "category": {"type": "string", "enum": ["커플", "친구", "가족", "혼자"]},
                                 "preference_rate": {"type": "integer", "minimum": 0, "maximum": 100},
                             },
-                            "required": ["category","preference_rate","keywords"],
+                            "required": ["category","preference_rate"],
                             "additionalProperties": False
                         }
                     },
@@ -142,7 +183,7 @@ def analyze_place_with_LLM(place_raw_data: str) -> dict:
                                 "age": {"type": "string", "enum": ["10대","20대","30대","40대","50대","60대+","기타"]},
                                 "preference_rate": {"type": "integer", "minimum": 0, "maximum": 100},
                             },
-                            "required": ["age","preference_rate","keywords"],
+                            "required": ["age","preference_rate"],
                             "additionalProperties": False
                         }
                     },
@@ -154,7 +195,7 @@ def analyze_place_with_LLM(place_raw_data: str) -> dict:
                                 "gender": {"type": "string", "enum": ["여성","남성"]},
                                 "preference_rate": {"type": "integer", "minimum": 0, "maximum": 100},
                             },
-                            "required": ["gender","preference_rate","keywords"],
+                            "required": ["gender","preference_rate"],
                             "additionalProperties": False
                         }
                     }
