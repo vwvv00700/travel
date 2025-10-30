@@ -72,7 +72,9 @@
                     <li><a href="{% url 'main' %}">Home</a></li>
                     <li><a href="{% url 'select' %}">AI 코스 추천</a></li>
                     <li><a href="{% url 'travel:diary_list' %}">내 다이어리</a></li>
-                     {% if user.is_authenticated %}
+                    <li><a href="{% url 'travel:chat' room_name='general' %}">채팅</a></li>
+                    {% if user.is_authenticated %}
+                        <li><span>{{ user.username }}님, 환영합니다!</span></li>
                         <li><a href="{% url 'travel:logout' %}">로그아웃</a></li>
                     {% else %}
                         <li><a href="{% url 'travel:login' %}">로그인</a></li>

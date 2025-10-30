@@ -2,19 +2,6 @@ import re
 from typing import Any, Dict, Optional
 from travel.models import PlaceAnalysis
 
-def _score(d: Dict[str, Any], *keys, default: int = 0) -> int:
-    """여러 키 후보 중 첫 값을 정수로. 없으면 0."""
-    for k in keys:
-        if k in d and d[k] is not None:
-            try:
-                return int(d[k])
-            except Exception:
-                try:
-                    return int(float(d[k]))
-                except Exception:
-                    pass
-    return default
-
 def create_or_update_analysis_from_json(place, data: Dict[str, Any]):
     """
     Place 하나에 대해 분석 결과 업서트.
@@ -38,9 +25,11 @@ def create_or_update_analysis_from_json(place, data: Dict[str, Any]):
     season_defaults: Dict[str, int] = {v: 0 for v in season_map.values()}
     for s in (data.get("seasonality_analysis") or []):
         name = str(s.get("season", "")).strip()
-        score = _score(s, "relevance_score", "importance_score", default=0)
+        score = str(s.get("relevance_score", 0))
+        # score = _score(s, "relevance_score", "importance_score", default=0)
+
         if name in season_map:
-            season_defaults[season_map[name]] = score
+            season_defaults[season_map[name]] = int(score)
 
     # ----- MBTI (기본 0) -----
     mbti_defaults: Dict[str, int] = {
@@ -48,22 +37,13 @@ def create_or_update_analysis_from_json(place, data: Dict[str, Any]):
         "mbti_T": 0, "mbti_F": 0, "mbti_J": 0, "mbti_P": 0,
     }
     # 예: "E(70%) / I(30%)" 같은 문자열 전체에서 퍼센트 뽑기
-    # for text in (data.get("mbti_profile") or {}).values():
-    #     # print(f"MBTI text: {text}")
-    #     for letter, val in text.items():
-    #         mbti_defaults[f"mbti_{letter}"] = int(val)
-
-    mbti_data = data.get("mbti_profile") or {}
-
-    for k, v in mbti_data.items():
-        # 예: k = "I_E", v = {"I": 40, "E": 60}
-        if isinstance(v, dict):
-            for letter, val in v.items():
-                try:
-                    mbti_defaults[f"mbti_{letter.lower()}"] = int(val)
-                except Exception as e:
-                    print(f"⚠️ MBTI 변환 실패: {letter}={val} ({e})")
-
+    for text in (data.get("mbti_profile") or {}).values():
+        # print(f"MBTI text: {text}")
+        for letter, val in text.items():
+            mbti_defaults[f"mbti_{letter}"] = int(val)
+            
+    print(f"MBTI defaults: {mbti_defaults}")
+    
     # ----- 방문자 그룹/연령/성별 (기본 0) -----
     visitor = data.get("visitor_analysis") or {}
 
@@ -73,27 +53,30 @@ def create_or_update_analysis_from_json(place, data: Dict[str, Any]):
     }
     for g in (visitor.get("groups") or []):
         cat = (g.get("category") or "").strip()
-        val = _score(g, "preference_rate", default=0)
-        if cat == "커플":  group_defaults["group_couple"] = val
-        elif cat == "친구": group_defaults["group_friends"] = val
-        elif cat == "가족": group_defaults["group_family"] = val
-        elif cat == "혼자": group_defaults["group_solo"] = val
+        val = (g.get("preference_rate") or 0)
+        # val = _score(g, "preference_rate", default=0)
+        if cat == "커플":  group_defaults["group_couple"] = int(val)
+        elif cat == "친구": group_defaults["group_friends"] = int(val)
+        elif cat == "가족": group_defaults["group_family"] = int(val)
+        elif cat == "혼자": group_defaults["group_solo"] = int(val)
 
     age_defaults: Dict[str, int] = {"age_20s": 0, "age_30s": 0, "age_40s": 0, "age_50plus": 0}
     for ag in (visitor.get("age_group") or []):
         age = (ag.get("age") or "").strip()
-        val = _score(ag, "preference_rate", default=0)
-        if "20" in age:   age_defaults["age_20s"] = val
-        elif "30" in age: age_defaults["age_30s"] = val
-        elif "40" in age: age_defaults["age_40s"] = val
-        elif "50" in age: age_defaults["age_50plus"] = val
+        val = (ag.get("preference_rate") or 0)
+        # val = _score(ag, "preference_rate", default=0)
+        if "20대" in age:   age_defaults["age_20s"] = int(val)
+        elif "30대" in age: age_defaults["age_30s"] = int(val)
+        elif "40대" in age: age_defaults["age_40s"] = int(val)
+        elif "50대" in age: age_defaults["age_50plus"] = int(val)
 
     gender_defaults: Dict[str, int] = {"gender_female": 0, "gender_male": 0}
     for gg in (visitor.get("gender") or []):
         gen = (gg.get("gender") or "").strip()
-        val = _score(gg, "preference_rate", default=0)
-        if gen == "여성": gender_defaults["gender_female"] = val
-        elif gen == "남성": gender_defaults["gender_male"] = val
+        val = (gg.get("preference_rate") or 0)
+        # val = _score(gg, "preference_rate", default=0)
+        if gen == "여성": gender_defaults["gender_female"] = int(val)
+        elif gen == "남성": gender_defaults["gender_male"] = int(val)
 
     # ----- defaults 조립 -----
     defaults = {

@@ -60,6 +60,7 @@ def _safe_json_loads(text: str) -> dict:
 
     # 3️⃣ 따옴표 교정 후 재시도
     t2 = (inner or t).replace("“", '"').replace("”", '"').replace("’", "'").replace("‘", "'")
+
     return json.loads(t2)
 
 
@@ -180,7 +181,7 @@ def analyze_place_with_LLM(place_raw_data: str) -> dict:
                         "items": {
                             "type": "object",
                             "properties": {
-                                "age": {"type": "string", "enum": ["10대","20대","30대","40대","50대","60대+","기타"]},
+                                "age": {"type": "string", "enum": ["20대","30대","40대","50대"]},
                                 "preference_rate": {"type": "integer", "minimum": 0, "maximum": 100},
                             },
                             "required": ["age","preference_rate"],

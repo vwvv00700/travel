@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 
 from itertools import groupby
 from operator import attrgetter
+from .models import UserProfile
 
 from django import forms
 from django.contrib import admin, messages
@@ -15,6 +16,8 @@ from django.template.response import TemplateResponse
 from django.urls import reverse, path
 from django.shortcuts import redirect, render
 from django.utils.safestring import mark_safe  # ### 추가: plan_preview HTML 렌더용
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
 
 from .models import (
     Place,
@@ -31,10 +34,6 @@ from .models import (
 
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
-
-
-from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User
 
 
 # @admin.register(UserProfile)
@@ -220,6 +219,7 @@ class ReviewAdmin(admin.ModelAdmin):
         return (obj.content or "")[:60]
     short_content.short_description = "content"
 
+
 # ── 장소 성격 어드민 ────────────────────────────────────────────────
 @admin.register(PlaceAnalysis)
 class PlaceAnalysisAdmin(admin.ModelAdmin):
@@ -238,6 +238,7 @@ class PlaceAnalysisAdmin(admin.ModelAdmin):
     )
     search_fields = ("place_code", "place_title")
     list_filter = ("created_at",)
+
 
 # ── 장소 성격 LLM 어드민 ────────────────────────────────────────────────
 @admin.register(AnalysisTool)
@@ -325,10 +326,9 @@ class AnalysisToolAdmin(admin.ModelAdmin):
                 "post_url": reverse("travel:llm_analysis"),
             }
             return render(request, "travel/select_and_analyze.html", ctx)
-        
-# ── 업로드 전용 어드민 ────────────────────────────────────────────────
 
-# ✅ 업로드 전용 어드민(프록시 모델: UploadEntry)
+
+# ── 업로드 전용 어드민 ────────────────────────────────────────────────
 @admin.register(UploadEntry)
 class UploadEntryAdmin(admin.ModelAdmin):
     """
@@ -501,6 +501,7 @@ class UploadEntryAdmin(admin.ModelAdmin):
 
         return redirect(reverse("admin:travel_analysis_tool_run"))
 
+
 # ── 다이어리 어드민 ────────────────────────────────────────────────
 @admin.register(Travel)
 class TravelAdmin(admin.ModelAdmin):
@@ -524,3 +525,14 @@ class DiaryEntryAdmin(admin.ModelAdmin):
         return obj.diary.id
     diary_id.short_description = '다이어리 ID' # Column header for the diary ID
     diary_id.admin_order_field = 'diary__id'
+
+
+# ── 유저 프로필 어드민 ────────────────────────────────────────────────
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'uuid', 'nickname', 'gender', 'age_range', 'country',
+        'language', 'travel_style', 'budget', 'smoking', 'drinking', 'sns', 'bio', 'created_at'
+    )
+    list_filter = ('gender', 'age_range', 'budget', 'smoking', 'drinking', 'country')
+    search_fields = ('nickname', 'user__email', 'country')

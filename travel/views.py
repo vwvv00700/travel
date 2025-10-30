@@ -1,5 +1,4 @@
-# views.py (정상화된 버전)
-import json, re, time
+import json, re, time, uuid
 from itertools import groupby
 from operator import attrgetter
 from openai import OpenAI # New import
@@ -9,12 +8,12 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.views import LoginView
 from django.db.models import Q # New import
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect ,get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
 from django.urls import reverse
-from django.shortcuts import get_object_or_404
 
 from .models import (
     Place,
@@ -24,6 +23,7 @@ from .models import (
     UserSelectedPlan,
     DiaryEntry,
     Travel,
+    ChatRoom,
 )
 
 from .services.LLM_analyzer import analyze_place_with_LLM
@@ -38,7 +38,6 @@ from .services.recommender import (
 
 from .forms import DiaryEntryForm, TravelForm # Import TravelForm
 from collections import defaultdict # Import defaultdict
-
 
 
 # -------------------------------------------------------------------
@@ -291,58 +290,39 @@ def travel_list(request):
 # -------------------------------------------------------------------
 
 def _render_select_page(request):
-    """분석 대상 선택 화면(GET)"""
-    # ✅ 아직 분석이 없는 Place만 노출
     all_places = (
         Place.objects
-        .filter(analyses__isnull=True)       # ← 포인트
+        .filter(analyses__isnull=True)
         .order_by("category", "name")
         .distinct()
     )
-
-    grouped_places = {cat: list(items)
-                      for cat, items in groupby(all_places, key=attrgetter("category"))}
+    grouped_places = {cat: list(items) for cat, items in groupby(all_places, key=attrgetter("category"))}
 
     ctx = {
         "title": "장소 LLM 분석 도구",
         "grouped_places": grouped_places,
         "post_url": request.path,
         "save_url": request.path,
-        # (선택) 얼마나 숨겨졌는지 보여주고 싶다면:
         "hidden_count": Place.objects.exclude(analyses__isnull=True).count(),
     }
     return render(request, "travel/select_and_analyze.html", ctx)
 
 
 def analyze_selected_places_view(request):
-    """
-    GET  : 선택 화면
-    POST : action=analyze -> LLM 분석 실행 후 화면에 결과 표시
-           action=save    -> 화면에 있는 결과들을 DB 저장
-    """
     if request.method == "GET":
         return _render_select_page(request)
 
     action = request.POST.get("action", "analyze")
 
-    # 1) 분석 실행
     if action == "analyze":
         selected_ids = request.POST.getlist("place_ids")
         if not selected_ids:
             messages.warning(request, "선택된 장소가 없어.")
             return redirect(request.path)
 
-        # 숫자만 취하고 중복 제거
         sel_ids = {int(x) for x in selected_ids if str(x).isdigit()}
+        available_qs = Place.objects.filter(id__in=sel_ids, analyses__isnull=True).distinct()
 
-        # 이미 분석된 장소(PlaceAnalysis 존재)는 제외
-        available_qs = (
-            Place.objects
-            .filter(id__in=sel_ids, analyses__isnull=True)  # related_name="analyses"
-            .distinct()
-        )
-
-        # 제외된 항목 안내 (선택)
         kept_ids = set(available_qs.values_list("id", flat=True))
         skipped = sel_ids - kept_ids
         if skipped:
@@ -353,64 +333,50 @@ def analyze_selected_places_view(request):
             return redirect(request.path)
 
         results = []
-        start_time = time.time() # 시작 시간 기록
+        start_time = time.time()
 
         for place in available_qs:
             place_raw_data = f"장소 이름: {place.name}\n"
-
             result_dict = analyze_place_with_LLM(place_raw_data)
-
-            # 보기용 / 전송용 분리
-            pretty_json  = json.dumps(result_dict, ensure_ascii=False, indent=2)
+            pretty_json = json.dumps(result_dict, ensure_ascii=False, indent=2)
             compact_json = json.dumps(result_dict, ensure_ascii=False, separators=(",", ":"))
-
             results.append({
-                "place_pk": place.pk,                               # 폼 키용 (정수 PK)
-                "place_id": getattr(place, "place_id", None),       # 외부 ID (있으면 저장에 활용)
+                "place_pk": place.pk,
+                "place_id": getattr(place, "place_id", None),
                 "place_name": place.name,
                 "analysis_dict": result_dict,
-                "analysis_json_pretty": pretty_json,                # 화면 표시용
-                "analysis_json_compact": compact_json,              # 폼 hidden 전송용
+                "analysis_json_pretty": pretty_json,
+                "analysis_json_compact": compact_json,
             })
 
-        end_time = time.time() # 종료 시간 기록
+        end_time = time.time()
         print(f"LLM 분석 시간 총 : {len(available_qs)} 개 ============> {round(end_time - start_time, 2)}")
 
         ctx = {
             "title": "분석 결과",
             "analysis_results": results,
             "post_url": request.path,
-            "save_url": request.path,   # action=save로 넘어감
+            "save_url": request.path,
         }
         return render(request, "travel/select_and_analyze.html", ctx)
 
-    # 2) DB 저장
     elif action == "save":
         key_pat = re.compile(r"^payload_(\d+)$")
-
         saved = errors = 0
+
         for key, val in request.POST.items():
             m = key_pat.match(key)
             if not m:
                 continue
-
             try:
                 place_pk = int(m.group(1))
-
-                # textarea(hidden)로 보냈으니 한 번만 디코드
                 data = json.loads(val)
-
-                # ✅ seasonality 비어 있어도 통과 (저장 함수가 0으로 처리)
                 sea = data.get("seasonality_analysis") or []
                 if not isinstance(sea, list):
-                    data["seasonality_analysis"] = []  # 안전한 기본값
-
+                    data["seasonality_analysis"] = []
                 place = Place.objects.get(pk=place_pk)
-
-                # 업서트 저장 (빈값은 0으로 처리하는 함수)
                 obj, created = create_or_update_analysis_from_json(place, data)
                 saved += 1
-
             except Exception as e:
                 errors += 1
                 messages.error(request, f"[{key}] 저장 실패: {e}")
@@ -568,23 +534,23 @@ def delete_diary_entry(request, pk):
 from django.http import JsonResponse
 
 
-@login_required
-def travel_agent_viewer(request):
-    if request.method == 'POST':
-        # Store selections in session
-        request.session['selected_districts'] = request.POST.getlist('travel_gu')
-        request.session['travel_days'] = request.POST.get('days')
-        request.session['selected_themes'] = request.POST.getlist('tema')
+# @login_required
+# def travel_agent_viewer(request):
+#     if request.method == 'POST':
+#         # Store selections in session
+#         request.session['selected_districts'] = request.POST.getlist('travel_gu')
+#         request.session['travel_days'] = request.POST.get('days')
+#         request.session['selected_themes'] = request.POST.getlist('tema')
 
-        context = {
-            'selected_districts': request.session['selected_districts'],
-            'travel_days': request.session['travel_days'],
-            'selected_themes': request.session['selected_themes'],
-        }
-        return render(request, 'travel/travel_agent_viewer.html', context)
+#         context = {
+#             'selected_districts': request.session['selected_districts'],
+#             'travel_days': request.session['travel_days'],
+#             'selected_themes': request.session['selected_themes'],
+#         }
+#         return render(request, 'travel/travel_agent_viewer.html', context)
     
-    # If accessed via GET or other methods, redirect to the start
-    return redirect('travel:travel_list')
+#     # If accessed via GET or other methods, redirect to the start
+#     return redirect('travel:travel_list')
 
 import logging
 
@@ -594,273 +560,273 @@ logger = logging.getLogger(__name__)
 
 # ... (other views)
 
-@login_required
-def get_ai_recommendations(request):
-    # --- Start of New Logging ---
-    logger.info(f"[AI Recommendations] Session - Districts: {request.session.get('selected_districts')}")
-    logger.info(f"[AI Recommendations] Session - Days: {request.session.get('travel_days')}")
-    logger.info(f"[AI Recommendations] Session - Themes: {request.session.get('selected_themes')}")
-    # --- End of New Logging ---
-    try:
-        client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+# @login_required
+# def get_ai_recommendations(request):
+#     # --- Start of New Logging ---
+#     logger.info(f"[AI Recommendations] Session - Districts: {request.session.get('selected_districts')}")
+#     logger.info(f"[AI Recommendations] Session - Days: {request.session.get('travel_days')}")
+#     logger.info(f"[AI Recommendations] Session - Themes: {request.session.get('selected_themes')}")
+#     # --- End of New Logging ---
+#     try:
+#         client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 
-        selected_districts = request.session.get('selected_districts', [])
-        travel_days = request.session.get('travel_days', '1')
-        selected_themes = request.session.get('selected_themes', [])
+#         selected_districts = request.session.get('selected_districts', [])
+#         travel_days = request.session.get('travel_days', '1')
+#         selected_themes = request.session.get('selected_themes', [])
 
-        # --- Start of New Fallback Logic ---
-        # --- Start of District Name Mapping ---
-        district_map = {
-            'jongno': '종로구', 'junggu': '중구', 'yongsan': '용산구', 'seongdong': '성동구',
-            'gwangjin': '광진구', 'dongdaemun': '동대문구', 'jungnang': '중랑구', 'seongbuk': '성북구',
-            'gangbuk': '강북구', 'dobong': '도봉구', 'nowon': '노원구', 'eunpyeong': '은평구',
-            'seodaemun': '서대문구', 'mapo': '마포구', 'yangcheon': '양천구', 'gangseo': '강서구',
-            'guro': '구로구', 'geumcheon': '금천구', 'yeongdeungpo': '영등포구', 'dongjak': '동작구',
-            'gwanak': '관악구', 'seocho': '서초구', 'gangnam': '강남구', 'songpa': '송파구',
-            'gangdong': '강동구'
-        }
-        korean_districts = [district_map.get(d.lower()) for d in selected_districts if district_map.get(d.lower())]
-        logger.info(f"Mapped Korean districts for query: {korean_districts}")
-        # --- End of District Name Mapping ---
+#         # --- Start of New Fallback Logic ---
+#         # --- Start of District Name Mapping ---
+#         district_map = {
+#             'jongno': '종로구', 'junggu': '중구', 'yongsan': '용산구', 'seongdong': '성동구',
+#             'gwangjin': '광진구', 'dongdaemun': '동대문구', 'jungnang': '중랑구', 'seongbuk': '성북구',
+#             'gangbuk': '강북구', 'dobong': '도봉구', 'nowon': '노원구', 'eunpyeong': '은평구',
+#             'seodaemun': '서대문구', 'mapo': '마포구', 'yangcheon': '양천구', 'gangseo': '강서구',
+#             'guro': '구로구', 'geumcheon': '금천구', 'yeongdeungpo': '영등포구', 'dongjak': '동작구',
+#             'gwanak': '관악구', 'seocho': '서초구', 'gangnam': '강남구', 'songpa': '송파구',
+#             'gangdong': '강동구'
+#         }
+#         korean_districts = [district_map.get(d.lower()) for d in selected_districts if district_map.get(d.lower())]
+#         logger.info(f"Mapped Korean districts for query: {korean_districts}")
+#         # --- End of District Name Mapping ---
 
-        fallback_activated = False
+#         fallback_activated = False
 
-        def perform_query(filter_by_theme):
-            base_query = Place.objects.all()
-            if korean_districts:
-                district_q = Q()
-                for district in korean_districts:
-                    district_q |= Q(city_gu__icontains=district)
-                base_query = base_query.filter(district_q)
+#         def perform_query(filter_by_theme):
+#             base_query = Place.objects.all()
+#             if korean_districts:
+#                 district_q = Q()
+#                 for district in korean_districts:
+#                     district_q |= Q(city_gu__icontains=district)
+#                 base_query = base_query.filter(district_q)
 
-            if filter_by_theme and selected_themes:
-                theme_q = Q()
-                for theme in selected_themes:
-                    theme_q |= Q(analysis__themes_csv__icontains=theme)
-                base_query = base_query.filter(theme_q).distinct()
+#             if filter_by_theme and selected_themes:
+#                 theme_q = Q()
+#                 for theme in selected_themes:
+#                     theme_q |= Q(analysis__themes_csv__icontains=theme)
+#                 base_query = base_query.filter(theme_q).distinct()
             
-            # Query each category separately
-            restaurants = base_query.filter(category='restaurants').order_by('-rating')
-            attractions = base_query.filter(category='attractions').order_by('-rating')
-            accommodations = base_query.filter(category='accommodations').order_by('-rating')
-            return attractions, restaurants, accommodations
+#             # Query each category separately
+#             restaurants = base_query.filter(category='restaurants').order_by('-rating')
+#             attractions = base_query.filter(category='attractions').order_by('-rating')
+#             accommodations = base_query.filter(category='accommodations').order_by('-rating')
+#             return attractions, restaurants, accommodations
 
-        # 1. Initial query with theme filter
-        attractions_query, restaurants_query, accommodations_query = perform_query(filter_by_theme=True)
+#         # 1. Initial query with theme filter
+#         attractions_query, restaurants_query, accommodations_query = perform_query(filter_by_theme=True)
 
-        # 2. Fallback query without theme filter if initial result is empty
-        if not attractions_query.exists() and not restaurants_query.exists():
-            fallback_activated = True
-            logger.info("Fallback activated: No results with theme filter, querying by district only.")
-            attractions_query, restaurants_query, accommodations_query = perform_query(filter_by_theme=False)
+#         # 2. Fallback query without theme filter if initial result is empty
+#         if not attractions_query.exists() and not restaurants_query.exists():
+#             fallback_activated = True
+#             logger.info("Fallback activated: No results with theme filter, querying by district only.")
+#             attractions_query, restaurants_query, accommodations_query = perform_query(filter_by_theme=False)
 
-        def get_place_data(place):
-            return {
-                'id': place.id,
-                'name': place.name,
-                'address': place.address,
-                'rating': place.rating,
-                'reviewCnt': place.reviewCnt,
-                'themes': place.analysis.themes_csv.split(',') if hasattr(place, 'analysis') and place.analysis.themes_csv else [],
-            }
+#         def get_place_data(place):
+#             return {
+#                 'id': place.id,
+#                 'name': place.name,
+#                 'address': place.address,
+#                 'rating': place.rating,
+#                 'reviewCnt': place.reviewCnt,
+#                 'themes': place.analysis.themes_csv.split(',') if hasattr(place, 'analysis') and place.analysis.themes_csv else [],
+#             }
 
-        relevant_attractions = [get_place_data(p) for p in attractions_query.select_related('analysis')[:30]]
-        relevant_restaurants = [get_place_data(p) for p in restaurants_query.select_related('analysis')[:40]]
-        relevant_accommodations = [get_place_data(p) for p in accommodations_query.select_related('analysis')[:20]]
+#         relevant_attractions = [get_place_data(p) for p in attractions_query.select_related('analysis')[:30]]
+#         relevant_restaurants = [get_place_data(p) for p in restaurants_query.select_related('analysis')[:40]]
+#         relevant_accommodations = [get_place_data(p) for p in accommodations_query.select_related('analysis')[:20]]
 
-        logger.info(f"Found {len(relevant_attractions)} attractions, {len(relevant_restaurants)} restaurants, {len(relevant_accommodations)} accommodations.")
-        if not relevant_attractions and not relevant_restaurants:
-            return JsonResponse({"trip_plan": [], "suggested_accommodation": None})
+#         logger.info(f"Found {len(relevant_attractions)} attractions, {len(relevant_restaurants)} restaurants, {len(relevant_accommodations)} accommodations.")
+#         if not relevant_attractions and not relevant_restaurants:
+#             return JsonResponse({"trip_plan": [], "suggested_accommodation": None})
 
-        # 2. Construct OpenAI Prompt
-        system_message = """
-        You are an expert travel planner in Korea, tasked with creating a detailed itinerary.
-        You will receive user preferences and lists of available attractions, restaurants, and accommodations for the selected area.
+#         # 2. Construct OpenAI Prompt
+#         system_message = """
+#         You are an expert travel planner in Korea, tasked with creating a detailed itinerary.
+#         You will receive user preferences and lists of available attractions, restaurants, and accommodations for the selected area.
 
-        **Your Task:**
-        1.  **Create a Day-by-Day Plan:** Generate a travel plan for the number of days the user specified.
-        2.  **Structure by District:** Group the recommendations by the districts the user selected. For each day, try to focus on places within one district to minimize travel time.
-        3.  **Daily Itinerary Logic:** For each day in the plan:
-            a.  Select one primary tourist attraction from the `attractions` list that fits the user's themes.
-            b.  Based on the attraction's location, find one nearby, high-rated restaurant from the `restaurants` list for **lunch** and one for **dinner**.
-            c.  You do not need to recommend breakfast.
-        4.  **Accommodation:** From the `accommodations` list, select **only one** high-rated and centrally located accommodation for the entire trip. It should be reasonably accessible to the recommended attractions.
-        5.  **Output Format:** You MUST provide the output in a single JSON object with two top-level keys:
-            - `suggested_accommodation`: An object containing the details of the single recommended accommodation.
-            - `trip_plan`: An array of objects, where each object represents a day's plan.
+#         **Your Task:**
+#         1.  **Create a Day-by-Day Plan:** Generate a travel plan for the number of days the user specified.
+#         2.  **Structure by District:** Group the recommendations by the districts the user selected. For each day, try to focus on places within one district to minimize travel time.
+#         3.  **Daily Itinerary Logic:** For each day in the plan:
+#             a.  Select one primary tourist attraction from the `attractions` list that fits the user's themes.
+#             b.  Based on the attraction's location, find one nearby, high-rated restaurant from the `restaurants` list for **lunch** and one for **dinner**.
+#             c.  You do not need to recommend breakfast.
+#         4.  **Accommodation:** From the `accommodations` list, select **only one** high-rated and centrally located accommodation for the entire trip. It should be reasonably accessible to the recommended attractions.
+#         5.  **Output Format:** You MUST provide the output in a single JSON object with two top-level keys:
+#             - `suggested_accommodation`: An object containing the details of the single recommended accommodation.
+#             - `trip_plan`: An array of objects, where each object represents a day's plan.
 
-        **JSON Structure Example:**
-        ```json
-        {
-          "suggested_accommodation": {
-            "name": "Hotel ABC",
-            "address": "123 Main St, Gangnam-gu",
-            "rating": 4.8,
-            "recommendation_reason": "Centrally located with excellent reviews."
-          },
-          "trip_plan": [
-            {
-              "day": 1,
-              "district": "강남구",
-              "attraction": {
-                  "name": "COEX Aquarium",
-                  "address": "513, Yeongdong-daero, Gangnam-gu",
-                  "recommendation_reason": "A great spot for family fun and fits the 'healing' theme."
-              },
-              "meals": {
-                "lunch": {
-                    "name": "Gangnam Gyoza",
-                    "address": "Nearby COEX",
-                    "recommendation_reason": "Famous for its dumplings, a short walk from the aquarium."
-                },
-                "dinner": {
-                    "name": "Tosokchon Samgyetang",
-                    "address": "Another part of Gangnam",
-                    "recommendation_reason": "A hearty and healthy dinner after a long day."
-                }
-              }
-            }
-          ]
-        }
-        ```
-        **Important:** Adhere strictly to this JSON structure. Do not add extra commentary outside of the JSON object.
-        """
+#         **JSON Structure Example:**
+#         ```json
+#         {
+#           "suggested_accommodation": {
+#             "name": "Hotel ABC",
+#             "address": "123 Main St, Gangnam-gu",
+#             "rating": 4.8,
+#             "recommendation_reason": "Centrally located with excellent reviews."
+#           },
+#           "trip_plan": [
+#             {
+#               "day": 1,
+#               "district": "강남구",
+#               "attraction": {
+#                   "name": "COEX Aquarium",
+#                   "address": "513, Yeongdong-daero, Gangnam-gu",
+#                   "recommendation_reason": "A great spot for family fun and fits the 'healing' theme."
+#               },
+#               "meals": {
+#                 "lunch": {
+#                     "name": "Gangnam Gyoza",
+#                     "address": "Nearby COEX",
+#                     "recommendation_reason": "Famous for its dumplings, a short walk from the aquarium."
+#                 },
+#                 "dinner": {
+#                     "name": "Tosokchon Samgyetang",
+#                     "address": "Another part of Gangnam",
+#                     "recommendation_reason": "A hearty and healthy dinner after a long day."
+#                 }
+#               }
+#             }
+#           ]
+#         }
+#         ```
+#         **Important:** Adhere strictly to this JSON structure. Do not add extra commentary outside of the JSON object.
+#         """
         
-        fallback_info = ""
-        if fallback_activated:
-            fallback_info = "Note: We could not find places that perfectly matched your selected themes. However, here are some popular places in your chosen districts. Please create the best possible course from this list, keeping the original themes in mind if possible."
+#         fallback_info = ""
+#         if fallback_activated:
+#             fallback_info = "Note: We could not find places that perfectly matched your selected themes. However, here are some popular places in your chosen districts. Please create the best possible course from this list, keeping the original themes in mind if possible."
 
-        # travel_days is like 'day4', we need the number 4.
-        num_days = int(''.join(filter(str.isdigit, travel_days))) if travel_days else 1
+#         # travel_days is like 'day4', we need the number 4.
+#         num_days = int(''.join(filter(str.isdigit, travel_days))) if travel_days else 1
 
-        user_message_content = f"""
-        {fallback_info}
+#         user_message_content = f"""
+#         {fallback_info}
 
-        **User Preferences:**
-        - Travel Duration: {num_days} day(s)
-        - Selected Districts: {korean_districts}
-        - Selected Themes: {selected_themes}
+#         **User Preferences:**
+#         - Travel Duration: {num_days} day(s)
+#         - Selected Districts: {korean_districts}
+#         - Selected Themes: {selected_themes}
 
-        **Available Places:**
-        - Attractions: {json.dumps(relevant_attractions, ensure_ascii=False, indent=2)}
-        - Restaurants: {json.dumps(relevant_restaurants, ensure_ascii=False, indent=2)}
-        - Accommodations: {json.dumps(relevant_accommodations, ensure_ascii=False, indent=2)}
+#         **Available Places:**
+#         - Attractions: {json.dumps(relevant_attractions, ensure_ascii=False, indent=2)}
+#         - Restaurants: {json.dumps(relevant_restaurants, ensure_ascii=False, indent=2)}
+#         - Accommodations: {json.dumps(relevant_accommodations, ensure_ascii=False, indent=2)}
 
-        Please generate the trip plan in the specified JSON format.
-        """
+#         Please generate the trip plan in the specified JSON format.
+#         """
 
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message_content}
-        ]
+#         messages = [
+#             {"role": "system", "content": system_message},
+#             {"role": "user", "content": user_message_content}
+#         ]
 
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            response_format={"type": "json_object"}
-        )
+#         response = client.chat.completions.create(
+#             model="gpt-4o",
+#             messages=messages,
+#             response_format={"type": "json_object"}
+#         )
         
-        llm_response_content = response.choices[0].message.content
-        parsed_response = json.loads(llm_response_content)
+#         llm_response_content = response.choices[0].message.content
+#         parsed_response = json.loads(llm_response_content)
         
-        return JsonResponse(parsed_response)
+#         return JsonResponse(parsed_response)
 
-    except json.JSONDecodeError as e:
-        logger.error(f"LLM JSON parsing failed: {e}. Raw response: {llm_response_content}")
-        return JsonResponse({"error": f"AI 응답을 처리하는 중 오류가 발생했습니다." }, status=500)
-    except Exception as e:
-        logger.error(f"An error occurred in get_ai_recommendations: {e}")
-        return JsonResponse({"error": f"AI 추천을 생성하는 중 오류가 발생했습니다: {e}"}, status=500)
+#     except json.JSONDecodeError as e:
+#         logger.error(f"LLM JSON parsing failed: {e}. Raw response: {llm_response_content}")
+#         return JsonResponse({"error": f"AI 응답을 처리하는 중 오류가 발생했습니다." }, status=500)
+#     except Exception as e:
+#         logger.error(f"An error occurred in get_ai_recommendations: {e}")
+#         return JsonResponse({"error": f"AI 추천을 생성하는 중 오류가 발생했습니다: {e}"}, status=500)
 
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message_content}
-        ]
+#         messages = [
+#             {"role": "system", "content": system_message},
+#             {"role": "user", "content": user_message_content}
+#         ]
 
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            response_format={"type": "json_object"}
-        )
+#         response = client.chat.completions.create(
+#             model="gpt-4o",
+#             messages=messages,
+#             response_format={"type": "json_object"}
+#         )
         
-        llm_response_content = response.choices[0].message.content
-        parsed_response = json.loads(llm_response_content)
+#         llm_response_content = response.choices[0].message.content
+#         parsed_response = json.loads(llm_response_content)
         
-        recommendations = parsed_response.get("recommendations", [])
+#         recommendations = parsed_response.get("recommendations", [])
         
-        if not recommendations:
-            for key, value in parsed_response.items():
-                if isinstance(value, list) and all(isinstance(item, dict) and "name" in item for item in value):
-                    recommendations = value
-                    break
+#         if not recommendations:
+#             for key, value in parsed_response.items():
+#                 if isinstance(value, list) and all(isinstance(item, dict) and "name" in item for item in value):
+#                     recommendations = value
+#                     break
 
-        return JsonResponse({"recommendations": recommendations})
+#         return JsonResponse({"recommendations": recommendations})
 
-    except json.JSONDecodeError as e:
-        logger.error(f"LLM JSON parsing failed: {e}. Raw response: {llm_response_content}")
-        return JsonResponse({"error": f"AI 응답을 처리하는 중 오류가 발생했습니다." }, status=500)
-    except Exception as e:
-        logger.error(f"An error occurred in get_ai_recommendations: {e}")
-        return JsonResponse({"error": f"AI 추천을 생성하는 중 오류가 발생했습니다: {e}"}, status=500)
+#     except json.JSONDecodeError as e:
+#         logger.error(f"LLM JSON parsing failed: {e}. Raw response: {llm_response_content}")
+#         return JsonResponse({"error": f"AI 응답을 처리하는 중 오류가 발생했습니다." }, status=500)
+#     except Exception as e:
+#         logger.error(f"An error occurred in get_ai_recommendations: {e}")
+#         return JsonResponse({"error": f"AI 추천을 생성하는 중 오류가 발생했습니다: {e}"}, status=500)
 
 # -------------------------------------------------------------------
 # 로그인 / 회원가입 / 로그아웃 / 플랜 선택 저장
 # -------------------------------------------------------------------
 
-def login_view(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+# def login_view(request):
+#     if request.method == "POST":
+#         username = request.POST.get("username")
+#         password = request.POST.get("password")
 
-        user = authenticate(request, username=username, password=password)
-        if user is None:
-            messages.error(request, "아이디 또는 비밀번호가 올바르지 않습니다.")
-            return render(request, "travel/login.html")
+#         user = authenticate(request, username=username, password=password)
+#         if user is None:
+#             messages.error(request, "아이디 또는 비밀번호가 올바르지 않습니다.")
+#             return render(request, "travel/login.html")
 
-        login(request, user)
-        return redirect("/")
+#         login(request, user)
+#         return redirect("/")
 
-    return render(request, "travel/login.html")
-
-
-def signup_view(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        email    = request.POST.get("email")
-        password = request.POST.get("password")
-
-        # 아이디 중복 체크
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "이미 존재하는 아이디입니다.")
-            return render(request, "travel/login.html")
-
-        # User 생성
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-        )
-
-        # UserProfile 생성
-        UserProfile.objects.get_or_create(
-            user=user,
-            defaults={
-                "nickname": username,
-                "preferred_style": "",
-                "bio": "",
-            }
-        )
-
-        messages.success(request, "회원가입이 완료되었습니다! 로그인해주세요 🙌")
-        return redirect("/travel/login/")
-
-    # GET이면 그냥 로그인 페이지로
-    return render(request, "travel/login.html")
+#     return render(request, "travel/login.html")
 
 
-def logout_view(request):
-    logout(request)
-    return redirect("/")
+# def signup_view(request):
+#     if request.method == "POST":
+#         username = request.POST.get("username")
+#         email    = request.POST.get("email")
+#         password = request.POST.get("password")
+
+#         # 아이디 중복 체크
+#         if User.objects.filter(username=username).exists():
+#             messages.error(request, "이미 존재하는 아이디입니다.")
+#             return render(request, "travel/login.html")
+
+#         # User 생성
+#         user = User.objects.create_user(
+#             username=username,
+#             email=email,
+#             password=password,
+#         )
+
+#         # UserProfile 생성
+#         UserProfile.objects.get_or_create(
+#             user=user,
+#             defaults={
+#                 "nickname": username,
+#                 "preferred_style": "",
+#                 "bio": "",
+#             }
+#         )
+
+#         messages.success(request, "회원가입이 완료되었습니다! 로그인해주세요 🙌")
+#         return redirect("/travel/login/")
+
+#     # GET이면 그냥 로그인 페이지로
+#     return render(request, "travel/login.html")
+
+
+# def logout_view(request):
+#     logout(request)
+#     return redirect("/")
 
 
 @require_POST
@@ -885,3 +851,143 @@ def select_plan(request):
     )
 
     return JsonResponse({"status": "success"})
+
+
+# def travel_plan_list(request):
+#     plans = TravelPlan.objects.all().order_by('-created_at')
+#     return render(request, 'travel/plan_list.html', {'plans': plans})
+
+
+# def travel_plan_new(request):
+#     if request.method == 'POST':
+#         TravelPlan.objects.create(
+#             title=request.POST.get('title'),
+#             destination=request.POST.get('destination'),
+#             start_date=request.POST.get('start_date'),
+#             end_date=request.POST.get('end_date'),
+#             description=request.POST.get('description'),
+#         )
+#         return redirect('travel_plan_list')
+#     return render(request, 'travel/plan_new.html')
+
+
+# def travel_plan_edit(request, pk):
+#     plan = get_object_or_404(TravelPlan, pk=pk)
+#     if request.method == 'POST':
+#         plan.title = request.POST.get('title')
+#         plan.destination = request.POST.get('destination')
+#         plan.start_date = request.POST.get('start_date')
+#         plan.end_date = request.POST.get('end_date')
+#         plan.description = request.POST.get('description')
+#         plan.save()
+#         return redirect('travel_plan_list')
+#     return render(request, 'travel/plan_edit.html', {'plan': plan})
+
+
+def chat_view(request, room_name):
+    room, created = ChatRoom.objects.get_or_create(name=room_name)
+    context = {'room': room}
+    return render(request, 'travel/chat_room.html', context)
+
+
+# ================== 회원가입 ==================
+def signup_view(request):
+    if request.method == 'POST':
+        try:
+            # 입력값 가져오기
+            nickname = request.POST.get('nickname', '').strip()
+            email = request.POST.get('email', '').strip()
+            password = request.POST.get('password', '').strip()
+            password2 = request.POST.get('password2', '').strip()
+            gender = request.POST.get('gender', '')
+            age_range = request.POST.get('age_range', '')
+            country = request.POST.get('country', '')
+            language = request.POST.get('language', '')
+            travel_style = request.POST.get('travel_style', '')
+            budget = request.POST.get('budget', '')
+            smoking_raw = request.POST.get('smoking', 'No')
+            drinking_raw = request.POST.get('drinking', 'No')
+            sns = request.POST.get('sns', '')
+            bio = request.POST.get('bio', '')
+
+            # 비밀번호 확인
+            if password != password2:
+                messages.error(request, "비밀번호가 일치하지 않습니다.")
+                return redirect('travel:signup')
+
+            # 이메일 중복 체크
+            if User.objects.filter(username=email).exists():
+                messages.error(request, "이미 존재하는 이메일입니다.")
+                return redirect('travel:signup')
+
+            # BooleanField 처리
+            smoking = True if smoking_raw in ['예', '흡연', 'Yes'] else False
+            drinking = True if drinking_raw in ['즐김', '가끔', 'Yes'] else False
+
+            # User 생성
+            user = User.objects.create_user(
+                username=email,
+                password=password,
+                email=email,
+                first_name=nickname or email
+            )
+
+            # UserProfile 생성
+            UserProfile.objects.create(
+                user=user,
+                uuid=uuid.uuid4(),
+                nickname=nickname or email,
+                gender=gender,
+                age_range=age_range,
+                country=country,
+                language=language,
+                travel_style=travel_style,
+                budget=budget,
+                smoking=smoking,
+                drinking=drinking,
+                sns=sns,
+                bio=bio
+            )
+
+            # 자동 로그인
+            user = authenticate(username=email, password=password)
+            if user:
+                login(request, user)
+                messages.success(request, f"{nickname or email}님 환영합니다!")
+                return redirect('main')
+            else:
+                messages.error(request, "회원가입은 되었지만 자동 로그인에 실패했습니다.")
+                return redirect('travel:login')
+
+        except Exception as e:
+            messages.error(request, f"회원가입 중 오류 발생: {e}")
+            return redirect('travel:signup')
+
+    return render(request, 'chat/signup.html')
+
+# ================== 로그인 ==================
+class CustomLoginView(LoginView):
+    template_name = 'chat/login.html'
+    redirect_authenticated_user = True
+
+    def get_success_url(self):
+        return reverse('main')
+
+    def form_valid(self, form):
+        user = form.get_user()
+        display_name = getattr(user.userprofile, 'nickname', user.username)
+        messages.success(self.request, f"{display_name}님 환영합니다!")
+        return super().form_valid(form)
+
+
+# ================== 로그아웃 ==================
+def logout_view(request):
+    logout(request)
+    # return render(request, 'chat/logout.html')
+    return redirect("/")
+
+
+# ================== 메인 ==================
+def main(request):
+    room, created = ChatRoom.objects.get_or_create(name='general')
+    return render(request, 'travel/main.html', {'room_name': room.name})
