@@ -372,20 +372,19 @@ class UserSelectedPlan(models.Model):
 
 # ----- 사용자 프로필 ------------------------------------------
 class UserProfile(models.Model):
+    unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    nickname = models.CharField(max_length=50)
+    nickname = models.CharField(max_length=30)
     gender = models.CharField(max_length=10, blank=True)
     age_range = models.CharField(max_length=20, blank=True)
     country = models.CharField(max_length=50, blank=True)
-    language = models.CharField(max_length=50, blank=True)
+    languages = models.CharField(max_length=100, blank=True)
     travel_style = models.CharField(max_length=50, blank=True)
     budget = models.CharField(max_length=50, blank=True)
-    smoking = models.CharField(max_length=20, blank=True)  # 흡연 여부
-    drinking = models.CharField(max_length=20, blank=True) # 음주 여부
+    smoking = models.CharField(max_length=20, blank=True)
+    drinking = models.CharField(max_length=20, blank=True)
     sns = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    mbti = models.CharField(max_length=4, blank=True, null=True) 
     def __str__(self):
-        return self.nickname
+        return f"{self.nickname} ({self.user.username})"

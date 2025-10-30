@@ -17,7 +17,14 @@
                 <li><a href="{% url 'travel:diary_list' %}">내 다이어리</a></li>
                 <li><a href="{% url 'travel:chat' room_name='general' %}">채팅</a></li>
                 {% if user.is_authenticated %}
-                    <li><span>{{ user.username }}님, 환영합니다!</span></li>
+                    <li class="dropdown"><a href="#"><span>{{ user.nickname }}님</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">나의 여행 플랜</a></li>
+                            <li><a href="#">비밀번호 재설정</a></li>
+                            <li><a href="#">Dropdown 3</a></li>
+                            <li><a href="#">Dropdown 4</a></li>
+                        </ul>
+                    </li>
                     <li><a href="{% url 'travel:logout' %}">로그아웃</a></li>
                 {% else %}
                     <li><a href="{% url 'travel:login' %}">로그인</a></li>

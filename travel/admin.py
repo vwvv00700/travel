@@ -42,23 +42,23 @@ from .services.analysis_loader import create_or_update_analysis_from_json
 #     search_fields = ("user__username", "nickname")
 
 
-class UserProfileInline(admin.StackedInline):
-    model = UserProfile
-    can_delete = False
-    verbose_name_plural = "Personal info"
+# class UserProfileInline(admin.StackedInline):
+#     model = UserProfile
+#     can_delete = False
+#     verbose_name_plural = "Personal info"
 
 
-class CustomUserAdmin(UserAdmin):
-    inlines = (UserProfileInline,)
-    list_display = ('username', 'get_mbti', 'email', 'first_name', 'last_name', 'is_staff')
+# class CustomUserAdmin(UserAdmin):
+#     inlines = (UserProfileInline,)
+#     list_display = ('username', 'get_mbti', 'email', 'first_name', 'last_name', 'is_staff')
 
-    def get_mbti(self, obj):
-        return obj.profile.mbti
-    get_mbti.short_description = 'MBTI'
+#     def get_mbti(self, obj):
+#         return obj.profile.mbti
+#     get_mbti.short_description = 'MBTI'
 
 
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
+# admin.site.unregister(User)
+# admin.site.register(User, CustomUserAdmin)
 
 
 # ─────────────────────────────────────────────
@@ -531,8 +531,17 @@ class DiaryEntryAdmin(admin.ModelAdmin):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'uuid', 'nickname', 'gender', 'age_range', 'country',
-        'language', 'travel_style', 'budget', 'smoking', 'drinking', 'sns', 'bio', 'created_at'
+        "unique_id",
+        "user",
+        "nickname",
+        "gender",
+        "age_range",
+        "country",
+        "languages",
+        "travel_style",
+        "budget",
+        "smoking",
+        "drinking",
+        "sns",
+        'mbti'
     )
-    list_filter = ('gender', 'age_range', 'budget', 'smoking', 'drinking', 'country')
-    search_fields = ('nickname', 'user__email', 'country')

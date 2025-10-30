@@ -47,12 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "import_export",
     "travel.apps.TravelConfig",
-<<<<<<< HEAD
     # "ai_planner",
-=======
-    'channels',       # 채널스 등록
-    
->>>>>>> a4443fe531670035dc195ace8a1e06c956bc8bf2
 ]
 
 MIDDLEWARE = [
@@ -167,7 +162,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DATA_DIR = BASE_DIR / "data"
 
-<<<<<<< HEAD
+
 # === Mapbox Directions API Token ===
 # .env 파일에 예:
 # MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoibXl1c2VyIi... (public access token)
@@ -175,12 +170,10 @@ MAPBOX_ACCESS_TOKEN = os.getenv("MAPBOX_ACCESS_TOKEN", "")
 
 
 # === 로그인 / 로그아웃 경로 설정 ===
-LOGIN_REDIRECT_URL = "/travel/"     # 로그인 성공 시 이동할 기본 페이지
-LOGOUT_REDIRECT_URL = "/login/"     # 로그아웃 후 이동할 페이지
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 1800  # 1800초 = 30분
 SESSION_SAVE_EVERY_REQUEST = True
-=======
+
 # ASGI 및 Channel Layer 설정
 ASGI_APPLICATION = 'travelAgent.asgi.application'
 
@@ -191,26 +184,12 @@ CHANNEL_LAYERS = {
     },
 }
 
-# 템플릿 디렉토리 설정 (이전에 문제되었던 부분)
-TEMPLATES = [
-    {
-        # ...
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # ✅ 프로젝트 루트의 templates 폴더를 찾도록 설정
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-        # ...
-    },
-]
 
 # 로그인 성공 후 리디렉션 URL (로그인 기능 사용 시)
 LOGIN_REDIRECT_URL = '/'  # 메인 화면 URL
 LOGOUT_REDIRECT_URL = '/accounts/login/' # 로그인 필요 시 이동할 URL
->>>>>>> a4443fe531670035dc195ace8a1e06c956bc8bf2
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]

@@ -1,4 +1,4 @@
-import json, re, time, uuid
+import json, re, time, uuid, random, string
 from itertools import groupby
 from operator import attrgetter
 from openai import OpenAI # New import
@@ -14,6 +14,10 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect ,get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
 from django.urls import reverse
+from django.db import transaction # 트랜잭션을 사용해 안전하게 처리
+
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
 
 from .models import (
     Place,
@@ -23,7 +27,6 @@ from .models import (
     UserSelectedPlan,
     DiaryEntry,
     Travel,
-    ChatRoom,
 )
 
 from .services.LLM_analyzer import analyze_place_with_LLM
@@ -884,110 +887,188 @@ def select_plan(request):
 #     return render(request, 'travel/plan_edit.html', {'plan': plan})
 
 
-def chat_view(request, room_name):
-    room, created = ChatRoom.objects.get_or_create(name=room_name)
-    context = {'room': room}
-    return render(request, 'travel/chat_room.html', context)
-
-
 # ================== 회원가입 ==================
+
+# def signup_view(request):
+#     print("Signup view called")
+
+#     if request.method == "POST":
+#         email = request.POST.get("email")
+#         password = request.POST.get("password")
+#         nickname = request.POST.get("nickname")
+#         gender = request.POST.get("gender")
+#         age_range = request.POST.get("age_range")
+#         country = request.POST.get("country")
+#         languages = request.POST.get("language")  # form 필드 이름과 일치
+#         travel_style = request.POST.get("travel_style")
+#         budget = request.POST.get("budget")
+#         smoking = request.POST.get("smoking")
+#         drinking = request.POST.get("drinking")
+#         sns = request.POST.get("sns")
+#         bio = request.POST.get("bio")
+#         mbti = request.POST.get("mbti")
+#         # username 중복 체크
+#         if User.objects.filter(username=email).exists():
+#             # 중복 시 에러 페이지 혹은 메시지 처리
+#             return render(request, "registration/signup.html", {"error": "이미 가입된 이메일입니다."})
+
+#         user = User.objects.create_user(username=email, email=email, password=password)
+#         print("========== 지점 ===========")
+#         UserProfile.objects.create(
+#             user=user,
+#             nickname=nickname,
+#             gender=gender,
+#             age_range=age_range,
+#             country=country,
+#             languages=languages,
+#             travel_style=travel_style,
+#             budget=budget,
+#             smoking=smoking,
+#             drinking=drinking,
+#             sns=sns,
+#             bio=bio,
+#             mbti=mbti,
+            
+#         )
+
+#         login(request, user)
+#         return redirect("/")
+#     else:
+#         return render(request, "registration/signup.html")
+    
+
 def signup_view(request):
-    if request.method == 'POST':
+    print("Signup view called")
+
+    if request.method == "POST":
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        nickname = request.POST.get("nickname")
+        gender = request.POST.get("gender")
+        age_range = request.POST.get("age_range")
+        country = request.POST.get("country")
+        languages = request.POST.get("language")  # form 필드 이름과 일치
+        travel_style = request.POST.get("travel_style")
+        budget = request.POST.get("budget")
+        smoking = request.POST.get("smoking")
+        drinking = request.POST.get("drinking")
+        sns = request.POST.get("sns")
+        bio = request.POST.get("bio")
+        mbti = request.POST.get("mbti")
+
+        # 1. username 중복 체크
+        if User.objects.filter(username=email).exists():
+            return render(request, "registration/signup.html", {"error": "이미 가입된 이메일입니다."})
+
         try:
-            # 입력값 가져오기
-            nickname = request.POST.get('nickname', '').strip()
-            email = request.POST.get('email', '').strip()
-            password = request.POST.get('password', '').strip()
-            password2 = request.POST.get('password2', '').strip()
-            gender = request.POST.get('gender', '')
-            age_range = request.POST.get('age_range', '')
-            country = request.POST.get('country', '')
-            language = request.POST.get('language', '')
-            travel_style = request.POST.get('travel_style', '')
-            budget = request.POST.get('budget', '')
-            smoking_raw = request.POST.get('smoking', 'No')
-            drinking_raw = request.POST.get('drinking', 'No')
-            sns = request.POST.get('sns', '')
-            bio = request.POST.get('bio', '')
+            # 2. User 객체 생성 (이때 Signal이 UserProfile 객체를 자동 생성함)
+            # 트랜잭션을 사용하여 User 생성 실패 시 UserProfile 생성도 롤백
+            with transaction.atomic():
+                user = User.objects.create_user(username=nickname, email=email, password=password)
+                print("========== 지점 (User 생성 완료) ===========")
+                
+                # 3. 자동으로 생성된 UserProfile 객체를 가져와서 업데이트
+                # Signal이 작동하지 않는 경우를 대비해 get() 대신 filter().first()를 쓰거나,
+                # Signal이 확실하다면 user.userprofile (또는 user.profile)을 바로 사용합니다.
+                
+                # Note: 'userprofile'은 UserProfile 모델이 User와 연결된 기본 이름입니다.
+                profile = user.userprofile 
+                
+                # 4. 폼에서 받은 데이터로 profile 객체 업데이트
+                profile.nickname = nickname
+                profile.gender = gender
+                profile.age_range = age_range
+                profile.country = country
+                profile.languages = languages
+                profile.travel_style = travel_style
+                profile.budget = budget
+                profile.smoking = smoking
+                profile.drinking = drinking
+                profile.sns = sns
+                profile.bio = bio
+                profile.mbti = mbti
+                
+                profile.save() # UserProfile 객체 저장
 
-            # 비밀번호 확인
-            if password != password2:
-                messages.error(request, "비밀번호가 일치하지 않습니다.")
-                return redirect('travel:signup')
-
-            # 이메일 중복 체크
-            if User.objects.filter(username=email).exists():
-                messages.error(request, "이미 존재하는 이메일입니다.")
-                return redirect('travel:signup')
-
-            # BooleanField 처리
-            smoking = True if smoking_raw in ['예', '흡연', 'Yes'] else False
-            drinking = True if drinking_raw in ['즐김', '가끔', 'Yes'] else False
-
-            # User 생성
-            user = User.objects.create_user(
-                username=email,
-                password=password,
-                email=email,
-                first_name=nickname or email
-            )
-
-            # UserProfile 생성
-            UserProfile.objects.create(
-                user=user,
-                uuid=uuid.uuid4(),
-                nickname=nickname or email,
-                gender=gender,
-                age_range=age_range,
-                country=country,
-                language=language,
-                travel_style=travel_style,
-                budget=budget,
-                smoking=smoking,
-                drinking=drinking,
-                sns=sns,
-                bio=bio
-            )
-
-            # 자동 로그인
-            user = authenticate(username=email, password=password)
-            if user:
-                login(request, user)
-                messages.success(request, f"{nickname or email}님 환영합니다!")
-                return redirect('main')
-            else:
-                messages.error(request, "회원가입은 되었지만 자동 로그인에 실패했습니다.")
-                return redirect('travel:login')
+            # 5. 로그인 처리 및 리다이렉트
+            login(request, user)
+            return redirect("/")
 
         except Exception as e:
-            messages.error(request, f"회원가입 중 오류 발생: {e}")
-            return redirect('travel:signup')
-
-    return render(request, 'chat/signup.html')
+            # 예상치 못한 DB 오류나 다른 오류 발생 시 처리
+            print(f"회원가입 중 오류 발생: {e}")
+            return render(request, "registration/signup.html", {"error": "회원가입 중 오류가 발생했습니다. 다시 시도해 주세요."})
+            
+    else:
+        return render(request, "registration/signup.html")
 
 # ================== 로그인 ==================
 class CustomLoginView(LoginView):
-    template_name = 'chat/login.html'
+    template_name = 'registration/login.html'
     redirect_authenticated_user = True
 
     def get_success_url(self):
-        return reverse('main')
+        return reverse('/')
 
     def form_valid(self, form):
         user = form.get_user()
         display_name = getattr(user.userprofile, 'nickname', user.username)
-        messages.success(self.request, f"{display_name}님 환영합니다!")
+        messages.success(self.request, f"{display_name}님 환영합니다! 🎉")
         return super().form_valid(form)
+
 
 
 # ================== 로그아웃 ==================
 def logout_view(request):
     logout(request)
-    # return render(request, 'chat/logout.html')
+    messages.info(request, "성공적으로 로그아웃되었습니다.")
     return redirect("/")
 
+# ================== 비밀번호 재설정 ==================
+def change_password(request):
+    # 로그인 여부 확인
+    if not request.user.is_authenticated:
+        return redirect('login') 
 
-# ================== 메인 ==================
-def main(request):
-    room, created = ChatRoom.objects.get_or_create(name='general')
-    return render(request, 'travel/main.html', {'room_name': room.name})
+    if request.method == 'POST':
+        # 현재 사용자 객체와 POST 데이터로 폼 생성
+        form = PasswordChangeForm(request.user, request.POST)
+        
+        if form.is_valid():
+            # 폼에 있는 set_password와 save()가 자동으로 처리됨
+            user = form.save() 
+            
+            # ❗️ 중요: 비밀번호 변경 후 세션 업데이트 (로그아웃 방지)
+            update_session_auth_hash(request, user) 
+            
+            return redirect('password_change_done') # 성공 페이지로 이동
+    else:
+        form = PasswordChangeForm(request.user)
+
+    return render(request, 'registration/change_password.html', {'form': form})
+
+# ================== 비밀번호 찾기 ==================
+def reset_password_instant(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            
+            # 1. 무작위 임시 비밀번호 생성 (예: 10자리)
+            temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            
+            # 2. set_password()로 비밀번호를 안전하게 저장
+            user.set_password(temp_password)
+            user.save()
+            
+            # 3. 임시 비밀번호를 사용자에게 보여주는 페이지 렌더링
+            return render(request, 'password_reset_show.html', {
+                'temp_password': temp_password,
+                'email': email
+            })
+            
+        except User.DoesNotExist:
+            return render(request, 'registration/password_reset_form.html', {'error': '해당 이메일의 사용자가 없습니다.'})
+
+def reset_password_form(request):
+    return render(request, 'registration/password_reset_form.html')

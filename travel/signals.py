@@ -11,5 +11,4 @@ def create_profile_if_missing(sender, instance, created, **kwargs):
             user=instance,
             nickname=instance.username,
             bio="",
-            preferred_style="",
         )
