@@ -94,7 +94,7 @@
                                         <!-- Tags -->
                                         <div class="mt-4">
                                             {% for tag in entry.tags.all %}
-                                                <span class="inline-block bg-sky-100 text-sky-800 rounded-full px-3 py-1 text-sm font-semibold mr-2 mb-2">#{{ tag.name }}</span>
+                                                <a href="{% url 'travel:diary_entries_by_tag' tag_name=tag.name %}" class="inline-block bg-sky-100 text-sky-800 rounded-full px-3 py-1 text-sm font-semibold mr-2 mb-2 hover:bg-sky-200">#{{ tag.name }}</a>
                                             {% endfor %}
                                         </div>
 

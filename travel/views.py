@@ -24,6 +24,7 @@ from .models import (
     UserSelectedPlan,
     DiaryEntry,
     Travel,
+    Tag, # Added Tag
 )
 
 from .services.LLM_analyzer import analyze_place_with_LLM
@@ -954,3 +955,29 @@ def generate_tags_from_text_view(request):
         logger = logging.getLogger(__name__)
         logger.error(f"Unexpected error in generate_tags_from_text_view: {e}")
         return JsonResponse({'error': f"예상치 못한 오류가 발생했습니다: {e}"}, status=500)
+
+
+@login_required
+def diary_entries_by_tag(request, tag_name):
+    tag = get_object_or_404(Tag, name=tag_name)
+    
+    # Get all diary entries for the current user that have this tag
+    diary_entries = DiaryEntry.objects.filter(
+        author_id=request.user.id,
+        tags=tag
+    ).order_by('-timestamp') # Order by newest first
+
+    # Group entries by date, similar to travel_diary_detail
+    grouped_entries = defaultdict(list)
+    for entry in diary_entries:
+        if entry.timestamp:
+            grouped_entries[entry.timestamp.date()].append(entry)
+    sorted_dates = sorted(grouped_entries.keys(), reverse=True) # Newest date first
+    entries_by_date = [(date, grouped_entries[date]) for date in sorted_dates]
+
+    context = {
+        'tag_name': tag_name,
+        'entries_by_date': entries_by_date,
+        'total_entries': diary_entries.count(),
+    }
+    return render(request, 'travel/diary_entries_by_tag.html', context)
