@@ -8,7 +8,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import logout
 
-from travel.models import TravelPlan, Place, ChatRoom
+from travel.models import TravelPlan, Place, ChatRoom, UserSelectedPlan
 
 logger = logging.getLogger(__name__)
 
@@ -145,15 +145,15 @@ def chat(request):
     partners_list = []
 
     # try:
-    #     current_plan = TravelPlan.objects.get(user=current_user)
-    # except TravelPlan.DoesNotExist:
+    #     current_plan = UserSelectedPlan.objects.get(user=current_user)
+    # except UserSelectedPlan.DoesNotExist:
     #     return render(request, 'travel/match_chat.html', {
     #         'partners': [],
     #         'current_user': current_user.username,
     #         'message': '여행 계획이 없습니다. 여행 계획을 먼저 등록해주세요.',
     #     })
 
-    # matched_plans = TravelPlan.objects.filter(
+    # matched_plans = UserSelectedPlan.objects.filter(
     #     Q(location_city=current_plan.location_city) &
     #     Q(start_date__lte=current_plan.end_date) &
     #     Q(end_date__gte=current_plan.start_date) &

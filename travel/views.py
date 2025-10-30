@@ -886,6 +886,7 @@ def signup_view(request):
 
     if request.method == "POST":
         email = request.POST.get("email")
+        userid = request.POST.get("userid")
         password = request.POST.get("password")
         nickname = request.POST.get("nickname")
         gender = request.POST.get("gender")
@@ -901,14 +902,14 @@ def signup_view(request):
         mbti = request.POST.get("mbti")
 
         # 1. username 중복 체크
-        if User.objects.filter(username=email).exists():
-            return render(request, "registration/signup.html", {"error": "이미 가입된 이메일입니다."})
+        if User.objects.filter(username=userid).exists():
+            return render(request, f"{userid}", {"error": "이미 가입된 아이디입니다.."})
 
         try:
             # 2. User 객체 생성 (이때 Signal이 UserProfile 객체를 자동 생성함)
             # 트랜잭션을 사용하여 User 생성 실패 시 UserProfile 생성도 롤백
             with transaction.atomic():
-                user = User.objects.create_user(username=nickname, email=email, password=password)
+                user = User.objects.create_user(username=userid, email=email, password=password)
                 print("========== 지점 (User 생성 완료) ===========")
                 
                 # 3. 자동으로 생성된 UserProfile 객체를 가져와서 업데이트

@@ -10,6 +10,8 @@ from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 from datetime import datetime
 
+from django import forms
+
 # Django 기본 User
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -366,6 +368,9 @@ class UserSelectedPlan(models.Model):
     )
     selected_at = models.DateTimeField(auto_now_add=True)
 
+    startDate = models.DateField(null=False, blank=False)
+    endDate = models.DateField(null=False, blank=False)
+
     class Meta:
         unique_together = ("user", "plan")  # 같은 플랜 중복 저장 방지
 
@@ -393,6 +398,7 @@ class ChatMessage(models.Model):
     def __str__(self):
         return f"{self.user.username} -> {self.plan.title}"
 
+# ----- 채팅 신고 모델 ------------------------------------------
 class ChatReport(models.Model):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
     message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, related_name='reports')
@@ -401,6 +407,7 @@ class ChatReport(models.Model):
 
     def __str__(self):
         return f"{self.reporter} → {self.message.id}"
+
 
 # ----- 사용자 프로필 ------------------------------------------
 class UserProfile(models.Model):

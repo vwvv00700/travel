@@ -228,85 +228,85 @@ body {
 </div>
 
 <script>
-const matchList = document.getElementById('match-list');
-const chatBox = document.getElementById('chat-box');
-const msgInput = document.getElementById('msg-input');
-const sendBtn = document.getElementById('send-btn');
-const partnerNameDisplay = document.getElementById('partner-name');
-const chatArea = document.getElementById('chat-area');
-const partnerListContainer = document.getElementById('sidebar');
-const backToListBtn = document.getElementById('back-to-list-btn');
-const profilePopup = document.getElementById('profile-popup');
-const popupName = document.getElementById('popup-name');
-const popupAvatar = document.getElementById('popup-avatar');
-const popupAge = document.getElementById('popup-age');
-const popupGender = document.getElementById('popup-gender');
-const popupIntro = document.getElementById('popup-intro');
-const openReportBtn = document.getElementById('open-report-btn');
-const reportForm = document.getElementById('report-form');
-const backToMainBtn = document.getElementById('back-to-main-btn');
+    const matchList = document.getElementById('match-list');
+    const chatBox = document.getElementById('chat-box');
+    const msgInput = document.getElementById('msg-input');
+    const sendBtn = document.getElementById('send-btn');
+    const partnerNameDisplay = document.getElementById('partner-name');
+    const chatArea = document.getElementById('chat-area');
+    const partnerListContainer = document.getElementById('sidebar');
+    const backToListBtn = document.getElementById('back-to-list-btn');
+    const profilePopup = document.getElementById('profile-popup');
+    const popupName = document.getElementById('popup-name');
+    const popupAvatar = document.getElementById('popup-avatar');
+    const popupAge = document.getElementById('popup-age');
+    const popupGender = document.getElementById('popup-gender');
+    const popupIntro = document.getElementById('popup-intro');
+    const openReportBtn = document.getElementById('open-report-btn');
+    const reportForm = document.getElementById('report-form');
+    const backToMainBtn = document.getElementById('back-to-main-btn');
 
-let currentPartnerId = null;
+    let currentPartnerId = null;
 
-// ✅ 메인으로 이동 버튼
-backToMainBtn.addEventListener('click', ()=>{
-    window.location.href = "{% url 'travel:travel_list' %}";
-});
+    // ✅ 메인으로 이동 버튼
+    backToMainBtn.addEventListener('click', ()=>{
+        window.location.href = "{% url 'main' %}";
+    });
 
-function displayMessage(message, sender, time=null) {
-    const isSent = sender===MY_USERNAME;
-    const div = document.createElement('div');
-    div.classList.add('message', isSent?'sent':'received');
-    div.innerHTML = `<span class="message-content">${message}</span>
-                     <span class="message-time">${time||new Date().toLocaleTimeString()}</span>`;
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
+    function displayMessage(message, sender, time=null) {
+        const isSent = sender===MY_USERNAME;
+        const div = document.createElement('div');
+        div.classList.add('message', isSent?'sent':'received');
+        div.innerHTML = `<span class="message-content">${message}</span>
+                        <span class="message-time">${time||new Date().toLocaleTimeString()}</span>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
-// 프로필 보기
-document.getElementById('partner-info').addEventListener('click', ()=>{
-    profilePopup.style.display='block';
-    popupName.textContent = partnerNameDisplay.textContent;
-});
+    // 프로필 보기
+    document.getElementById('partner-info').addEventListener('click', ()=>{
+        profilePopup.style.display='block';
+        popupName.textContent = partnerNameDisplay.textContent;
+    });
 
-// 프로필 닫기
-profilePopup.querySelector('.close-popup').addEventListener('click', ()=>{
-    profilePopup.style.display='none';
-    reportForm.classList.add('hidden');
-});
+    // 프로필 닫기
+    profilePopup.querySelector('.close-popup').addEventListener('click', ()=>{
+        profilePopup.style.display='none';
+        reportForm.classList.add('hidden');
+    });
 
-// 신고 폼 열기
-openReportBtn.addEventListener('click', ()=>{ reportForm.classList.toggle('hidden'); });
+    // 신고 폼 열기
+    openReportBtn.addEventListener('click', ()=>{ reportForm.classList.toggle('hidden'); });
 
-// 메시지 전송
-function sendMessage() {
-    const msg = msgInput.value.trim();
-    if(!msg) return;
-    displayMessage(msg, MY_USERNAME);
-    msgInput.value='';
-    setTimeout(()=>displayMessage(msg+' 👍','AI 파트너'),500);
-}
+    // 메시지 전송
+    function sendMessage() {
+        const msg = msgInput.value.trim();
+        if(!msg) return;
+        displayMessage(msg, MY_USERNAME);
+        msgInput.value='';
+        setTimeout(()=>displayMessage(msg+' 👍','AI 파트너'),500);
+    }
 
-sendBtn.addEventListener('click',sendMessage);
-msgInput.addEventListener('keypress',e=>{if(e.key==='Enter') sendMessage();});
+    sendBtn.addEventListener('click',sendMessage);
+    msgInput.addEventListener('keypress',e=>{if(e.key==='Enter') sendMessage();});
 
-// 파트너 선택
-matchList.addEventListener('click', e=>{
-    const card = e.target.closest('.partner-card'); if(!card) return;
-    currentPartnerId = card.dataset.roomId;
-    document.querySelectorAll('.partner-card').forEach(c=>c.classList.remove('active'));
-    card.classList.add('active');
-    partnerNameDisplay.textContent = card.querySelector('.partner-name').textContent;
-    chatBox.innerHTML='';
-    chatArea.classList.remove('hidden');
-    partnerListContainer.classList.add('hidden');
-});
+    // 파트너 선택
+    matchList.addEventListener('click', e=>{
+        const card = e.target.closest('.partner-card'); if(!card) return;
+        currentPartnerId = card.dataset.roomId;
+        document.querySelectorAll('.partner-card').forEach(c=>c.classList.remove('active'));
+        card.classList.add('active');
+        partnerNameDisplay.textContent = card.querySelector('.partner-name').textContent;
+        chatBox.innerHTML='';
+        chatArea.classList.remove('hidden');
+        partnerListContainer.classList.add('hidden');
+    });
 
-// 목록으로 돌아가기
-backToListBtn.addEventListener('click', ()=>{
-    chatArea.classList.add('hidden');
-    partnerListContainer.classList.remove('hidden');
-});
+    // 목록으로 돌아가기
+    backToListBtn.addEventListener('click', ()=>{
+        chatArea.classList.add('hidden');
+        partnerListContainer.classList.remove('hidden');
+    });
 </script>
 
 </body>

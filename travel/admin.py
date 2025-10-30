@@ -29,7 +29,10 @@ from .models import (
     TravelPlan,
     UserSelectedPlan,
     Travel,
-    DiaryEntry
+    DiaryEntry,
+    ChatRoom,
+    ChatReport,
+    ChatMessage,
 )
 
 from .services.LLM_analyzer import analyze_place_with_LLM
@@ -90,15 +93,10 @@ class TravelPlanAdmin(admin.ModelAdmin):
     data_pretty.short_description = "data (pretty JSON)"
 
 
-# ─────────────────────────────────────────────
-# UserSelectedPlan Admin
-#   - plan_preview: 이 유저가 고른 플랜 안의 Day1/Day2별 장소 리스트,
-#                   장소명 / 카테고리 / 키워드 / 점수 / 주소까지 한번에 표시
-#   - 관리자 화면에서 바로 두번째 스샷 같은 정보 확인 가능
-# ─────────────────────────────────────────────
+
 @admin.register(UserSelectedPlan)
 class UserSelectedPlanAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "plan", "selected_at")
+    list_display = ("id", "user", "plan", "startDate", "endDate", "selected_at")
     search_fields = ("user__username", "plan__title")
     readonly_fields = ("selected_at", "plan_preview")  # ### 수정: plan_preview 추가
 
@@ -580,6 +578,36 @@ class DiaryEntryAdmin(admin.ModelAdmin):
         return obj.diary.id
     diary_id.short_description = '다이어리 ID' # Column header for the diary ID
     diary_id.admin_order_field = 'diary__id'
+
+
+# ── 채팅 어드민 ────────────────────────────────────────────────
+@admin.register(ChatRoom)
+class ChatRoomAdmin(admin.ModelAdmin):
+    list_display = ('id', 'room_name', 'created_at')
+    search_fields = ('room_name',)
+    filter_horizontal = ('participants',) # ManyToManyField를 편하게 관리
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'room', 'sender', 'message', 'timestamp')
+    search_fields = ('room__room_name', 'sender__username', 'message')
+    list_filter = ('room', 'sender', 'timestamp')
+    raw_id_fields = ('room', 'sender') # 데이터가 많을 때 드롭다운 대신 ID로 검색
+
+@admin.register(ChatReport)
+class ChatReportAdmin(admin.ModelAdmin):
+    list_display = ('id', 'reporter', 'message_id_display', 'reason_summary', 'created_at')
+    search_fields = ('reporter__username', 'message__message', 'reason')
+    list_filter = ('created_at',)
+    raw_id_fields = ('reporter', 'message')
+
+    def message_id_display(self, obj):
+        return obj.message.id
+    message_id_display.short_description = '신고된 메시지 ID'
+
+    def reason_summary(self, obj):
+        return (obj.reason or "")[:50] + "..." if len(obj.reason or "") > 50 else obj.reason
+    reason_summary.short_description = '신고 사유'
 
 
 # ── 유저 프로필 어드민 ────────────────────────────────────────────────
