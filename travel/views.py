@@ -159,80 +159,55 @@ def chat_view(request, room_name):
     return render(request, 'travel/chat_room.html', context)
 
 
+
 # ================== 회원가입 ==================
+
 def signup_view(request):
-    if request.method == 'POST':
-        try:
-            # 입력값 가져오기
-            nickname = request.POST.get('nickname', '').strip()
-            email = request.POST.get('email', '').strip()
-            password = request.POST.get('password', '').strip()
-            password2 = request.POST.get('password2', '').strip()
-            gender = request.POST.get('gender', '')
-            age_range = request.POST.get('age_range', '')
-            country = request.POST.get('country', '')
-            language = request.POST.get('language', '')
-            travel_style = request.POST.get('travel_style', '')
-            budget = request.POST.get('budget', '')
-            smoking_raw = request.POST.get('smoking', 'No')
-            drinking_raw = request.POST.get('drinking', 'No')
-            sns = request.POST.get('sns', '')
-            bio = request.POST.get('bio', '')
+    print("Signup view called")
+    if request.method == "POST":
+        print("POST data:", request.POST)
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        nickname = request.POST.get("nickname")
+        gender = request.POST.get("gender")
+        age_range = request.POST.get("age_range")
+        country = request.POST.get("country")
+        languages = request.POST.get("language")  # form 필드 이름과 일치
+        travel_style = request.POST.get("travel_style")
+        budget = request.POST.get("budget")
+        smoking = request.POST.get("smoking")
+        drinking = request.POST.get("drinking")
+        sns = request.POST.get("sns")
+        bio = request.POST.get("bio")
+        mbti = request.POST.get("mbti")
+        # username 중복 체크
+        if User.objects.filter(username=email).exists():
+            # 중복 시 에러 페이지 혹은 메시지 처리
+            return render(request, "signup.html", {"error": "이미 가입된 이메일입니다."})
 
-            # 비밀번호 확인
-            if password != password2:
-                messages.error(request, "비밀번호가 일치하지 않습니다.")
-                return redirect('travel:signup')
+        user = User.objects.create_user(username=email, email=email, password=password)
 
-            # 이메일 중복 체크
-            if User.objects.filter(username=email).exists():
-                messages.error(request, "이미 존재하는 이메일입니다.")
-                return redirect('travel:signup')
+        UserProfile.objects.create(
+            user=user,
+            nickname=nickname,
+            gender=gender,
+            age_range=age_range,
+            country=country,
+            languages=languages,
+            travel_style=travel_style,
+            budget=budget,
+            smoking=smoking,
+            drinking=drinking,
+            sns=sns,
+            bio=bio,
+            mbti=mbti,
+            
+        )
 
-            # BooleanField 처리
-            smoking = True if smoking_raw in ['예', '흡연', 'Yes'] else False
-            drinking = True if drinking_raw in ['즐김', '가끔', 'Yes'] else False
-
-            # User 생성
-            user = User.objects.create_user(
-                username=email,
-                password=password,
-                email=email,
-                first_name=nickname or email
-            )
-
-            # UserProfile 생성
-            UserProfile.objects.create(
-                user=user,
-                uuid=uuid.uuid4(),
-                nickname=nickname or email,
-                gender=gender,
-                age_range=age_range,
-                country=country,
-                language=language,
-                travel_style=travel_style,
-                budget=budget,
-                smoking=smoking,
-                drinking=drinking,
-                sns=sns,
-                bio=bio
-            )
-
-            # 자동 로그인
-            user = authenticate(username=email, password=password)
-            if user:
-                login(request, user)
-                messages.success(request, f"{nickname or email}님 환영합니다!")
-                return redirect('main')
-            else:
-                messages.error(request, "회원가입은 되었지만 자동 로그인에 실패했습니다.")
-                return redirect('travel:login')
-
-        except Exception as e:
-            messages.error(request, f"회원가입 중 오류 발생: {e}")
-            return redirect('travel:signup')
-
-    return render(request, 'chat/signup.html')
+        login(request, user)
+        return redirect("main")
+    else:
+        return render(request, "signup.html")
 
 # ================== 로그인 ==================
 class CustomLoginView(LoginView):
@@ -245,14 +220,17 @@ class CustomLoginView(LoginView):
     def form_valid(self, form):
         user = form.get_user()
         display_name = getattr(user.userprofile, 'nickname', user.username)
-        messages.success(self.request, f"{display_name}님 환영합니다!")
+        messages.success(self.request, f"{display_name}님 환영합니다! 🎉")
         return super().form_valid(form)
+
 
 
 # ================== 로그아웃 ==================
 def logout_view(request):
     logout(request)
+    messages.info(request, "성공적으로 로그아웃되었습니다.")
     return render(request, 'chat/logout.html')
+
 
 
 # ================== 메인 ==================

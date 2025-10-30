@@ -376,13 +376,20 @@ from django.contrib import admin
 from .models import UserProfile
 
 
-
-    
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'uuid', 'nickname', 'gender', 'age_range', 'country',
-        'language', 'travel_style', 'budget', 'smoking', 'drinking', 'sns', 'bio', 'created_at'
+        "unique_id",
+        "user",
+        "nickname",
+        "gender",
+        "age_range",
+        "country",
+        "languages",
+        "travel_style",
+        "budget",
+        "smoking",
+        "drinking",
+        "sns",
+        'mbti'
     )
-    list_filter = ('gender', 'age_range', 'budget', 'smoking', 'drinking', 'country')
-    search_fields = ('nickname', 'user__email', 'country')

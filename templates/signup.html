@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>회원가입 | TravelMatch</title>
+  <link rel="stylesheet" href="{% static 'css/signup.css' %}" />
+</head>
+<body>
+  <!-- 🌐 Language Toggle -->
+  <div class="language-switch">
+    <button id="lang-ko" class="active">🇰🇷 한국어</button>
+    <button id="lang-en">🌎 English</button>
+  </div>
+
+  <!-- 🌄 Background -->
+  <div class="background"></div>
+
+  <!-- ✈️ Signup Container -->
+  <div class="signup-container">
+    <h2 data-ko="여행 매칭 회원가입" data-en="Create Your Travel Account">여행 매칭 회원가입</h2>
+    <form class="signup-form" method="POST" action="{% url 'travel:signup' %}">
+      {% csrf_token %}
+      
+      <label data-ko="이름 / 닉네임" data-en="Full Name / Nickname">이름 / 닉네임</label>
+      <input type="text" name="nickname" placeholder="홍길동 / John Doe" required />
+
+      <label data-ko="이메일" data-en="Email">이메일</label>
+      <input type="email" name="email" placeholder="you@example.com" required />
+
+      <label data-ko="비밀번호" data-en="Password">비밀번호</label>
+      <input type="password" name="password" id="password" placeholder="8자 이상" required />
+      <small data-ko="비밀번호는 8자 이상이어야 합니다." data-en="Password must be at least 8 characters long.">
+        비밀번호는 8자 이상이어야 합니다.
+      </small>
+
+      <label data-ko="비밀번호 확인" data-en="Confirm Password">비밀번호 확인</label>
+      <input type="password" name="password2" placeholder="비밀번호 확인" required />
+
+      <label data-ko="성별" data-en="Gender">성별</label>
+      <select name="gender" required>
+        <option value="" disabled selected>선택 / Select</option>
+        <option value="남성">남성 / Male</option>
+        <option value="여성">여성 / Female</option>
+        <option value="기타">기타 / Other</option>
+        <option value="선택 안함">선택 안함 / Prefer not to say</option>
+      </select>
+
+      <label data-ko="연령대" data-en="Age Group">연령대</label>
+      <select name="age_range" required>
+        <option value="" disabled selected>선택 / Select</option>
+        <option value="10대">10대</option>
+        <option value="20대">20대</option>
+        <option value="30대">30대</option>
+        <option value="40대 이상">40대 이상</option>
+      </select>
+
+      <label data-ko="국가" data-en="Country">국가</label>
+      <input type="text" name="country" placeholder="대한민국 / South Korea" />
+
+      <label data-ko="사용 언어" data-en="Languages Spoken">사용 언어</label>
+      <input type="text" name="language" placeholder="한국어, English, 日本語" />
+
+      <label data-ko="여행 스타일" data-en="Travel Style">여행 스타일</label>
+      <select name="travel_style">
+        <option value="휴양형">🌿 휴양형 / Relax</option>
+        <option value="액티비티">🏃‍♂️ 액티비티 / Adventure</option>
+        <option value="문화탐방">🎭 문화탐방 / Culture</option>
+        <option value="미식">🍽 미식 / Foodie</option>
+        <option value="사진">📸 사진 / Photography</option>
+      </select>
+
+      <label data-ko="예산 수준" data-en="Budget Level">예산 수준</label>
+      <select name="budget">
+        <option value="저예산">₩ 저예산 / Budget</option>
+        <option value="중간">₩₩ 중간 / Standard</option>
+        <option value="고급">₩₩₩ 고급 / Luxury</option>
+      </select>
+
+      <label data-ko="흡연 여부" data-en="Smoking Preference">흡연 여부</label>
+      <select name="smoking">
+        <option value="비흡연">🚭 비흡연 / Non-smoker</option>
+        <option value="흡연">🚬 흡연 / Smoker</option>
+      </select>
+
+      <label data-ko="음주 여부" data-en="Drinking Preference">음주 여부</label>
+      <select name="drinking">
+        <option value="즐김">🍷 즐김 / Enjoys alcohol</option>
+        <option value="가끔">🍺 가끔 / Sometimes</option>
+        <option value="안 마심">🚫 안 마심 / Non-drinker</option>
+      </select>
+        <label data-ko="MBTI 성격 유형" data-en="MBTI Type">MBTI 성격 유형</label>
+      <select name="mbti" required>
+        <option value="" disabled selected>선택 / Select</option>
+        <option value="INTJ">INTJ</option>
+        <option value="INTP">INTP</option>
+        <option value="ENTJ">ENTJ</option>
+        <option value="ENTP">ENTP</option>
+        <option value="INFJ">INFJ</option>
+        <option value="INFP">INFP</option>
+        <option value="ENFJ">ENFJ</option>
+        <option value="ENFP">ENFP</option>
+        <option value="ISTJ">ISTJ</option>
+        <option value="ISFJ">ISFJ</option>
+        <option value="ESTJ">ESTJ</option>
+        <option value="ESFJ">ESFJ</option>
+        <option value="ISTP">ISTP</option>
+        <option value="ISFP">ISFP</option>
+        <option value="ESTP">ESTP</option>
+        <option value="ESFP">ESFP</option>
+      </select>
+
+      <label data-ko="SNS 연결 (선택)" data-en="SNS (optional)">SNS 연결 (선택)</label>
+      <input type="text" name="sns" placeholder="@username / link" />
+
+      <label data-ko="자기소개" data-en="About Me">자기소개</label>
+      <textarea name="bio" placeholder="간단한 자기소개를 입력해주세요 / Tell us a bit about yourself"></textarea>
+
+      <label class="terms">
+        <input type="checkbox" required />
+        <span data-ko="이용약관 및 개인정보 처리방침에 동의합니다." data-en="I agree to the Terms and Privacy Policy.">
+          이용약관 및 개인정보 처리방침에 동의합니다.
+        </span>
+      </label>
+
+      <button type="submit" data-ko="가입하기" data-en="Sign Up">가입하기</button>
+    </form>
+  </div>
+
+  <script>
+    // 🌐 언어 전환 스크립트
+    const koBtn = document.getElementById('lang-ko');
+    const enBtn = document.getElementById('lang-en');
+
+    function switchLanguage(lang) {
+      document.querySelectorAll('[data-ko]').forEach(el => {
+        el.textContent = el.getAttribute(`data-${lang}`);
+      });
+      koBtn.classList.toggle('active', lang === 'ko');
+      enBtn.classList.toggle('active', lang === 'en');
+    }
+
+    koBtn.addEventListener('click', () => switchLanguage('ko'));
+    enBtn.addEventListener('click', () => switchLanguage('en'));
+  </script>
+</body>
+</html>
