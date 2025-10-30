@@ -8,7 +8,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import logout
 
-from travel.models import TravelPlan, Place
+from travel.models import TravelPlan, Place, ChatRoom
 
 logger = logging.getLogger(__name__)
 
@@ -17,24 +17,24 @@ def main(request):
 
 def select(request):
     # ✨ 수정된 부분: 템플릿으로 전달할 딕셔너리를 뷰에서 생성합니다.
-    duration_options = {
-        "당일치기": "day1",
-        "1박 2일": "day2",
-        "2박 3일": "day3",
-        "3박 4일": "day4",
-        "4박 5일": "day5",
-    }
+    # duration_options = {
+    #     "당일치기": "day1",
+    #     "1박 2일": "day2",
+    #     "2박 3일": "day3",
+    #     "3박 4일": "day4",
+    #     "4박 5일": "day5",
+    # }
     
-    theme_options = {
-        "cafe": "카페",
-        "restaurant": "맛집",
-        "festival": "축제",
-        "자연 경관": "자연/산책",
-        "culture": "문화/전시",
-        "park": "테마파크",
-        "healing": "힐링/스파",
-        "shopping": "쇼핑",
-    }
+    # theme_options = {
+    #     "cafe": "카페",
+    #     "restaurant": "맛집",
+    #     "festival": "축제",
+    #     "자연 경관": "자연/산책",
+    #     "culture": "문화/전시",
+    #     "park": "테마파크",
+    #     "healing": "힐링/스파",
+    #     "shopping": "쇼핑",
+    # }
     
     # form = SelectPlanForm()
     # parsed_plan = None
@@ -121,21 +121,67 @@ def select(request):
     #         error_message = "선택 입력이 유효하지 않습니다."
 
     # ✨ 수정된 부분: 생성한 딕셔너리를 context에 추가하여 템플릿으로 전달합니다.
-    context = {
-        # 'form': form,
-        'duration_options': duration_options,
-        'theme_options': theme_options,
-        # 'parsed_plan': enriched_plan,
-        # 'plan_result': plan_result,
-        # 'error_message': error_message,
-        # 'selected_region': selected_region,
-        # 'selected_duration': selected_duration,
-        # 'selected_theme': selected_theme,
-        # 'generated_prompt': prompt,
-        # 'raw_ai_response': raw_plan_result,
-    }
+    # context = {
+    #     'form': form,
+    #     'duration_options': duration_options,
+    #     'theme_options': theme_options,
+    #     'parsed_plan': enriched_plan,
+    #     'plan_result': plan_result,
+    #     'error_message': error_message,
+    #     'selected_region': selected_region,
+    #     'selected_duration': selected_duration,
+    #     'selected_theme': selected_theme,
+    #     'generated_prompt': prompt,
+    #     'raw_ai_response': raw_plan_result,
+    # }
 
-    return render(request, "select.html", context)
+    # return render(request, "select.html", context)
+    return render(request, "select.html")
+
+
+@login_required
+def chat(request):
+    current_user = request.user
+    partners_list = []
+
+    # try:
+    #     current_plan = TravelPlan.objects.get(user=current_user)
+    # except TravelPlan.DoesNotExist:
+    #     return render(request, 'travel/match_chat.html', {
+    #         'partners': [],
+    #         'current_user': current_user.username,
+    #         'message': '여행 계획이 없습니다. 여행 계획을 먼저 등록해주세요.',
+    #     })
+
+    # matched_plans = TravelPlan.objects.filter(
+    #     Q(location_city=current_plan.location_city) &
+    #     Q(start_date__lte=current_plan.end_date) &
+    #     Q(end_date__gte=current_plan.start_date) &
+    #     Q(is_seeking_partner=True) &
+    #     ~Q(user=current_user)
+    # ).select_related('user').order_by('-regdate')
+
+    # for plan in matched_plans:
+    #     partner_user = plan.user
+    #     user_ids = sorted([current_user.id, partner_user.id])
+    #     room_name = f"chat_{user_ids[0]}_{user_ids[1]}"
+
+    #     room, created = ChatRoom.objects.get_or_create(
+    #         room_name=room_name,
+    #         defaults={'user1': current_user, 'user2': partner_user}
+    #     )
+
+    #     partners_list.append({
+    #         'id': room.room_name,
+    #         'name': partner_user.username,
+    #         'trip': f"{plan.location_city} ({plan.start_date.strftime('%m/%d')}~{plan.end_date.strftime('%m/%d')})"
+    #     })
+
+    return render(request, 'travel/match_chat.html', {
+        'partners': partners_list,
+        'current_user': current_user.username,
+        'message': None,
+    })
 
 def signup_view(request):
     if request.method == 'POST':

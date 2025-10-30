@@ -1,47 +1,58 @@
 import json, re, time, uuid, random, string
+from collections import defaultdict
 from itertools import groupby
 from operator import attrgetter
 from openai import OpenAI # New import
-
+# ======================================
+# 2. 서드파티 라이브러리 (Third-Party)
+# ======================================
+import requests
+from openai import OpenAI
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.db.models import Q # New import
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect ,get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.db import transaction # 트랜잭션을 사용해 안전하게 처리
 
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 
+
+# ======================================
+# 3. 로컬 앱 임포트 (Local Application)
+# ======================================
+from .forms import DiaryEntryForm, TravelForm
 from .models import (
     Place,
-    PlaceAnalysis,
-    UserProfile,
+    ChatRoom,
+    ChatMessage,
+    ChatReport,
     TravelPlan,
     UserSelectedPlan,
     DiaryEntry,
     Travel,
+    PlaceAnalysis,
 )
 
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
 from .services.itinerary_llm_gemini import generate_itinerary_guide
+from .services.matching import create_chatroom_for_plan
 from .services.recommender import (
     parse_user_request,
     get_ranked_places,
     split_into_days,
     build_map_paths,
 )
-
-from .forms import DiaryEntryForm, TravelForm # Import TravelForm
-from collections import defaultdict # Import defaultdict
-
 
 # -------------------------------------------------------------------
 # 여행 Plane 뷰 -------- START
@@ -288,18 +299,92 @@ def travel_list(request):
 # -------------------------------------------------------------------
 
 
-# -------------------------------------------------------------------
-# 실제 화면 뷰
-# -------------------------------------------------------------------
+# ------------------------
+# 실제 매칭용 채팅방 뷰
+# ------------------------
+@login_required
+def chat_view(request, room_name):
+    room = get_object_or_404(ChatRoom, room_name=room_name)
+    participants = room.participants.exclude(id=request.user.id)
+    partner = participants.first() if participants.exists() else None
+    partner_profile = getattr(partner, 'userprofile', None) if partner else None
 
+    return render(request, 'travel/match_chat.html', {
+        'room_name': room.room_name,
+        'partner': partner,
+        'partner_profile': partner_profile
+    })
+
+
+# ------------------------
+# 채팅 메시지 신고 기능 (AJAX)
+# ------------------------
+@csrf_exempt
+@login_required
+def report_message(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "허용되지 않은 요청입니다."}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        message_id = data.get("message_id")
+        reason = data.get("reason", "")
+        message = ChatMessage.objects.get(id=message_id)
+        reporter = request.user
+
+        if ChatReport.objects.filter(reporter=reporter, message=message).exists():
+            return JsonResponse({"success": False, "message": "이미 신고한 메시지입니다."}, status=400)
+
+        ChatReport.objects.create(reporter=reporter, message=message, reason=reason)
+        return JsonResponse({"success": True, "message": "✅ 신고가 접수되었습니다."})
+
+    except ChatMessage.DoesNotExist:
+        return JsonResponse({"success": False, "message": "❌ 메시지를 찾을 수 없습니다."}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": f"에러 발생: {str(e)}"}, status=400)
+
+
+# ------------------------
+# 여행 계획 생성
+# ------------------------
+@login_required
+def create_travel_plan(request):
+    if request.method == "POST":
+        city = request.POST.get("location_city")
+        start_date = request.POST.get("start_date")
+        end_date = request.POST.get("end_date")
+
+        plan = TravelPlan.objects.create(
+            user=request.user,
+            location_city=city,
+            start_date=start_date,
+            end_date=end_date,
+            is_seeking_partner=True
+        )
+
+        new_rooms = create_chatroom_for_plan(plan)
+        message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!" if new_rooms else "매칭 가능한 사용자가 아직 없습니다."
+
+        return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
+
+    return render(request, "travel/create_travel_plan.html")
+
+
+# ------------------------
+# LLM 기반 장소 분석 뷰
+# ------------------------
 def _render_select_page(request):
+    """분석 대상 선택 화면(GET)"""
+    # ✅ 아직 분석이 없는 Place만 노출
     all_places = (
         Place.objects
-        .filter(analyses__isnull=True)
+        .filter(analyses__isnull=True)       # ← 포인트
         .order_by("category", "name")
         .distinct()
     )
-    grouped_places = {cat: list(items) for cat, items in groupby(all_places, key=attrgetter("category"))}
+
+    grouped_places = {cat: list(items)
+                      for cat, items in groupby(all_places, key=attrgetter("category"))}
 
     ctx = {
         "title": "장소 LLM 분석 도구",
@@ -772,66 +857,6 @@ logger = logging.getLogger(__name__)
 #         logger.error(f"An error occurred in get_ai_recommendations: {e}")
 #         return JsonResponse({"error": f"AI 추천을 생성하는 중 오류가 발생했습니다: {e}"}, status=500)
 
-# -------------------------------------------------------------------
-# 로그인 / 회원가입 / 로그아웃 / 플랜 선택 저장
-# -------------------------------------------------------------------
-
-# def login_view(request):
-#     if request.method == "POST":
-#         username = request.POST.get("username")
-#         password = request.POST.get("password")
-
-#         user = authenticate(request, username=username, password=password)
-#         if user is None:
-#             messages.error(request, "아이디 또는 비밀번호가 올바르지 않습니다.")
-#             return render(request, "travel/login.html")
-
-#         login(request, user)
-#         return redirect("/")
-
-#     return render(request, "travel/login.html")
-
-
-# def signup_view(request):
-#     if request.method == "POST":
-#         username = request.POST.get("username")
-#         email    = request.POST.get("email")
-#         password = request.POST.get("password")
-
-#         # 아이디 중복 체크
-#         if User.objects.filter(username=username).exists():
-#             messages.error(request, "이미 존재하는 아이디입니다.")
-#             return render(request, "travel/login.html")
-
-#         # User 생성
-#         user = User.objects.create_user(
-#             username=username,
-#             email=email,
-#             password=password,
-#         )
-
-#         # UserProfile 생성
-#         UserProfile.objects.get_or_create(
-#             user=user,
-#             defaults={
-#                 "nickname": username,
-#                 "preferred_style": "",
-#                 "bio": "",
-#             }
-#         )
-
-#         messages.success(request, "회원가입이 완료되었습니다! 로그인해주세요 🙌")
-#         return redirect("/travel/login/")
-
-#     # GET이면 그냥 로그인 페이지로
-#     return render(request, "travel/login.html")
-
-
-# def logout_view(request):
-#     logout(request)
-#     return redirect("/")
-
-
 @require_POST
 def select_plan(request):
     # 로그인 안 한 경우
@@ -855,88 +880,7 @@ def select_plan(request):
 
     return JsonResponse({"status": "success"})
 
-
-# def travel_plan_list(request):
-#     plans = TravelPlan.objects.all().order_by('-created_at')
-#     return render(request, 'travel/plan_list.html', {'plans': plans})
-
-
-# def travel_plan_new(request):
-#     if request.method == 'POST':
-#         TravelPlan.objects.create(
-#             title=request.POST.get('title'),
-#             destination=request.POST.get('destination'),
-#             start_date=request.POST.get('start_date'),
-#             end_date=request.POST.get('end_date'),
-#             description=request.POST.get('description'),
-#         )
-#         return redirect('travel_plan_list')
-#     return render(request, 'travel/plan_new.html')
-
-
-# def travel_plan_edit(request, pk):
-#     plan = get_object_or_404(TravelPlan, pk=pk)
-#     if request.method == 'POST':
-#         plan.title = request.POST.get('title')
-#         plan.destination = request.POST.get('destination')
-#         plan.start_date = request.POST.get('start_date')
-#         plan.end_date = request.POST.get('end_date')
-#         plan.description = request.POST.get('description')
-#         plan.save()
-#         return redirect('travel_plan_list')
-#     return render(request, 'travel/plan_edit.html', {'plan': plan})
-
-
 # ================== 회원가입 ==================
-
-# def signup_view(request):
-#     print("Signup view called")
-
-#     if request.method == "POST":
-#         email = request.POST.get("email")
-#         password = request.POST.get("password")
-#         nickname = request.POST.get("nickname")
-#         gender = request.POST.get("gender")
-#         age_range = request.POST.get("age_range")
-#         country = request.POST.get("country")
-#         languages = request.POST.get("language")  # form 필드 이름과 일치
-#         travel_style = request.POST.get("travel_style")
-#         budget = request.POST.get("budget")
-#         smoking = request.POST.get("smoking")
-#         drinking = request.POST.get("drinking")
-#         sns = request.POST.get("sns")
-#         bio = request.POST.get("bio")
-#         mbti = request.POST.get("mbti")
-#         # username 중복 체크
-#         if User.objects.filter(username=email).exists():
-#             # 중복 시 에러 페이지 혹은 메시지 처리
-#             return render(request, "registration/signup.html", {"error": "이미 가입된 이메일입니다."})
-
-#         user = User.objects.create_user(username=email, email=email, password=password)
-#         print("========== 지점 ===========")
-#         UserProfile.objects.create(
-#             user=user,
-#             nickname=nickname,
-#             gender=gender,
-#             age_range=age_range,
-#             country=country,
-#             languages=languages,
-#             travel_style=travel_style,
-#             budget=budget,
-#             smoking=smoking,
-#             drinking=drinking,
-#             sns=sns,
-#             bio=bio,
-#             mbti=mbti,
-            
-#         )
-
-#         login(request, user)
-#         return redirect("/")
-#     else:
-#         return render(request, "registration/signup.html")
-    
-
 def signup_view(request):
     print("Signup view called")
 

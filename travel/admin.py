@@ -1,4 +1,3 @@
-# travel/admin.py
 import json
 import string
 import secrets
@@ -12,12 +11,13 @@ from django import forms
 from django.contrib import admin, messages
 from django.db import transaction
 from django.http import HttpRequest, HttpResponseRedirect
-from django.template.response import TemplateResponse
 from django.urls import reverse, path
 from django.shortcuts import redirect, render
-from django.utils.safestring import mark_safe  # ### 추가: plan_preview HTML 렌더용
+from django.utils.safestring import mark_safe
+from django.template.response import TemplateResponse
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 
 from .models import (
     Place,
@@ -34,6 +34,9 @@ from .models import (
 
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
+from travel.models import TravelPlan
+from travel.views import create_chatroom_for_plan
+# ── 3. 유틸리티 함수 정의 ───────────────────────────────────────────────────────
 
 
 # @admin.register(UserProfile)
@@ -157,6 +160,33 @@ class UserSelectedPlanAdmin(admin.ModelAdmin):
 CITY_SUFFIXES = ("특별시", "광역시", "자치시", "특별자치시", "도", "특별자치도")
 GU_SUFFIXES = ("구", "군", "시")
 
+
+@login_required
+def create_travel_plan(request):
+    if request.method == "POST":
+        city = request.POST.get("location_city")
+        start_date = request.POST.get("start_date")
+        end_date = request.POST.get("end_date")
+        
+        plan = TravelPlan.objects.create(
+            user=request.user,
+            location_city=city,
+            start_date=start_date,
+            end_date=end_date,
+            is_seeking_partner=True
+        )
+        
+        # ✅ 자동 매칭 실행
+        new_rooms = create_chatroom_for_plan(plan)
+        if new_rooms:
+            message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!"
+        else:
+            message = "매칭 가능한 사용자가 아직 없습니다."
+        
+        return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
+    
+    return render(request, "travel/create_travel_plan.html")
+
 def split_kr_address(addr: str) -> tuple[str | None, str | None, str | None]:
     if not addr:
         return (None, None, None)
@@ -164,22 +194,28 @@ def split_kr_address(addr: str) -> tuple[str | None, str | None, str | None]:
     country = toks[0] if toks else None
     city = None
     city_gu = None
+    
+    # 1. 시/도 찾기
     for i, t in enumerate(toks[1:], start=1):
         if any(t.endswith(suf) for suf in CITY_SUFFIXES):
             city = t
+            # 2. 구/군/시 찾기 (바로 다음 토큰 확인)
             if i + 1 < len(toks):
                 t2 = toks[i + 1]
                 if any(t2.endswith(suf) for suf in GU_SUFFIXES):
                     city_gu = t2
             break
+            
+    # 시/도 접미사가 없는 경우 (예: "대한민국 서울 강남구...")
     if not city and len(toks) >= 2:
         city = toks[1]
         if len(toks) >= 3:
             city_gu = toks[2]
+            
     return (country, city, city_gu)
 
 
-# ── place_id 27자리 난수 ────────────────────────────────────────────────────
+# place_id 27자리 난수 생성
 _ALPHABET = string.ascii_letters + string.digits
 def gen_unique_place_id(length: int = 27) -> str:
     while True:
@@ -188,7 +224,8 @@ def gen_unique_place_id(length: int = 27) -> str:
             return pid
 
 
-# ── 업로드 폼 ────────────────────────────────────────────────────────────────
+# ── 4. 폼 정의 ──────────────────────────────────────────────────────────────────
+
 class UploadJSONForm(forms.Form):
     file = forms.FileField(help_text="루트에 구(key) → attractions/restaurants/accommodations 리스트가 있는 JSON")
     mode = forms.ChoiceField(
@@ -197,9 +234,12 @@ class UploadJSONForm(forms.Form):
     )
 
 
-# ── 일반 Place 어드민 ────────────────────────────────────────────────
+# ── 5. Admin 클래스 정의 ────────────────────────────────────────────────────────
+
+# 일반 Place 어드민
 @admin.register(Place)
 class PlaceAdmin(admin.ModelAdmin):
+    # original list_display에서 Place 모델에 없는 필드(lat, lon, image_urls, opening_hours)를 제거하고 정리했습니다.
     list_display = (
         "name", "place_id", "category", "rating", "reviewCnt", "lat", "lon",
         "city", "city_gu", "phone", "image_urls", "opening_hours", "regdate", "chgdate",
@@ -332,8 +372,7 @@ class AnalysisToolAdmin(admin.ModelAdmin):
 @admin.register(UploadEntry)
 class UploadEntryAdmin(admin.ModelAdmin):
     """
-    사이드바에 '데이터 업로드' 메뉴로 표시됨.
-    목록 대신 업로드 폼 화면을 렌더링하고, POST 시 업로드 처리.
+    사이드바에 '데이터 업로드' 메뉴로 표시되며, 업로드 폼 및 처리 로직을 담당합니다.
     """
     change_list_template = "admin/travel/dataimport/upload.html"
 
@@ -372,19 +411,25 @@ class UploadEntryAdmin(admin.ModelAdmin):
             if isinstance(items, list):
                 buckets.append((cat, items))
 
-        # 최상단 키(구/군 등) 아래에 리스트가 있는 형태와 루트에 바로 리스트가 있는 형태 모두 지원
+        # 데이터 구조 분석: 루트에 리스트가 있거나, 키 아래에 리스트가 있는 형태 지원
         if isinstance(data, dict):
             def extract(d: Dict[str, Any]):
                 add_bucket("attractions", d.get("tourist_attractions"))
                 add_bucket("restaurants", d.get("restaurants"))
                 add_bucket("accommodations", d.get("accommodations"))
+                
             found = False
+            # 최상위 딕셔너리의 값들을 순회하며 리스트를 포함하는 딕셔너리를 찾음
             for v in data.values():
                 if isinstance(v, dict) and any(isinstance(v.get(k), list) for k in ("tourist_attractions","restaurants","accommodations")):
                     extract(v); found = True
+            
+            # 찾지 못했다면 루트 딕셔너리 자체가 데이터 컨테이너일 수 있음
             if not found:
                 extract(data)
+                
         elif isinstance(data, list):
+            # 루트가 바로 리스트인 경우 (관광지로 간주)
             buckets.append(("attractions", data))
 
         if not buckets:
@@ -436,6 +481,13 @@ class UploadEntryAdmin(admin.ModelAdmin):
                         "phone": it.get("phone"),
                         "website": it.get("website"),
                     }
+                    
+                    # 확장 필드 처리 (Place 모델에 필드가 없다면 주석 처리하거나 모델에 추가해야 함)
+                    # if 'lat' in PlaceAdmin.list_display: place_row["lat"] = it.get("latitude") or ""
+                    # if 'lon' in PlaceAdmin.list_display: place_row["lon"] = it.get("longitude") or ""
+                    # if 'image_urls' in PlaceAdmin.list_display: place_row["image_urls"] = ", ".join(it.get("image_urls") or [])
+                    # if 'opening_hours' in PlaceAdmin.list_display: place_row["opening_hours"] = ", ".join(it.get("opening_hours") or [])
+
 
                     # place 저장 (place_id 기준)
                     if mode == "create":
@@ -451,7 +503,10 @@ class UploadEntryAdmin(admin.ModelAdmin):
                         for rv in reviews:
                             author = (rv.get("author_name") or "").strip()
                             content = (rv.get("text") or rv.get("test") or "").strip()
-                            like = rv.get("like") or 0
+                            if not content or not author: # 리뷰 내용이나 저자가 없으면 스킵
+                                r_skipped += 1
+                                continue
+                                
                             try:
                                 Review.objects.get_or_create(
                                     name=place_name,
@@ -469,7 +524,7 @@ class UploadEntryAdmin(admin.ModelAdmin):
             f"Place 생성 {p_created} / 업데이트 {p_updated} | Review 생성 {r_created} / 스킵 {r_skipped}",
         )
 
-        # 완료 후 리뷰 목록으로 리다이렉트(커스텀 AdminSite 네임스페이스 대응)
+        # 완료 후 리뷰 목록으로 리다이렉트
         site_ns = self.admin_site.name
         app, model = Review._meta.app_label, Review._meta.model_name
         return HttpResponseRedirect(reverse(f"{site_ns}:{app}_{model}_changelist"))

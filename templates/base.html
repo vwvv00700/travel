@@ -64,12 +64,13 @@
             <a href="{% url 'main' %}" class="logo d-flex align-items-center me-auto me-xl-0">
                 <!-- Uncomment the line below if you also wish to use an image logo -->
                 <!-- <img src="assets/img/logo.webp" alt=""> -->
-                <h1 class="sitename">Agent</h1>
+                <h1 class="sitename">Travel</h1>
             </a>
 
             <nav id="navmenu" class="navmenu">
                 <ul>
                     <li><a href="{% url 'main' %}">Home</a></li>
+                    <li><a href="{% url 'chat' %}">채팅</a></li>
                     <li><a href="{% url 'select' %}">AI 코스 추천</a></li>
                     <li><a href="{% url 'travel:diary_list' %}">내 다이어리</a></li>
                     {% if user.is_authenticated %}

@@ -1,6 +1,7 @@
 from django.urls import path, register_converter
 from django.contrib.auth import views as auth_views
-from . import views
+from travel import views
+from django.shortcuts import render
 
 app_name = "travel"
 
@@ -31,6 +32,9 @@ urlpatterns = [
     # path("signup/", views.signup_view, name="signup"),
     # path("logout/", views.logout_view, name="logout"),
     path("select_plan/", views.select_plan, name="select_plan"),
+
+    path('chat/<str:room_name>/', views.chat_view, name='chat'),
+    path("travel/create/", views.create_travel_plan, name="create_travel_plan"),
 
     # 사용자 인증 관련
     # 로그인

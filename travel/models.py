@@ -2,6 +2,7 @@ import logging, io, requests, os
 import uuid
 
 from django.db import models
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.contrib.auth.models import User
 
@@ -9,6 +10,8 @@ from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 from datetime import datetime
 
+# Django 기본 User
+User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
@@ -115,7 +118,6 @@ def get_location_name(latitude, longitude):
     except Exception as e:
         logger.error(f"Kakao 위치 이름 가져오는 중 오류: {e}")
         return f"위도: {latitude:.4f}, 경도: {longitude:.4f}"
-
 
 
 # ----- 장소 테이블 ------------------------------------------
@@ -226,16 +228,15 @@ class Review(models.Model):
         who = self.author or "anonymous"
         return f"{who} → {self.place_id}"
 
-
-# ----- Proxy ------------------------------------------
+# ----- 데이터 업로드 용 -----------------------------------
 class UploadEntry(Place):
+    """Place 모델 상속, 데이터 업로드/관리용"""
     class Meta:
         proxy = True
         verbose_name = "데이터 업로드"
         verbose_name_plural = "데이터 업로드"
 
-
-# ----- LLM용 ------------------------------------------
+# ----- LLM 장소분석 용 ------------------------------------
 class AnalysisTool(models.Model):
     class Meta:
         managed = False
@@ -342,6 +343,7 @@ class DiaryEntry(models.Model):
 #     def __str__(self):
 #         return self.nickname or self.user.username
     
+
 class TravelPlan(models.Model):
     title = models.CharField(max_length=200)
     data = models.JSONField()  # 전체 플랜 구조 (day_plans, day_waypoints, guide_text 등 저장 가능)
@@ -369,6 +371,36 @@ class UserSelectedPlan(models.Model):
 
     def __str__(self):
         return f"{self.user.username} -> {self.plan.title}"
+
+# ----- 채팅 관련 모델 ------------------------------------------
+class ChatRoom(models.Model):
+    room_name = models.CharField(max_length=100, unique=True)
+    participants = models.ManyToManyField(User)
+    travel_plan1 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan1')
+    travel_plan2 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan2')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"ChatRoom({self.id}): {self.travel_plan1} <-> {self.travel_plan2}"
+
+
+class ChatMessage(models.Model):
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.plan.title}"
+
+class ChatReport(models.Model):
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
+    message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, related_name='reports')
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.reporter} → {self.message.id}"
 
 # ----- 사용자 프로필 ------------------------------------------
 class UserProfile(models.Model):

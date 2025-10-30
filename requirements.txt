@@ -116,4 +116,8 @@ watchdog==6.0.0
 webdriver-manager==4.0.2
 websocket-client==1.9.0
 websockets==15.0.1
+<<<<<<< HEAD
 wsproto==1.2.0
+=======
+wsproto==1.2.0
+>>>>>>> de6c6e241f1046890f223fa79b655e7f906da338

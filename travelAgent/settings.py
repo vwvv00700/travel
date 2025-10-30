@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()  # .env 파일에서 환경 변수 로드
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "import_export",
     "travel.apps.TravelConfig",
+    'channels',       # 채널스 등록
     # "ai_planner",
 ]
 
@@ -106,10 +107,15 @@ DATABASES = {
     "diary_db": {  # New database for diary app
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "diary_db.sqlite3",
+    },
+    "chat_db": {  # New database for chat app
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "chat_db.sqlite3",
     }
 }
 
-DATABASE_ROUTERS = ['travelAgent.db_routers.DiaryRouter']
+DATABASE_ROUTERS = ['travelAgent.db_routers.DiaryRouter'
+                    , 'travelAgent.db_routers.ChatRouter']
 
 
 # Password validation
@@ -162,10 +168,16 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DATA_DIR = BASE_DIR / "data"
 
+# ASGI 및 Channel Layer 설정
+ASGI_APPLICATION = 'travelAgent.asgi.application'
 
-# === Mapbox Directions API Token ===
-# .env 파일에 예:
-# MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoibXl1c2VyIi... (public access token)
+CHANNEL_LAYERS = {
+    'default': {
+        # 개발 환경용 인메모리 레이어 (DB에만 메시지 저장, 재시작 시 실시간 그룹 정보만 초기화됨)
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
 MAPBOX_ACCESS_TOKEN = os.getenv("MAPBOX_ACCESS_TOKEN", "")
 
 
@@ -193,3 +205,4 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://localhost:8000",
 ]
+
