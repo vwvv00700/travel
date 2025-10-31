@@ -39,6 +39,20 @@
         <form class="form-selects" method="post" action="{% url 'travel:travel_list' %}">
             {% csrf_token %}
             <div class="form-wrap">
+                <div class="form-block">
+                    <h4>📅 여행 날짜</h4>
+                    <strong class="red">출발일부터 마지막 날까지 선택해주세요.</strong>
+                    <div class="date-range">
+                        <label for="start_date">출발일</label>
+                        <input type="date" name="start_date" id="start_date" required>
+
+                        <label for="end_date">복귀일</label>
+                        <input type="date" name="end_date" id="end_date" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-wrap">
                 <div class="form-block" style="width:100%;">
                     <h4>🛫 여행지 (지도에서 선택)</h4>
                     <strong class="red">최대 4개까지 선택 가능합니다.</strong>

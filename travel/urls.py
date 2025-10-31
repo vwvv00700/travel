@@ -40,7 +40,7 @@ urlpatterns = [
     path('chat/<str:room_name>/', views.chat_view, name='chat'),
     path("travel/create/", views.create_travel_plan, name="create_travel_plan"),
 
-    # path("my_plans/", views.user_travel_plans, name="user_travel_plans"),
+    path("my_plans/", views.user_travel_plans, name="user_travel_plans"),
 
     # 사용자 인증 관련
     # 로그인

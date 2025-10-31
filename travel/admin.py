@@ -96,9 +96,27 @@ class TravelPlanAdmin(admin.ModelAdmin):
 
 @admin.register(UserSelectedPlan)
 class UserSelectedPlanAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "plan", "startDate", "endDate", "selected_at")
+    list_display = ("id", "user", "plan", "travel_dates", "selected_at")
     search_fields = ("user__username", "plan__title")
     readonly_fields = ("selected_at", "plan_preview")  # ### 수정: plan_preview 추가
+
+    def travel_dates(self, obj):
+        """
+        ex) 2025-11-02 ~ 2025-11-04
+        둘 중 하나라도 없으면 그냥 있는 것만 보여줌.
+        """
+        sd = obj.start_date
+        ed = obj.end_date
+
+        if sd and ed:
+            return f"{sd} ~ {ed}"
+        if sd:
+            return f"{sd} ~ -"
+        if ed:
+            return f"- ~ {ed}"
+        return "(날짜 미지정)"
+
+    travel_dates.short_description = "여행 기간"
 
     def plan_preview(self, obj):
         """

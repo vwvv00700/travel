@@ -2,8 +2,6 @@
 // 전역 상태
 // =============================
 
-console.log("load");
-
 let currentPlanIdx = (typeof INITIAL_PLAN_IDX !== "undefined") ? INITIAL_PLAN_IDX : 0;
 
 const DEFAULT_CENTER = [37.5665, 126.9780];
@@ -111,43 +109,38 @@ function buildDirectionsURL(waypoints, profile = "driving") {
  *    distanceMeters: number                     // 전체 주행거리(m)
  *  }
  */
-async function fetchRouteForDay(waypoints) {
-    const url = buildDirectionsURL(waypoints, "driving");
-    if (!url) {
-        return {
-            lineCoords: [],
-            distanceMeters: 0,
-        };
-    }
-
-    try {
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            console.error("Mapbox Directions API error", resp.status, resp.statusText);
+    async function fetchRouteForDay(waypoints) {
+        if (!waypoints || waypoints.length < 2) {
             return { lineCoords: [], distanceMeters: 0 };
         }
 
-        const data = await resp.json();
-        if (!data.routes || !data.routes.length) {
+        const url = buildDirectionsURL(waypoints, "driving");
+        if (!url) return { lineCoords: [], distanceMeters: 0 };
+
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) {
+                console.error("Mapbox Directions API error", resp.status, resp.statusText);
+                return { lineCoords: [], distanceMeters: 0 };
+            }
+
+            const data = await resp.json();
+            if (!data.routes || !data.routes.length) {
+                return { lineCoords: [], distanceMeters: 0 };
+            }
+
+            const best = data.routes[0];
+            const coordsLngLat = best.geometry.coordinates || [];
+            const distanceMeters = best.distance || 0;
+            const lineCoords = coordsLngLat.map(pair => [pair[1], pair[0]]);
+
+            return { lineCoords, distanceMeters };
+        } catch (err) {
+            console.error("Directions fetch failed:", err);
             return { lineCoords: [], distanceMeters: 0 };
         }
-
-        const best = data.routes[0];
-        const coordsLngLat = best.geometry.coordinates || [];
-        const distanceMeters = best.distance || 0;
-
-        // Mapbox는 [lng, lat] 이라서 Leaflet은 [lat, lng]로 바꿔야 함
-        const lineCoords = coordsLngLat.map(pair => [pair[1], pair[0]]);
-
-        return {
-            lineCoords,
-            distanceMeters,
-        };
-    } catch (err) {
-        console.error("Directions fetch failed:", err);
-        return { lineCoords: [], distanceMeters: 0 };
     }
-}
+
 
 
 // =============================
@@ -233,12 +226,13 @@ async function renderMapForDay(dayIdx) {
     if (!waypoints.length) {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
         updateDistanceInfoBox("");
-        const totalKm = routeData.distanceMeters ? metersToKmLabel(routeData.distanceMeters) : "";
-        updateDistanceInfoBox(totalKm ? `예상 이동 거리 약 ${totalKm}` : "");
+
+        // Day 타이틀의 총 이동거리 초기화
         const dayTitleEl = document.querySelector(`.day-title[data-day="${dayIdx}"] .day-total-dist`);
         if (dayTitleEl) {
-            dayTitleEl.textContent = totalKm ? `(${totalKm})` : "";
+            dayTitleEl.textContent = "";
         }
+
         syncMapHeightToList();
         return;
     }
@@ -491,6 +485,39 @@ function updateGuideText() {
     guideEl.textContent = planData.guide_text || "가이드를 불러오는 중입니다...";
 }
 
+// --- [NEW] 서버에서 가이드 받아와서 화면/PLANS에 반영 ---
+async function fetchGuideAndApply(planIdx) {
+    const guideEl = document.getElementById("guideText");
+    if (guideEl) {
+        guideEl.textContent = "가이드 작성 중입니다";
+        guideEl.classList.add("guide-loading"); // 🔴 로딩 아이콘 표시
+    }
+
+    const userQuery = window.USER_QUERY || {};
+    try {
+        const resp = await fetch(
+            `/travel/generate_guide/?plan_idx=${planIdx}` +
+            `&user_query_json=${encodeURIComponent(JSON.stringify(userQuery))}`
+        );
+        const data = await resp.json();
+
+        if (PLANS && PLANS[planIdx]) {
+            PLANS[planIdx].guide_text = data.guide_text || "";
+        }
+
+        if (guideEl) {
+            guideEl.textContent = data.guide_text || "가이드 생성 실패";
+            guideEl.classList.remove("guide-loading"); // 🔵 완료 시 제거
+        }
+    } catch (err) {
+        console.error("guide fetch failed:", err);
+        if (guideEl) {
+            guideEl.textContent = "가이드 요청 실패";
+            guideEl.classList.remove("guide-loading");
+        }
+    }
+}
+
 // 저장하기 버튼이 현재 플랜 id랑 맞게 동기화
 function syncSaveButtonPlanId() {
     const saveBtn = document.getElementById("savePlanBtn");
@@ -547,37 +574,58 @@ function bindPlanSelector() {
 // =============================
 
 function setupSaveButton() {
-    const saveBtn = document.getElementById("savePlanBtn");
-    if (!saveBtn) return;
+    const btn = document.getElementById("savePlanBtn");
+    if (!btn) return;
 
-    saveBtn.addEventListener("click", () => {
-        const planId = saveBtn.dataset.planId;
+    btn.addEventListener("click", async () => {
+        const planId = btn.getAttribute("data-plan-id");
 
-        fetch("/travel/select_plan/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-CSRFToken": getCookie("csrftoken"),
-            },
-            body: `plan_id=${encodeURIComponent(planId)}`
-        })
-        .then(res => res.json())
-        .then(data => {
+        // 날짜와 유저 정보는 travel_list 뷰에서 context로 내려와야 함
+        const uq = window.USER_QUERY || {};
+        const startDate = uq.start_date || "";
+        const endDate   = uq.end_date || "";
+        const userId    = uq.user_id || "";  // travel_list에서 user_id도 USER_QUERY에 넣어줘
+
+        const bodyData = new URLSearchParams();
+        bodyData.set("plan_id", planId);
+        bodyData.set("user_id", userId);
+        bodyData.set("trip_start_date", startDate);
+        bodyData.set("trip_end_date", endDate);
+
+        try {
+            const res = await fetch("/travel/select_plan/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: bodyData.toString(),
+            });
+
+            const data = await res.json();
+
             if (data.status === "success") {
-                alert("플랜이 내 여행으로 저장됐어요 ✅");
-            } else if (data.status === "login_required") {
-                alert("로그인 후에 저장할 수 있어요.");
-                window.location.href = "/travel/login/";
-            } else {
-                alert("저장 중 오류가 발생했어요.");
+                alert("플랜이 저장됐어요 ✅");
+                return;
             }
-        })
-        .catch(err => {
+            if (data.status === "duplicate") {
+                alert("이미 같은 날짜로 저장된 플랜입니다.");
+                return;
+            }
+            if (data.status === "login_required") {
+                alert("로그인이 필요합니다.");
+                return;
+            }
+
+            alert("알 수 없는 응답: " + data.status);
+
+        } catch (err) {
             console.error(err);
-            alert("서버 오류가 발생했어요.");
-        });
+            alert("저장 중 오류가 발생했습니다.");
+        }
     });
 }
+
 
 
 // =============================
@@ -613,4 +661,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // 8. 레이아웃 높이 동기화
     syncMapHeightToList();
+
+    // 9. 첫 진입 시 가이드 생성 호출
+    fetchGuideAndApply(currentPlanIdx);
 });

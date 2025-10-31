@@ -377,14 +377,14 @@ class UserSelectedPlan(models.Model):
     )
     selected_at = models.DateTimeField(auto_now_add=True)
 
-    startDate = models.DateField(null=False, blank=False)
-    endDate = models.DateField(null=False, blank=False)
+    start_date = models.DateField(null=False, blank=False)
+    end_date = models.DateField(null=False, blank=False)
 
     class Meta:
-        unique_together = ("user", "plan")  # 같은 플랜 중복 저장 방지
+        unique_together = ("user", "plan", "start_date", "end_date")
 
     def __str__(self):
-        return f"{self.user.username} -> {self.plan.title}"
+        return f"{self.user.username} -> {self.plan.title} ({self.start_date} ~ {self.end_date})"
 
 # ----- 채팅 관련 모델 ------------------------------------------
 class ChatRoom(models.Model):

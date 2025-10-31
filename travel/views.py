@@ -943,20 +943,25 @@ def select_plan(request):
         return JsonResponse({"status": "error", "msg": "no plan_id"})
 
     current_time = timezone.now()
-    startDate = current_time.date()
-    endDate = current_time.date()
+
+    trip_start = request.POST.get("trip_start_date", "").strip()
+    trip_end   = request.POST.get("trip_end_date", "").strip()
 
     try:
         plan = TravelPlan.objects.get(id=plan_id)
     except TravelPlan.DoesNotExist:
         return JsonResponse({"status": "error", "msg": "plan_not_found"})
 
-    UserSelectedPlan.objects.get_or_create(
+    obj, created = UserSelectedPlan.objects.get_or_create(
         user=request.user,
         plan=plan,
-        startDate = startDate,
-        endDate = endDate,
+        start_date = trip_start,
+        end_date = trip_end,
     )
+
+    if not created:
+        # 이미 있었다는 뜻
+        return JsonResponse({"status": "duplicate"})
 
     return JsonResponse({"status": "success"})
 
@@ -1130,20 +1135,20 @@ def reset_password_form(request):
 
 
 # # ================== 내 여행 계획 보기 ==================
-# def user_travel_plans(request):
-#     if not request.user.is_authenticated:
-#         return redirect('login')
+def user_travel_plans(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
 
-#     try:
-#         travel_plans = UserSelectedPlan.objects.filter(user=request.user)
+    try:
+        travel_plans = UserSelectedPlan.objects.filter(user=request.user)
 
-#         for plan in travel_plans:
-#             print(f"DEBUG: Plan ID: {plan.plan.user_query}, Dates: {plan.startDate} to {plan.endDate}")  # Debug print
+        for plan in travel_plans:
+            print(f"DEBUG: Plan ID: {plan.plan.user_query}, Dates: {plan.start_date} to {plan.end_date}")  # Debug print
 
-#         return redirect("/")
+        return redirect("/")
     
-#     except Exception as e:
-#         print(f"Error fetching travel plans: {e}")  # Log the error for debugging
+    except Exception as e:
+        print(f"Error fetching travel plans: {e}")  # Log the error for debugging
 
-#         messages.error(request, '여행 계획이 없습니다')
-#         return redirect("/")    
+        messages.error(request, '여행 계획이 없습니다')
+        return redirect("/")    
