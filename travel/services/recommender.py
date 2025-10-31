@@ -68,6 +68,38 @@ def parse_user_request(request) -> Dict[str, Any]:
 
     mbti_guess = "ENFP"
     season = "autumn"
+    
+ # ✅ 영문 구 코드 → 한글 구 이름 변환
+    DISTRICT_MAP = {
+        "gangnam": "강남구",
+        "seocho": "서초구",
+        "songpa": "송파구",
+        "gangdong": "강동구",
+        "yongsan": "용산구",
+        "mapo": "마포구",
+        "jongno": "종로구",
+        "jung": "중구",
+        "seongdong": "성동구",
+        "gwangjin": "광진구",
+        "dongdaemun": "동대문구",
+        "jungnang": "중랑구",
+        "seongbuk": "성북구",
+        "gangbuk": "강북구",
+        "dobong": "도봉구",
+        "nowon": "노원구",
+        "eunpyeong": "은평구",
+        "seodaemun": "서대문구",
+        "yangcheon": "양천구",
+        "gangseo": "강서구",
+        "guro": "구로구",
+        "geumcheon": "금천구",
+        "yeongdeungpo": "영등포구",
+        "dongjak": "동작구",
+        "gwanak": "관악구",
+    }
+
+    # 프론트에서 영어 코드로 넘어오는 경우 한글로 변환
+    areas = [DISTRICT_MAP.get(a.lower(), a) for a in areas]
 
     user_id_val = request.user.username if request.user.is_authenticated else ""
 
@@ -125,53 +157,106 @@ def _base_queryset():
 
 
 def _filter_queryset_for_user(qs, user: Dict[str, Any]):
-    """사용자 조건(지역/테마)에 맞게 필터링"""
-    # ✅ 지역 필터 (정확한 필드: city_gu)
-    if user["areas"]:
+    """
+    사용자 조건(지역/테마)에 맞게 필터링해서 queryset을 반환.
+    절대 None을 반환하지 않도록 보장.
+    """
+
+    # 지역 필터
+    areas = user.get("areas", [])
+    if areas:
         area_q = Q()
-        for area in user["areas"]:
+        for area in areas:
+            # city_gu 또는 주소에 해당 구 이름이 들어가면 허용
             area_q |= Q(city_gu__icontains=area) | Q(address__icontains=area)
         qs = qs.filter(area_q)
 
-    # ✅ 테마 필터 (카테고리에 부분 매칭)
-    if user["themes"]:
+    # 테마 필터
+    themes = user.get("themes", [])
+    if themes:
         theme_q = Q()
-        for t in user["themes"]:
-            theme_q |= Q(category__icontains=t)
+        for t in themes:
+            if not t:
+                continue
+            # category / name / address 안에 테마 키워드 들어가면 허용
+            theme_q |= (
+                Q(category__icontains=t)
+                | Q(name__icontains=t)
+                | Q(address__icontains=t)
+            )
         qs = qs.filter(theme_q)
 
     return qs
 
 
+
 def _rank_places_from_queryset(qs, user: Dict[str, Any]) -> List[Dict[str, Any]]:
     ranked = []
+
+    # ✅ None 들어오면 그냥 빈 리스트 반환하고 끝
+    if qs is None:
+        return ranked
+
     for place in qs:
         pa = place.analyses.first()
         if not pa:
             continue
+
+        # 기본 점수
         s = score_place(pa, user)
+
+        # 테마 가산점
+        themes = user.get("themes", [])
+        for t in themes:
+            t = (t or "").strip()
+            if t and (
+                t in (place.category or "")
+                or t in (place.name or "")
+                or t in (place.address or "")
+            ):
+                s += 5
+
         ranked.append({
             "place": place,
             "analysis": pa,
             "score": s,
         })
+
     ranked.sort(key=lambda x: x["score"], reverse=True)
     return ranked
 
 
-def get_ranked_places(user: Dict[str, Any], limit_total: int = 10) -> List[Dict[str, Any]]:
+
+
+def get_ranked_places(user: Dict[str, Any], limit_total: int = 120) -> List[Dict[str, Any]]:
     """
-    최종 ranked 후보 생성
-    1) 유저 조건 필터 기반으로 우선 스코어링
-    2) 거기서 숙소/관광/음식 골고루 샘플
-    3) 만약 특정 카테고리가 부족하면 (ex. 숙소, 관광) -> 전역 풀에서라도 끌어와서 채운다
+    최종 추천 후보 생성.
+    - 지역/테마 조건(_filter_queryset_for_user) 반영한 qs_user 우선
+    - 부족하면 전체(qs_all)도 보긴 하지만 allowed_areas(사용자 선택 구) 밖이면 버림
+    - 숙소/음식/관광 최소 갯수 채움
+    - 항상 list를 반환하도록 보장
     """
+
+    # 0. 사용자가 허용한 구
+    allowed_areas = set(user.get("areas", []))
+
+    def is_allowed_place(place_obj):
+        if not allowed_areas:
+            return True
+        gu = (place_obj.city_gu or "").strip()
+        addr = (place_obj.address or "").strip()
+
+        # 완전 일치 OR 주소에 해당 구 이름이 들어가도 허용
+        for area in allowed_areas:
+            if area in gu or area in addr:
+                return True
+        return False
 
     # 1. 유저 조건 반영 버전
     qs_user = _filter_queryset_for_user(_base_queryset(), user)
     ranked_user = _rank_places_from_queryset(qs_user, user)
 
-    # 2. 전역 fallback (필터로 잘린 카테고리 보충용)
+    # 2. 전역 fallback (부족할 때 보충용)
     qs_all = _base_queryset()
     ranked_all = _rank_places_from_queryset(qs_all, user)
 
@@ -187,16 +272,19 @@ def get_ranked_places(user: Dict[str, Any], limit_total: int = 10) -> List[Dict[
                 attr.append(r)
         return acc, food, attr
 
-    # 유저 기반 우선
     acc_u, food_u, attr_u = split_by_cat(ranked_user)
-
-    # 전역 풀 (fallback)
     acc_all, food_all, attr_all = split_by_cat(ranked_all)
 
-    # 최소 확보 목표
-    want_acc = 1 if user.get("nights", 0) >= 1 else 0  # 0박이면 숙소 안 넣음
-    want_food = 3
-    want_attr = 3
+    # 최소 확보 목표 (일정 길이에 따라 자동 조정)
+    nights = user.get("nights", 0)
+    total_days = nights + 1  # 0박이면 1일, 1박이면 2일 등
+
+    # 숙소는 1박 이상이면 1개, 그 외엔 없음
+    want_acc = 1 if nights >= 1 else 0
+
+    # 일정이 길수록 음식/관광 개수를 늘림 (기본 3개 + 하루당 3개씩)
+    want_food = max(3, total_days * 3)
+    want_attr = max(3, total_days * 3)
 
     selected: List[Dict[str, Any]] = []
 
@@ -204,59 +292,67 @@ def get_ranked_places(user: Dict[str, Any], limit_total: int = 10) -> List[Dict[
     if want_acc > 0:
         # 유저 기반에서 먼저
         for r in acc_u:
-            if len([x for x in selected if "accommod" in (x["place"].category or "").lower()]) >= want_acc:
+            already = [x for x in selected if "accommod" in (x["place"].category or "").lower()]
+            if len(already) >= want_acc:
                 break
-            selected.append(r)
-        # 부족하면 전역에서 (중복 제거)
+            if is_allowed_place(r["place"]):
+                selected.append(r)
+        # 부족하면 전역에서 보충 (단 허용 구만)
         for r in acc_all:
-            if len([x for x in selected if "accommod" in (x["place"].category or "").lower()]) >= want_acc:
+            already = [x for x in selected if "accommod" in (x["place"].category or "").lower()]
+            if len(already) >= want_acc:
                 break
-            if r not in selected:
+            if (r not in selected) and is_allowed_place(r["place"]):
                 selected.append(r)
 
     # --- 음식 확보
     for r in food_u:
-        if len([x for x in selected if "restaurant" in (x["place"].category or "").lower()]) >= want_food:
+        already = [x for x in selected if "restaurant" in (x["place"].category or "").lower()]
+        if len(already) >= want_food:
             break
-        if r not in selected:
+        if (r not in selected) and is_allowed_place(r["place"]):
             selected.append(r)
+
     for r in food_all:
-        if len([x for x in selected if "restaurant" in (x["place"].category or "").lower()]) >= want_food:
+        already = [x for x in selected if "restaurant" in (x["place"].category or "").lower()]
+        if len(already) >= want_food:
             break
-        if r not in selected:
+        if (r not in selected) and is_allowed_place(r["place"]):
             selected.append(r)
 
     # --- 관광 확보
     for r in attr_u:
-        if len([x for x in selected if "attraction" in (x["place"].category or "").lower()]) >= want_attr:
+        already = [x for x in selected if "attraction" in (x["place"].category or "").lower()]
+        if len(already) >= want_attr:
             break
-        if r not in selected:
-            selected.append(r)
-    for r in attr_all:
-        if len([x for x in selected if "attraction" in (x["place"].category or "").lower()]) >= want_attr:
-            break
-        if r not in selected:
+        if (r not in selected) and is_allowed_place(r["place"]):
             selected.append(r)
 
-    # --- 나머지 상위 점수들로 채우기 (중복 없이)
+    for r in attr_all:
+        already = [x for x in selected if "attraction" in (x["place"].category or "").lower()]
+        if len(already) >= want_attr:
+            break
+        if (r not in selected) and is_allowed_place(r["place"]):
+            selected.append(r)
+
+    # --- 나머지 상위 점수로 채우기
     seen_ids = {s["place"].id for s in selected}
     for r in ranked_user:
         if len(selected) >= limit_total:
             break
-        if r["place"].id not in seen_ids:
+        if (r["place"].id not in seen_ids) and is_allowed_place(r["place"]):
             selected.append(r)
             seen_ids.add(r["place"].id)
 
     for r in ranked_all:
         if len(selected) >= limit_total:
             break
-        if r["place"].id not in seen_ids:
+        if (r["place"].id not in seen_ids) and is_allowed_place(r["place"]):
             selected.append(r)
             seen_ids.add(r["place"].id)
 
-    # 최종 컷
-    return selected[:limit_total]
-
+    # ✅ 항상 리스트 반환 (절대 None 안 나가게)
+    return list(selected[:limit_total])
 
 
 
@@ -367,11 +463,18 @@ def split_into_days(ranked: List[Dict[str, Any]], total_days: int) -> List[List[
         # 다음 턴은 반대로
         turn_food = not turn_food
 
-    # 혹시 남은 etcs가 있다면 뒤에 그냥 붙여준다 (우선순위 낮은 기타 카테고리)
+
+    # 1) 번갈이 루프에서 다 못 쓴 남은 음식 / 관광 / 기타를 몽땅 뒤에 붙여서 리스트를 최대한 늘린다.
+    if food_idx < len(foods):
+        alternating_list.extend(foods[food_idx:])
+
+    if attr_idx < len(attractions):
+        alternating_list.extend(attractions[attr_idx:])
+
     if etcs:
         alternating_list.extend(etcs)
 
-    # 숙소로 이미 사용된 accommodations[0]은 이후 리스트에서 제외해야 함
+    # 2) 숙소로 이미 사용된 accommodations[0]은 이후 리스트에서 제외해야 함
     if used_accom:
         used_accom_place_id = used_accom["place"].id
         alternating_list = [
@@ -388,39 +491,40 @@ def split_into_days(ranked: List[Dict[str, Any]], total_days: int) -> List[List[
     # 알고리즘:
     #   1) 전체 remaining 방문지 수 / total_days -> base_cnt
     #   2) 순서대로 잘라 넣되, Day1은 숙소가 있으면 base_cnt-1 만큼만 우선 넣는 식으로 조정.
-
+    # 하루에 최소 6개씩 채우는 로직으로 변경
     remaining = list(alternating_list)
-
-    # 먼저 대략 균등하게 나눌 chunk target 계산
-    total_stops = len(remaining)
-    if total_days > 0:
-        base_cnt = max(1, total_stops // total_days)
-    else:
-        base_cnt = total_stops
+    PER_DAY_TARGET = 5
+    MAX_PER_DAY     = 6 
 
     for day_idx in range(total_days):
-        # Day1에서 이미 숙소가 있다면 그만큼 capacity를 줄여서 채움
         already = len(day_plans[day_idx])
-        # 최소 1개는 들어가도록 보장, 하지만 remaining이 없으면 break
-        target_for_day = max(1 - already, base_cnt - already)
+        need_now = PER_DAY_TARGET - already
+        if need_now < 0:
+            need_now = 0
 
-        if target_for_day < 0:
-            target_for_day = 0
-
-        for _ in range(target_for_day):
+        for _ in range(need_now):
             if not remaining:
                 break
             day_plans[day_idx].append(remaining.pop(0))
 
-    # 남은 게 있다면 순서대로 다시 분배 (Day1 -> Day2 -> ...)
+    # 남은 장소 순환 분배 (기존과 동일)
     day_cycle = 0
     while remaining:
-        day_plans[day_cycle % total_days].append(remaining.pop(0))
+        idx = day_cycle % total_days
+
+        # 만약 이 날짜가 이미 MAX_PER_DAY를 꽉 채웠으면 건너뛰고 다음 날로 넘어감
+        if len(day_plans[idx]) >= MAX_PER_DAY:
+            day_cycle += 1
+            if day_cycle > 9999:
+                break
+            continue
+
+        day_plans[idx].append(remaining.pop(0))
+
         day_cycle += 1
-        if day_cycle > 9999:  # 안전장치
+        if day_cycle > 9999:
             break
 
-    # 최종 day_plans 리턴
     return day_plans
 
 def build_map_paths(day_plans):

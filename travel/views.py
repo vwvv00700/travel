@@ -143,53 +143,30 @@ def _boost_and_sort(items, keywords):
 
 
 def _strategy_plan_A(items):
-    """
-    기본 플랜: 상위 랭킹 위주
-    """
-    CHUNK_START = 0
-    CHUNK_SIZE = 10
-    return _pick_chunk(items, CHUNK_START, CHUNK_SIZE)
-
+    # 기본 플랜: 상위 랭킹 위주
+    # 그냥 상위 많이 준다. (일단 60개 정도까지 잘라주자)
+    return items[:60]
 
 def _strategy_plan_B(items):
-    """
-    힐링 / 데이트 / 잔잔한 분위기 위주
-    """
+    # 힐링/데이트 위주: 키워드로 보너스 준 다음 많이 준다
     healing_keywords = (
-        "힐링", "휴식", "온천", "공원", "산책", "뷰", "조용", "분위기",
-        "감성", "야경", "카페", "데이트", "로맨틱", "분위기좋은",
-        "드라이브", "한적", "산책코스"
+        "힐링","휴식","온천","공원","산책","뷰","조용","분위기",
+        "감성","야경","카페","데이트","로맨틱","분위기좋은",
+        "드라이브","한적","산책코스"
     )
     boosted_sorted = _boost_and_sort(items, healing_keywords)
 
-    CHUNK_START = 3
-    CHUNK_SIZE = 10
-    chunk = _pick_chunk(boosted_sorted, CHUNK_START, CHUNK_SIZE)
-
-    if not chunk:
-        chunk = _pick_chunk(boosted_sorted, 0, 10)
-
-    return chunk
-
+    return boosted_sorted[:60]
 
 def _strategy_plan_C(items):
-    """
-    핫플 / 이색 / 액티비티 위주
-    """
+    # 핫플/이색/액티비티 위주
     active_keywords = (
-        "핫플", "핫플레이스", "SNS", "인스타", "액티비티", "체험",
-        "독특", "이색", "야경", "맛집투어", "트렌디", "핫스팟"
+        "핫플","핫플레이스","SNS","인스타","액티비티","체험",
+        "독특","이색","야경","맛집투어","트렌디","핫스팟"
     )
     boosted_sorted = _boost_and_sort(items, active_keywords)
 
-    CHUNK_START = 6
-    CHUNK_SIZE = 10
-    chunk = _pick_chunk(boosted_sorted, CHUNK_START, CHUNK_SIZE)
-
-    if not chunk:
-        chunk = _pick_chunk(boosted_sorted, 0, 10)
-
-    return chunk
+    return boosted_sorted[:60]
 
 
 def _extract_day_waypoints(day_plans):
@@ -350,6 +327,35 @@ def travel_list(request):
     }
 
     return render(request, "travel/travel_list.html", context)
+
+@require_GET
+def generate_guide_api(request):
+    """
+    /travel/generate_guide/?plan_idx=0
+    plan_idx: 0 -> 플랜 A 스타일
+              1 -> 플랜 B 스타일
+              2 -> 플랜 C 스타일
+    """
+
+    # 어떤 플랜 스타일로 만들지
+    try:
+        plan_idx = int(request.GET.get("plan_idx", 0))
+    except ValueError:
+        plan_idx = 0
+
+    user_query = parse_user_request(request)
+    ranked_all = get_ranked_places(user_query)
+
+    strategies = [_strategy_plan_A, _strategy_plan_B, _strategy_plan_C]
+    if plan_idx < 0 or plan_idx >= len(strategies):
+        plan_idx = 0
+
+    plan_info = _build_plan_variant_with_guide(user_query, ranked_all, strategies[plan_idx])
+
+    return JsonResponse({
+        "guide_text": plan_info["guide_text"],
+    })
+
 
 @require_GET
 def generate_guide_api(request):
@@ -1135,20 +1141,94 @@ def reset_password_form(request):
 
 
 # # ================== 내 여행 계획 보기 ==================
+AREA_LABELS = {
+    "gangnam": "강남구",
+    "seocho": "서초구",
+    "jongno": "종로구",
+    "jung": "중구",
+    "yongsan": "용산구",
+    "seongdong": "성동구",
+    "gwangjin": "광진구",
+    "dongdaemun": "동대문구",
+    "jungnang": "중랑구",
+    "seongbuk": "성북구",
+    "gangbuk": "강북구",
+    "dobong": "도봉구",
+    "nowon": "노원구",
+    "eunpyeong": "은평구",
+    "seodaemun": "서대문구",
+    "mapo": "마포구",
+    "yangcheon": "양천구",
+    "gangseo": "강서구",
+    "guro": "구로구",
+    "geumcheon": "금천구",
+    "yeongdeungpo": "영등포구",
+    "dongjak": "동작구",
+    "gwanak": "관악구",
+    "songpa": "송파구",
+    "gangdong": "강동구",
+}
+
 def user_travel_plans(request):
     if not request.user.is_authenticated:
         return redirect('login')
-
-    try:
-        travel_plans = UserSelectedPlan.objects.filter(user=request.user)
-
-        for plan in travel_plans:
-            print(f"DEBUG: Plan ID: {plan.plan.user_query}, Dates: {plan.start_date} to {plan.end_date}")  # Debug print
-
-        return redirect("/")
     
-    except Exception as e:
-        print(f"Error fetching travel plans: {e}")  # Log the error for debugging
+    travel_plans = UserSelectedPlan.objects.filter(user=request.user)
 
-        messages.error(request, '여행 계획이 없습니다')
-        return redirect("/")    
+    final_plans = [] # 최종 가공된 플랜들이 담길 리스트
+
+    for plan in travel_plans:
+        english_areas = plan.plan.user_query.get('areas', [])
+        korean_areas = []
+        
+        # 영문 지역명을 한글로 치환합니다.
+        for area_key in english_areas:
+            # 맵에 키가 없으면 기본값으로 영문 이름을 사용하거나 건너뜁니다.
+            korean_name = AREA_LABELS.get(area_key, area_key) 
+            korean_areas.append(korean_name)
+        if korean_areas:    
+            areas_display = ", ".join(korean_areas[:-1])
+            if len(korean_areas) > 1:
+                areas_display += ", "
+            areas_display += f"{korean_areas[-1]}"
+        else:
+            areas_display = "선택된 지역 없음"
+
+
+        themes = plan.plan.user_query.get('themes', []) 
+        mbti_guess = plan.plan.user_query.get('mbti_guess')
+        
+        combined_tags = []
+        if mbti_guess:
+            combined_tags.append(mbti_guess) # MBTI를 먼저 추가
+        
+        combined_tags.extend(themes) # 테마 리스트를 합칩니다.
+
+        season = plan.plan.user_query.get('season')
+        group = plan.plan.user_query.get('group')
+        total_days = plan.plan.user_query.get('total_days')
+        start_date = plan.start_date
+        end_date = plan.end_date
+
+        processed_plan = {
+            'areas_display': areas_display,      
+            'combined_tags': combined_tags,      
+            'season': season,
+            'group': group,
+            'total_days': total_days,
+            'start_date': start_date,
+            'end_date': end_date,
+        }
+
+        final_plans.append(processed_plan)
+    
+    # HTML 템플릿으로 전달할 Context 딕셔너리를 구성합니다.
+    context = {
+        'final_plans': final_plans, # ⭐️ 가공된 플랜 리스트를 넘깁니다.
+    }
+
+    print("context:", context)  # 디버그 출력
+
+    return render(request, 'travel/my_travel_plan.html', context)
+    
+    

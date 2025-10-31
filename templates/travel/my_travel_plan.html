@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}나의 여행 계획{% endblock %}
+
+{% block content %}
+<!-- Page Title -->
+<div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/destination-20.webp' %});">
+    <div class="container position-relative">
+        <h1>나의 여행 플랜</h1>
+        <p>내가 저장한 여행의 일정을 확인해보세요.</p>
+        <nav class="breadcrumbs">
+            <ol>
+                <li><a href="{% url 'main' %}">Home</a></li>
+                <li class="current">나의 여행 플랜</li>
+            </ol>
+        </nav>
+    </div>
+</div><!-- End Page Title -->
+
+<div class="container mx-auto cont-wrap">
+    <div class="max-w-6xl mx-auto p-8 border-slate-200">
+
+        <div class="flex justify-between items-center mb-6">
+            <a href="{% url 'select' %}" class="text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center btn-primary">
+                <i class="fa-solid fa-plus mr-2"></i> 여행 플랜 추천받기
+            </a>
+        </div>
+
+        <section id="card-list" class="card-list section" style="background: none;">
+            <div class="container aos-init aos-animate" data-aos="fade-up" data-aos-delay="100" style="padding: 0;"> 
+                {% if final_plans %}
+                    <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="200">
+                        {% for plan in final_plans %}
+                        <div class="tour-card">
+                            <!-- <div class="tour-image">
+                                <img src="assets/img/travel/tour-1.webp" alt="Serene Beach Retreat" class="img-fluid" loading="lazy">
+                            </div> -->
+                            <div class="tour-content">
+                                <h4>{{ plan.areas_display }} 여행</h4>
+                                <div class="tour-meta">
+                                    <span class="duration"><i class="bi bi-clock"></i> {{ plan.total_days }} Days</span>
+                                    <span class="group-size"><i class="bi bi-people"></i> {{ plan.group }}</span>
+                                </div>
+                                <!-- <p>Mauris ipsum neque, cursus ac ipsum at, iaculis facilisis ligula. Suspendisse non sapien vel enim cursus semper.</p> -->
+                                <div class="tour-highlights">
+                                    {% for tag in plan.combined_tags %}
+                                    <span>{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="tour-action">
+                                    <a href="booking.html" class="btn-book">상세보기</a>
+                                        <div class="tour-rating">
+                                        <i class="bi bi-star"></i>
+                                        <i class="bi bi-star"></i>
+                                        <i class="bi bi-star"></i>
+                                        <i class="bi bi-star"></i>
+                                        <i class="bi bi-star"></i>
+                                        <span>0.0 (0)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div><!-- End Tour Item -->
+                {% else %}
+                    <p class="text-center text-slate-600 text-lg py-10">아직 생성된 여행 플랜이 없습니다. 새로운 플랜을 추천받아 보세요!</p>
+                {% endif %}
+            </div>
+        </section>
+</div>
+{% endblock %}

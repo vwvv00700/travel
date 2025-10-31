@@ -39,23 +39,27 @@
         <form class="form-selects" method="post" action="{% url 'travel:travel_list' %}">
             {% csrf_token %}
             <div class="form-wrap">
-                <div class="form-block">
+                <div class="form-block" style="width:100%;">
                     <h4>📅 여행 날짜</h4>
-                    <strong class="red">출발일부터 마지막 날까지 선택해주세요.</strong>
+                    <strong class="red">출발일부터 마지막 날까지 선택해주세요</strong>
                     <div class="date-range">
-                        <label for="start_date">출발일</label>
-                        <input type="date" name="start_date" id="start_date" required>
-
-                        <label for="end_date">복귀일</label>
-                        <input type="date" name="end_date" id="end_date" required>
+                        <div>
+                            <!-- <label for="start_date">출발일</label> -->
+                            <input type="date"  name="start_date" id="start_date" placeholder="날짜를 선택하세요" autocomplete="off">
+                            <!-- <input type="date" name="start_date" id="start_date" required> -->
+                        </div>
+                        <span style="font-weight: 700; font-size: 20px;"> - </span>
+                        <div>
+                            <!-- <label for="end_date">복귀일</label> -->
+                            <input type="date"  name="end_date" id="end_date" placeholder="날짜를 선택하세요" autocomplete="off">
+                            <!-- <input type="date" name="end_date" id="end_date" required> -->
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="form-wrap">
+
                 <div class="form-block" style="width:100%;">
                     <h4>🛫 여행지 (지도에서 선택)</h4>
-                    <strong class="red">최대 4개까지 선택 가능합니다.</strong>
+                    <strong class="red">최대 4개까지 선택 해주세요</strong>
                     
                     <div id="map-container">
                         <svg version="1.1" id="Layer_1" viewBox="0 0 1400 1400" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
@@ -148,21 +152,20 @@
                 
                 <div class="options-wrap">
                     <div class="form-block">
-                        <h4>📅 여행 기간</h4>
-                        <strong class="red">원하시는 여행 일정을 선택해주세요.</strong>
+                        <h4>👩🏼‍🤝‍🧑🏻 여행 그룹</h4>
+                        <strong class="red">여행의 동행이 있는지 알려주세요</strong>
                         <ul class="radio-list">
-                            <li><input type="radio" name="days" id="day1" value="day1"><label for="day1">당일치기</label></li>
-                            <li><input type="radio" name="days" id="day2" value="day2"><label for="day2">1박 2일</label></li>
-                            <li><input type="radio" name="days" id="day3" value="day3"><label for="day3">2박 3일</label></li>
-                            <li><input type="radio" name="days" id="day4" value="day4"><label for="day4">3박 4일</label></li>
-                            <li><input type="radio" name="days" id="day5" value="day5"><label for="day5">4박 5일</label></li>
+                            <li><input type="radio" name="days" id="solo" value="solo"><label for="solo">혼자</label></li>
+                            <li><input type="radio" name="days" id="friends" value="friends"><label for="friends">친구</label></li>
+                            <li><input type="radio" name="days" id="family" value="family"><label for="family">가족</label></li>
+                            <li><input type="radio" name="days" id="couple" value="couple"><label for="couple">연인</label></li>
                         </ul>
                     </div>
     
                     <!-- 여행 테마 -->
                     <div class="form-block">
-                        <h4>🧾 여행 테마</h4>
-                        <strong class="red">최대 4개까지 선택 가능합니다.</strong>
+                        <h4>📝 여행 테마</h4>
+                        <strong class="red">최대 4개까지 선택 해주세요</strong>
                         <ul class="check-list thema">
                             <li><input type="checkbox" name="tema" id="cafe" value="cafe"><label for="cafe">카페</label></li>
                             <li><input type="checkbox" name="tema" id="restaurant" value="restaurant"><label for="restaurant">맛집</label></li>
@@ -251,6 +254,50 @@
 
                     updateSelectedDisplay();
                 });
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 달력 인스턴스를 저장할 변수를 미리 선언합니다.
+            let endDatePicker; 
+            
+            // 2. 시작일 달력 설정 (Picker 1)
+            const startDatePicker = flatpickr("#start_date", {
+                dateFormat: "Y-m-d",
+                locale: "ko",
+                // ⭐️ 추가 옵션 1: 월 드롭다운을 짧게 표시 (년도 강조에 도움)
+                shorthandCurrentMonth: true,                 
+                // ⭐️ 추가 옵션 2: 년도 텍스트를 클릭하거나 스크롤하여 변경 가능하게 함
+                allowInput: true,
+                // ⭐️ 날짜가 바뀔 때마다 실행될 이벤트
+                onChange: function(selectedDates, dateStr, instance) {
+                    if (selectedDates.length > 0) {
+                        // 선택된 시작 날짜(dateStr)를 종료일의 minDate로 설정합니다.
+                        // 이 날짜 이후만 선택 가능하게 됩니다.
+                        endDatePicker.set('minDate', dateStr);
+                        
+                        // 만약 시작일보다 종료일이 더 이전 날짜로 선택되어 있었다면,
+                        // 종료일도 시작일로 초기화해주는 것이 사용자 경험에 좋습니다.
+                        if (endDatePicker.selectedDates.length > 0 && endDatePicker.selectedDates[0] < selectedDates[0]) {
+                            endDatePicker.setDate(selectedDates[0], true);
+                        }
+                    } else {
+                        // 시작 날짜가 지워졌다면, 종료일의 minDate 제한도 해제합니다.
+                        endDatePicker.set('minDate', null);
+                    }
+                }
+            });
+
+            // 3. 종료일 달력 설정 (Picker 2)
+            endDatePicker = flatpickr("#end_date", {
+                dateFormat: "Y-m-d",
+                locale: "ko",
+                // 초기에는 minDate를 설정하지 않거나, 오늘 날짜로 설정할 수 있습니다.
+                minDate: "today",
+                // ⭐️ 추가 옵션 1: 월 드롭다운을 짧게 표시 (년도 강조에 도움)
+                shorthandCurrentMonth: true,                 
+                // ⭐️ 추가 옵션 2: 년도 텍스트를 클릭하거나 스크롤하여 변경 가능하게 함
+                allowInput: true,
             });
         });
     </script>
