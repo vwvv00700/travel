@@ -28,13 +28,19 @@ urlpatterns = [
     # path("agent_viewer/recommendations/", views.get_ai_recommendations, name="get_ai_recommendations"),
 
     # ✅ 신규: 인증 관련
-    # path("login/", views.login_view, name="login"),
-    # path("signup/", views.signup_view, name="signup"),
-    # path("logout/", views.logout_view, name="logout"),
     path("select_plan/", views.select_plan, name="select_plan"),
+
+    # ✅ 새로 추가된 비동기 가이드 생성 API
+    path("generate_guide/", views.generate_guide_api, name="generate_guide"),
+
+    # ✅ 추가: 플랜/가이드 JSON
+    path("get_selected_plan/", views.get_selected_plan_api, name="get_selected_plan"),
+    path("proxy_mapbox/", views.proxy_mapbox_route, name="proxy_mapbox"),
 
     path('chat/<str:room_name>/', views.chat_view, name='chat'),
     path("travel/create/", views.create_travel_plan, name="create_travel_plan"),
+
+    # path("my_plans/", views.user_travel_plans, name="user_travel_plans"),
 
     # 사용자 인증 관련
     # 로그인

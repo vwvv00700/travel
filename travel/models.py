@@ -5,6 +5,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.conf import settings
 
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
@@ -260,22 +261,6 @@ class Travel(models.Model):
         default_permissions = ()
 
 
-# # ----- 여행 계획 ------------------------------------------
-# class TravelPlan(models.Model):
-#     title = models.CharField(max_length=100)
-#     destination = models.CharField(max_length=100)
-#     start_date = models.DateField()
-#     end_date = models.DateField()
-#     description = models.TextField(blank=True, null=True)
-#     created_at = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         verbose_name = "Travel Plan"
-#         verbose_name_plural = "Travel Plans"
-
-#     def __str__(self):
-#         return f"{self.title} ({self.destination})"
-
 # ----- 다이어리 ------------------------------------------
 class DiaryEntry(models.Model):
     diary = models.ForeignKey(Travel, on_delete=models.CASCADE, related_name='diary_entries') # Renamed from 'travel'
@@ -347,12 +332,36 @@ class DiaryEntry(models.Model):
     
 
 class TravelPlan(models.Model):
+    # ✅ 새로 추가된 필드들
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="travel_plans",
+    )
+
     title = models.CharField(max_length=200)
-    data = models.JSONField()  # 전체 플랜 구조 (day_plans, day_waypoints, guide_text 등 저장 가능)
+
+    # 사용자가 검색창/필터에서 고른 조건을 그대로 박제해서 저장
+    user_query = models.JSONField(null=True, blank=True)
+
+    # 실제 플랜 본문 데이터
+    # {
+    #   "guide_text": "",
+    #   "day_waypoints": [...],
+    #   "day_plans": [...]
+    # }
+    data = models.JSONField()
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        base = self.title
+        if self.owner:
+            base += f" / {self.owner.username}"
+        base += f" / {self.created_at:%Y-%m-%d %H:%M}"
+        return base
 
 
 class UserSelectedPlan(models.Model):

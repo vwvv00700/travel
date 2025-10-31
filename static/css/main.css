@@ -109,6 +109,116 @@ h6 {
     word-break: keep-all;
 }
 
+/*--------------------------------------------------------------
+# Layer Popup
+--------------------------------------------------------------*/
+/* 팝업 배경 (모달 오버레이) */
+.message-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* 더 진한 배경 */
+    backdrop-filter: blur(3px); /* 배경 흐림 효과 (현대적인 느낌) */
+}
+
+/* 팝업 내용 상자 */
+.modal-content {
+    background-color: #ffffff;
+    margin: 10% auto; /* 상단 여백 조절 */
+    padding: 30px;
+    border-radius: 8px; /* 둥근 모서리 */
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); /* 깊은 그림자 */
+    text-align: center;
+    
+    /* 애니메이션 설정 */
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 팝업 등장 애니메이션 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* 제목 스타일 */
+.modal-content h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+/* 메시지 본문 영역 */
+#modalMessageBody {
+    margin-bottom: 20px;
+    line-height: 1.6;
+    text-align: left;
+}
+
+#modalMessageBody p {
+    margin: 8px 0;
+    padding: 30px 10px;
+    border-radius: 4px;
+}
+
+/* 닫기 버튼 (X 아이콘) */
+.close-btn {
+    color: #999;
+    font-size: 30px;
+    line-height: 20px;
+    font-weight: normal;
+    transition: color 0.2s;
+    position: absolute;
+    right: 30px;
+}
+
+.close-btn:hover {
+    color: #333;
+    cursor: pointer;
+}
+
+/* 확인 버튼 스타일 */
+.modal-content button {
+    background-color: #333; /* 파란색 버튼 */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.modal-content button:hover {
+    background-color: #0056b3;
+}
+
+/* 메시지 종류에 따른 색상 */
+.tag-error { 
+    color: #f71515; /* 진한 빨강 텍스트 */
+}
+.tag-success { 
+    background-color: #d4edda;
+    color: #333;
+    border: 1px solid #c3e6cb;
+}
+.tag-info { 
+    background-color: #d4edda;
+    color: #333;
+    border: 1px solid #c3e6cb;
+}
+
 
 /*--------------------------------------------------------------
 # Global Header
@@ -482,10 +592,6 @@ section, .section { color: var(--default-color); background-color: var(--backgro
 .distanceInfo{list-style:none;margin:0;padding:4px 8px;}
 .distanceInfo .label{display:inline-block;width:40px;color:#333;}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> de6c6e241f1046890f223fa79b655e7f906da338
 /* SVG 맵 스타일링 */
 #map-svg-container { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.75rem; }
 #map-svg-container svg { width: 100%; height: 100%; background-color: transparent; }
@@ -514,6 +620,7 @@ section, .section { color: var(--default-color); background-color: var(--backgro
 @media (max-width: 768px) {
     .diary-cont .diary-form{background-color: unset; box-shadow: unset;}
     .diary-cont .datetime-box{flex-direction: column;}
+
 
 /* ─────────── 반응형 ─────────── */
 @media (max-width: 768px) {
@@ -601,3 +708,4 @@ section, .section { color: var(--default-color); background-color: var(--backgro
         width: 20%;
         border-top: 1px solid #ddd;
     }
+}

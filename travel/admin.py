@@ -160,30 +160,30 @@ GU_SUFFIXES = ("구", "군", "시")
 
 
 @login_required
-def create_travel_plan(request):
-    if request.method == "POST":
-        city = request.POST.get("location_city")
-        start_date = request.POST.get("start_date")
-        end_date = request.POST.get("end_date")
+# def create_travel_plan(request):
+#     if request.method == "POST":
+#         city = request.POST.get("location_city")
+#         start_date = request.POST.get("start_date")
+#         end_date = request.POST.get("end_date")
         
-        plan = TravelPlan.objects.create(
-            user=request.user,
-            location_city=city,
-            start_date=start_date,
-            end_date=end_date,
-            is_seeking_partner=True
-        )
+#         plan = TravelPlan.objects.create(
+#             user=request.user,
+#             location_city=city,
+#             start_date=start_date,
+#             end_date=end_date,
+#             is_seeking_partner=True
+#         )
         
-        # ✅ 자동 매칭 실행
-        new_rooms = create_chatroom_for_plan(plan)
-        if new_rooms:
-            message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!"
-        else:
-            message = "매칭 가능한 사용자가 아직 없습니다."
+#         # ✅ 자동 매칭 실행
+#         new_rooms = create_chatroom_for_plan(plan)
+#         if new_rooms:
+#             message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!"
+#         else:
+#             message = "매칭 가능한 사용자가 아직 없습니다."
         
-        return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
+#         return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
     
-    return render(request, "travel/create_travel_plan.html")
+#     return render(request, "travel/create_travel_plan.html")
 
 def split_kr_address(addr: str) -> tuple[str | None, str | None, str | None]:
     if not addr:

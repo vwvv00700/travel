@@ -25,7 +25,7 @@ from django.db import transaction # 트랜잭션을 사용해 안전하게 처�
 
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
-
+from django.utils import timezone
 
 # ======================================
 # 3. 로컬 앱 임포트 (Local Application)
@@ -57,6 +57,21 @@ from .services.recommender import (
 # -------------------------------------------------------------------
 # 여행 Plane 뷰 -------- START
 # -------------------------------------------------------------------
+
+@csrf_exempt
+@require_GET
+def proxy_mapbox_route(request):
+    """Mapbox Directions API CORS 우회"""
+    url = request.GET.get("url")
+    if not url:
+        return JsonResponse({"error": "missing url"}, status=400)
+    try:
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        return JsonResponse(res.json(), safe=False)
+    except requests.RequestException as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
 
 def _serialize_day_plans_for_js(day_plans):
     """
@@ -204,75 +219,116 @@ def _extract_day_waypoints(day_plans):
     return all_days
 
 
-def _build_plan_variant(user_query, ranked_places, variant_name, filter_strategy):
-    """
-    주어진 전략(filter_strategy)으로 하나의 플랜 변형을 만든다.
-    """
-    custom_ranked = filter_strategy(ranked_places)
+# def _build_plan_variant(user_query, ranked_places, variant_name, filter_strategy):
+#     """
+#     주어진 전략(filter_strategy)으로 하나의 플랜 변형을 만든다.
+#     """
+#     custom_ranked = filter_strategy(ranked_places)
 
+#     total_days = user_query["total_days"]
+#     day_plans = split_into_days(custom_ranked, total_days)
+
+#     # Mapbox Directions용 waypoints만 추출
+#     day_waypoints = _extract_day_waypoints(day_plans)
+
+#     guide_text = generate_itinerary_guide(user_query, day_plans)
+
+#     return {
+#         "name": variant_name,
+#         "day_plans": day_plans,
+#         "day_waypoints": day_waypoints,
+#         "guide_text": guide_text,
+#     }
+
+def _extract_day_waypoints(day_plans):
+    all_days = []
+    for stops in day_plans:
+        coords = []
+        for stop in stops:
+            p = stop["place"]
+            coords.append({
+                "lat": p.lat,
+                "lng": p.lon,
+            })
+        all_days.append(coords)
+    return all_days
+
+
+def _build_plan_variant_no_guide(user_query, ranked_places, variant_name, filter_strategy):
+    custom_ranked = filter_strategy(ranked_places)
     total_days = user_query["total_days"]
     day_plans = split_into_days(custom_ranked, total_days)
-
-    # Mapbox Directions용 waypoints만 추출
     day_waypoints = _extract_day_waypoints(day_plans)
-
-    guide_text = generate_itinerary_guide(user_query, day_plans)
-
     return {
         "name": variant_name,
         "day_plans": day_plans,
         "day_waypoints": day_waypoints,
+    }
+
+
+def _build_plan_variant_with_guide(user_query, ranked_places, filter_strategy):
+    custom_ranked = filter_strategy(ranked_places)
+    total_days = user_query["total_days"]
+    day_plans = split_into_days(custom_ranked, total_days)
+    guide_text = generate_itinerary_guide(user_query, day_plans)
+    return {
+        "day_plans": day_plans,
         "guide_text": guide_text,
     }
 
+
 def travel_list(request):
     """
-    1) 유저 요청 파싱
-    2) 후보 장소 점수화
-    3) 추천 플랜 A/B/C 생성
-    4) TravelPlan 모델에도 저장 (id 부여)
-    5) 템플릿 + JS용 context 내려주기
+    추천 코스 결과 페이지
+    - 여기서는 LLM 가이드를 즉시 안 만들고
+      비동기(fetch)로 따로 받도록 함.
+    - 대신 TravelPlan을 유저마다 새로 create해서 저장.
     """
 
-    # 1. 유저 요청 해석 (ex. 도시, 취향, 동행, 일정일수 등)
+    # 1) 유저 조건 파싱
     user_query = parse_user_request(request)
 
-    # 2. 전체 후보 장소 스코어링
+    # 2) 후보 장소 스코어링
     ranked_all = get_ranked_places(user_query)
 
-    # 3. A/B/C 플랜 구성
-    plan_A = _build_plan_variant(user_query, ranked_all, "추천 플랜 A", _strategy_plan_A)
-    plan_B = _build_plan_variant(user_query, ranked_all, "추천 플랜 B", _strategy_plan_B)
-    plan_C = _build_plan_variant(user_query, ranked_all, "추천 플랜 C", _strategy_plan_C)
+    # 3) A/B/C 플랜 (가이드 없이)
+    plan_A = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 A", _strategy_plan_A)
+    plan_B = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 B", _strategy_plan_B)
+    plan_C = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 C", _strategy_plan_C)
     plan_dicts = [plan_A, plan_B, plan_C]
 
-    # 4. TravelPlan 모델로 저장(or 재사용)
+    # 4) DB에 각 플랜을 "새로" 저장 (get_or_create 금지!)
     saved_models = []
     for p in plan_dicts:
-        tp_obj, _created = TravelPlan.objects.get_or_create(
+        tp_obj = TravelPlan.objects.create(
+            owner=request.user if request.user.is_authenticated else None,
             title=p["name"],
-            defaults={
-                "data": {
-                    "guide_text": p["guide_text"],
-                    "day_waypoints": p["day_waypoints"],
-                    "day_plans": _serialize_day_plans_for_js(p["day_plans"]),
-                }
+            user_query=user_query,
+            data={
+                "guide_text": "",
+                "day_waypoints": p["day_waypoints"],
+                "day_plans": _serialize_day_plans_for_js(p["day_plans"]),
             }
         )
-        # 이미 있는 title이라면 최신 data로 덮고 싶으면 여길 수정:
-        # tp_obj.data = {...}; tp_obj.save()
-
         saved_models.append(tp_obj)
 
-    # 5. 프론트 JS가 쓸 가벼운 PLANS 배열 구성
+    # 5) 프론트에서 쓸 가벼운 배열
     plans_light = []
     for tp_obj, p_dict in zip(saved_models, plan_dicts):
+        serialized_days = _serialize_day_plans_for_js(p_dict["day_plans"])
+        map_paths = p_dict["day_waypoints"]
+
         plans_light.append({
+            # 기존 필드 (절대 삭제 금지)
             "id": tp_obj.id,
             "name": p_dict["name"],
-            "guide_text": p_dict["guide_text"],
-            "day_waypoints": p_dict["day_waypoints"],
-            "day_plans": _serialize_day_plans_for_js(p_dict["day_plans"]),
+            "guide_text": "",
+            "day_waypoints": map_paths,
+            "day_plans": serialized_days,
+
+            # 신규 필드 (프론트 요구사항)
+            "days": serialized_days,        # alias for clarity
+            "map_paths": map_paths,         # alias for clarity
         })
 
     plans_json = json.dumps(plans_light, ensure_ascii=False)
@@ -281,18 +337,47 @@ def travel_list(request):
     initial_plan_idx = 0
 
     context = {
-        # JS 전역으로 내려줄 것들
+        # JS 전역
         "plans_json": plans_json,
         "initial_plan_idx": initial_plan_idx,
         "MAPBOX_ACCESS_TOKEN": settings.MAPBOX_ACCESS_TOKEN,
 
-        # 템플릿 서버 렌더에 바로 쓸 것들
+        # SSR로 바로 표시할 값
         "plans": plans_light,
         "day_plans": plan_A["day_plans"],
-        "guide_text": plan_A["guide_text"],
+        "guide_text": "생성 중...",
+        "user_query_json": json.dumps(user_query, ensure_ascii=False),
     }
 
     return render(request, "travel/travel_list.html", context)
+
+@require_GET
+def generate_guide_api(request):
+    """
+    /travel/generate_guide/?plan_idx=0
+    plan_idx: 0 -> 플랜 A 스타일
+              1 -> 플랜 B 스타일
+              2 -> 플랜 C 스타일
+    """
+
+    # 어떤 플랜 스타일로 만들지
+    try:
+        plan_idx = int(request.GET.get("plan_idx", 0))
+    except ValueError:
+        plan_idx = 0
+
+    user_query = parse_user_request(request)
+    ranked_all = get_ranked_places(user_query)
+
+    strategies = [_strategy_plan_A, _strategy_plan_B, _strategy_plan_C]
+    if plan_idx < 0 or plan_idx >= len(strategies):
+        plan_idx = 0
+
+    plan_info = _build_plan_variant_with_guide(user_query, ranked_all, strategies[plan_idx])
+
+    return JsonResponse({
+        "guide_text": plan_info["guide_text"],
+    })
 
 # -------------------------------------------------------------------
 # 여행 Plane 뷰 -------- END
@@ -508,22 +593,13 @@ def travel_diary_detail(request, pk):
     # Prepare data for template: list of (date, entries_for_date) tuples
     entries_by_date = [(date, grouped_entries[date]) for date in sorted_dates]
     
-    if entry.timestamp:
-        dt = entry.timestamp
-        # strftime으로 날짜/시간의 숫자 부분만 추출하고, f-string으로 한글을 붙입니다.
-        # %Y(4자리 년도), %m(2자리 월), %d(2자리 일), %H(24시), %M(분)
-        timestamp_str = f"{dt.strftime('%Y')}년 {dt.strftime('%m')}월 {dt.strftime('%d')}일 {dt.strftime('%H')}시 {dt.strftime('%M')}분"
-    else:
-        timestamp_str = ""
-
     # Prepare data for JavaScript map (ensure photo__url is correctly accessed)
     diary_entries_data = []
     for entry in diary_entries:
         diary_entries_data.append({
             'id': entry.id,
             'location': entry.location,
-            # 'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %i분") if entry.timestamp else '',
-            'timestamp': timestamp_str,
+            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %i분") if entry.timestamp else '',
             'latitude': entry.latitude,
             'longitude': entry.longitude,
             'photo_url': entry.photo.url if entry.photo else '',
@@ -859,7 +935,6 @@ logger = logging.getLogger(__name__)
 
 @require_POST
 def select_plan(request):
-    # 로그인 안 한 경우
     if not request.user.is_authenticated:
         return JsonResponse({"status": "login_required"})
 
@@ -867,18 +942,53 @@ def select_plan(request):
     if not plan_id:
         return JsonResponse({"status": "error", "msg": "no plan_id"})
 
+    current_time = timezone.now()
+    startDate = current_time.date()
+    endDate = current_time.date()
+
     try:
         plan = TravelPlan.objects.get(id=plan_id)
     except TravelPlan.DoesNotExist:
         return JsonResponse({"status": "error", "msg": "plan_not_found"})
 
-    # 유저-플랜 매핑 (중복 저장 방지)
     UserSelectedPlan.objects.get_or_create(
         user=request.user,
         plan=plan,
+        startDate = startDate,
+        endDate = endDate,
     )
 
     return JsonResponse({"status": "success"})
+
+@require_GET
+def get_selected_plan_api(request):
+    """
+    클라이언트가 보여줄 현재 플랜/가이드 정보를 JSON으로 준다.
+    /travel/get_selected_plan/?plan_idx=0
+    """
+    try:
+        plan_idx = int(request.GET.get("plan_idx", 0))
+    except ValueError:
+        plan_idx = 0
+
+    user_query = parse_user_request(request)
+    ranked_all = get_ranked_places(user_query)
+
+    strategies = [_strategy_plan_A, _strategy_plan_B, _strategy_plan_C]
+    if plan_idx < 0 or plan_idx >= len(strategies):
+        plan_idx = 0
+
+    # 플랜/경로/가이드 생성
+    plan_info = _build_plan_variant_with_guide(user_query, ranked_all, strategies[plan_idx])
+
+    safe_days = _serialize_day_plans_for_js(plan_info["day_plans"])
+    waypoints = _extract_day_waypoints(plan_info["day_plans"])
+
+    return JsonResponse({
+        "guide_text": plan_info["guide_text"],
+        "day_plans": safe_days,
+        "day_waypoints": waypoints,
+    })
 
 # ================== 회원가입 ==================
 def signup_view(request):
@@ -1017,3 +1127,23 @@ def reset_password_instant(request):
 
 def reset_password_form(request):
     return render(request, 'registration/password_reset_form.html')
+
+
+# # ================== 내 여행 계획 보기 ==================
+# def user_travel_plans(request):
+#     if not request.user.is_authenticated:
+#         return redirect('login')
+
+#     try:
+#         travel_plans = UserSelectedPlan.objects.filter(user=request.user)
+
+#         for plan in travel_plans:
+#             print(f"DEBUG: Plan ID: {plan.plan.user_query}, Dates: {plan.startDate} to {plan.endDate}")  # Debug print
+
+#         return redirect("/")
+    
+#     except Exception as e:
+#         print(f"Error fetching travel plans: {e}")  # Log the error for debugging
+
+#         messages.error(request, '여행 계획이 없습니다')
+#         return redirect("/")    

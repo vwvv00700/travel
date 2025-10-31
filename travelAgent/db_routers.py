@@ -61,7 +61,8 @@ class DiaryRouter:
         # if app_label == 'auth':
         #     return True
         # return None
-    
+
+        
 class ChatRouter:
     """
     'ChatRoom', 'ChatMessage', 'ChatReport' 모델에 대한 데이터베이스 작업을
