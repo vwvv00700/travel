@@ -16,10 +16,19 @@ from dotenv import load_dotenv
 
 load_dotenv()  # .env 파일에서 환경 변수 로드
 
+# 2. 지원할 언어 정의 (언어 코드와 이름)
+LANGUAGES = [
+    ('ko', 'Korean'),  # 한국어
+    ('en', 'English'), # 영어
+    ('es', 'Spanish'), # 스페인어
+]
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -55,6 +64,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    'django.middleware.locale.LocaleMiddleware',
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -140,12 +150,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = "UTC"
+LANGUAGE_CODE = "ko"
+TIME_ZONE = "Asia/Seoul"
 
 USE_I18N = True
-
 USE_TZ = True
 
 

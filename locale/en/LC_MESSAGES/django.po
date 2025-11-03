@@ -1,0 +1,291 @@
+# English translations for the travelagent project.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-03 17:51+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\templates\base.html:75
+msgid "언어선택"
+msgstr "Select Language"
+
+#: .\templates\base.html:104
+msgid "어드민"
+msgstr "ADMIN"
+
+#: .\templates\base.html:106 .\templates\select.html:25
+msgid "AI 코스 추천"
+msgstr "AI Course Recommendation"
+
+#: .\templates\base.html:109
+msgid "나의 여행 플랜"
+msgstr "My Travel Plans"
+
+#: .\templates\base.html:110
+msgid "내 다이어리"
+msgstr "My Diary"
+
+#: .\templates\base.html:111
+msgid "여행자 채팅"
+msgstr "Traveler Chat"
+
+#: .\templates\base.html:114
+msgid "로그아웃"
+msgstr "Logout"
+
+#: .\templates\base.html:116
+msgid "로그인"
+msgstr "Login"
+
+#: .\templates\base.html:117
+msgid "회원가입"
+msgstr "Sign Up"
+
+#: .\templates\base.html:159
+msgid "알림"
+msgstr "Notification"
+
+#: .\templates\base.html:161
+msgid "확인"
+msgstr "Confirm"
+
+#: .\templates\index.html:21
+msgid "당신만의 여행을 설계해주는 여행 에이전트"
+msgstr "A Travel Agent designing your own trip"
+
+#: .\templates\index.html:22
+msgid "AI가 나에게 꼭 맞는 여행 계획을 추천해줘요"
+msgstr "AI recommends a perfect travel plan for you"
+
+#: .\templates\index.html:28
+msgid "예: 강남, 마포 2박3일 힐링"
+msgstr "Ex: Gangnam, Mapo 2 nights 3 days healing"
+
+#: .\templates\index.html:44
+msgid "사람들의"
+msgstr "People's"
+
+#: .\templates\index.html:44
+msgid "여행 플랜"
+msgstr "Travel Plans"
+
+#: .\templates\index.html:68
+msgid "상세보기"
+msgstr "Details"
+
+#: .\templates\index.html:83
+msgid "여행 플랜이 없습니다."
+msgstr "No travel plans available."
+
+#: .\templates\index.html:88
+msgid "더보기 +"
+msgstr "View More +"
+
+#: .\templates\select.html:20
+msgid "AI 코스 선택하기"
+msgstr "Select AI Course"
+
+#: .\templates\select.html:21
+msgid "여행지 & 여행 기간 & 여행 테마 선택하고 코스를 추천 받아보세요"
+msgstr "Select location, duration, and theme to get course recommendations"
+
+#: .\templates\select.html:24
+msgid "Home"
+msgstr "Home"
+
+#: .\templates\select.html:43
+msgid "여행 날짜"
+msgstr "Travel Date"
+
+#: .\templates\select.html:44
+msgid "출발일부터 마지막 날까지 선택해주세요"
+msgstr "Please select from the start date to the last day"
+
+#: .\templates\select.html:61
+msgid "여행지 (지도에서 선택)"
+msgstr "Destination (Select on Map)"
+
+#: .\templates\select.html:62 .\templates\select.html:168
+msgid "최대 4개까지 선택 해주세요"
+msgstr "Please select up to 4 items"
+
+#: .\templates\select.html:92 .\templates\select.html:125
+msgid "강남구"
+msgstr "Gangnam-gu"
+
+#: .\templates\select.html:93 .\templates\select.html:147
+msgid "서초구"
+msgstr "Seocho-gu"
+
+#: .\templates\select.html:94 .\templates\select.html:148
+msgid "송파구"
+msgstr "Songpa-gu"
+
+#: .\templates\select.html:95 .\templates\select.html:149
+msgid "강동구"
+msgstr "Gangdong-gu"
+
+#: .\templates\select.html:96 .\templates\select.html:145
+msgid "동작구"
+msgstr "Dongjak-gu"
+
+#: .\templates\select.html:97 .\templates\select.html:146
+msgid "관악구"
+msgstr "Gwanak-gu"
+
+#: .\templates\select.html:98 .\templates\select.html:143
+msgid "금천구"
+msgstr "Geumcheon-gu"
+
+#: .\templates\select.html:99 .\templates\select.html:144
+msgid "영등포구"
+msgstr "Yeongdeungpo-gu"
+
+#: .\templates\select.html:100 .\templates\select.html:142
+msgid "구로구"
+msgstr "Guro-gu"
+
+#: .\templates\select.html:101 .\templates\select.html:140
+msgid "양천구"
+msgstr "Yangcheon-gu"
+
+#: .\templates\select.html:102 .\templates\select.html:141
+msgid "강서구"
+msgstr "Gangseo-gu"
+
+#: .\templates\select.html:103 .\templates\select.html:139
+msgid "마포구"
+msgstr "Mapo-gu"
+
+#: .\templates\select.html:104 .\templates\select.html:137
+msgid "은평구"
+msgstr "Eunpyeong-gu"
+
+#: .\templates\select.html:105 .\templates\select.html:138
+msgid "서대문구"
+msgstr "Seodaemun-gu"
+
+#: .\templates\select.html:106 .\templates\select.html:128
+msgid "용산구"
+msgstr "Yongsan-gu"
+
+#: .\templates\select.html:107 .\templates\select.html:127
+msgid "중구"
+msgstr "Jung-gu"
+
+#: .\templates\select.html:108 .\templates\select.html:126
+msgid "종로구"
+msgstr "Jongno-gu"
+
+#: .\templates\select.html:109 .\templates\select.html:133
+msgid "성북구"
+msgstr "Seongbuk-gu"
+
+#: .\templates\select.html:110 .\templates\select.html:129
+msgid "성동구"
+msgstr "Seongdong-gu"
+
+#: .\templates\select.html:111 .\templates\select.html:131
+msgid "동대문구"
+msgstr "Dongdaemun-gu"
+
+#: .\templates\select.html:112 .\templates\select.html:130
+msgid "광진구"
+msgstr "Gwangjin-gu"
+
+#: .\templates\select.html:113 .\templates\select.html:132
+msgid "중랑구"
+msgstr "Jungnang-gu"
+
+#: .\templates\select.html:114 .\templates\select.html:136
+msgid "노원구"
+msgstr "Nowon-gu"
+
+#: .\templates\select.html:115 .\templates\select.html:135
+msgid "도봉구"
+msgstr "Dobong-gu"
+
+#: .\templates\select.html:116 .\templates\select.html:134
+msgid "강북구"
+msgstr "Gangbuk-gu"
+
+#: .\templates\select.html:121
+msgid "선택된 지역이 없습니다."
+msgstr "No region selected."
+
+#: .\templates\select.html:155
+msgid "여행 그룹"
+msgstr "Travel Group"
+
+#: .\templates\select.html:156
+msgid "여행의 동행이 있는지 알려주세요"
+msgstr "Please let us know if you have a travel companion"
+
+#: .\templates\select.html:158
+msgid "혼자"
+msgstr "Solo"
+
+#: .\templates\select.html:159
+msgid "친구"
+msgstr "Friends"
+
+#: .\templates\select.html:160
+msgid "가족"
+msgstr "Family"
+
+#: .\templates\select.html:161
+msgid "연인"
+msgstr "Couple"
+
+#: .\templates\select.html:167
+msgid "여행 테마"
+msgstr "Travel Theme"
+
+#: .\templates\select.html:170
+msgid "카페"
+msgstr "Cafe"
+
+#: .\templates\select.html:171
+msgid "맛집"
+msgstr "Gourmet"
+
+#: .\templates\select.html:172
+msgid "축제"
+msgstr "Festival"
+
+#: .\templates\select.html:173
+msgid "자연/산책"
+msgstr "Nature/Walk"
+
+#: .\templates\select.html:174
+msgid "문화/전시"
+msgstr "Culture/Exhibition"
+
+#: .\templates\select.html:175
+msgid "테마파크"
+msgstr "Theme Park"
+
+#: .\templates\select.html:176
+msgid "힐링/스파"
+msgstr "Healing/Spa"
+
+#: .\templates\select.html:177
+msgid "쇼핑"
+msgstr "Shopping"
+
+#: .\templates\select.html:183
+msgid "AI 추천 코스"
+msgstr "AI Recommended Course"

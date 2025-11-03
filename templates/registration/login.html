@@ -8,105 +8,106 @@
   <link rel="stylesheet" href="{% static 'css/signup.css' %}">
 </head>
 <body>
-  <!-- 🌐 언어 전환 버튼 -->
-  <div class="language-switch">
-    <button id="lang-ko" class="active">🇰🇷 한국어</button>
-    <button id="lang-en">🌎 English</button>
-  </div>
-
-{% if messages %}
-<div id="message-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-  {% for message in messages %}
-    <div class="alert {{ message.tags }}" style="padding: 10px 20px; margin-bottom: 10px; border-radius: 5px; background: #f0f0f0; border: 1px solid #ccc;">
-      {{ message }}
+    <!-- 🌐 언어 전환 버튼 -->
+    <div class="language-switch">
+        <a href="{% url 'main' %}">TRAVEL</a>
+        <button id="lang-ko" class="active">🇰🇷 한국어</button>
+        <button id="lang-en">🇺🇸 English</button>
+        <button id="lang-es">🇪🇸 Español</button>
     </div>
-  {% endfor %}
-</div>
 
-<script>
-  setTimeout(() => {
+    {% if messages %}
+    <div id="message-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+    {% for message in messages %}
+        <div class="alert {{ message.tags }}" style="padding: 10px 20px; margin-bottom: 10px; border-radius: 5px; background: #f0f0f0; border: 1px solid #ccc;">
+        {{ message }}
+        </div>
+    {% endfor %}
+    </div>
+
+    <script>
+    setTimeout(() => {
+        const container = document.getElementById('message-container');
+        if(container) container.style.display = 'none';
+    }, 5000); // 5초 후 사라짐
+    </script>
+    {% endif %}
+
+
+    {% if messages %}
+    <div id="message-container">
+    {% for message in messages %}
+        <div class="alert {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+    </div>
+
+    <script>
+    setTimeout(() => {
     const container = document.getElementById('message-container');
     if(container) container.style.display = 'none';
-  }, 5000); // 5초 후 사라짐
-</script>
-{% endif %}
+    }, 5000);
+    </script>
+    {% endif %}
+    <!-- 🌄 배경 -->
+    <div class="background"></div>
 
+    <!-- ✈️ 로그인 카드 -->
+    <div class="signup-container">
+        <h2 data-ko="로그인" data-en="Login" data-es="Iniciar Sesión">로그인</h2>
 
-{% if messages %}
-<div id="message-container">
-  {% for message in messages %}
-    <div class="alert {{ message.tags }}">{{ message }}</div>
-  {% endfor %}
-</div>
+        <!-- 🔹 POST form -->
+        <!-- ✅ action을 'login' URL로 지정 -->
+        <form class="signup-form" method="POST" action="{% url 'login' %}">
+        {% csrf_token %}
 
-<script>
-setTimeout(() => {
-  const container = document.getElementById('message-container');
-  if(container) container.style.display = 'none';
-}, 5000);
-</script>
-{% endif %}
-  <!-- 🌄 배경 -->
-  <div class="background"></div>
+        <!-- ✅ 로그인 실패 시 에러 표시 -->
+        {% if form.errors %}
+            <p style="color:red; text-align:center; font-size:14px;">
+            아이디 또는 비밀번호가 잘못되었습니다. 다시 확인해주세요.
+            </p>
+        {% endif %}
 
-  <!-- ✈️ 로그인 카드 -->
-  <div class="signup-container">
-    <h2 data-ko="로그인" data-en="Login">로그인</h2>
+        <!-- username -->
+        <div>
+            <label data-ko="아이디" data-en="Username" data-es="Nombre de usuario">아이디</label>
+            <input type="text" name="username" placeholder="아이디를 입력하세요" required id="id_username">
+        </div>
 
-    <!-- 🔹 POST form -->
-    <!-- ✅ action을 'login' URL로 지정 -->
-    <form class="signup-form" method="POST" action="{% url 'login' %}">
-      {% csrf_token %}
+        <!-- password -->
+        <div>
+            <label data-ko="비밀번호" data-en="Password" data-es="Contraseña">비밀번호</label>
+            <input type="password" name="password" placeholder="비밀번호를 입력하세요" required id="id_password">
+        </div>
 
-      <!-- ✅ 로그인 실패 시 에러 표시 -->
-      {% if form.errors %}
-        <p style="color:red; text-align:center; font-size:14px;">
-          아이디 또는 비밀번호가 잘못되었습니다. 다시 확인해주세요.
+        <button type="submit" data-ko="로그인" data-en="Login" data-es="Iniciar Sesión">로그인</button>
+
+        <p style="text-align:center; margin-top:10px;">
+            <a href="{% url 'travel:signup' %}" data-ko="회원가입" data-en="Sign Up" data-es="Registro">회원가입</a>&nbsp; | &nbsp;
+            <a href="{% url 'travel:changeFindForm' %}" data-ko="비밀번호 찾기" data-en="Forgot Password?" data-es="¿Olvidaste tu contraseña?">비밀번호 찾기</a>
         </p>
-      {% endif %}
+        </form>
+    </div>
 
-      <!-- username -->
-      <label data-ko="아이디" data-en="Username">아이디</label>
-      <input 
-        type="text" 
-        name="username" 
-        placeholder="아이디를 입력하세요" 
-        required 
-        id="id_username">
+    <script>
+        // 🌐 언어 전환 스크립트
+        const koBtn = document.getElementById('lang-ko');
+        const enBtn = document.getElementById('lang-en');
+        const esBtn = document.getElementById('lang-es');
 
-      <!-- password -->
-      <label data-ko="비밀번호" data-en="Password">비밀번호</label>
-      <input 
-        type="password" 
-        name="password" 
-        placeholder="비밀번호를 입력하세요" 
-        required 
-        id="id_password">
+        function switchLanguage(lang) {
+            console.log(lang)
+            document.querySelectorAll('[data-ko]').forEach(el => {
+                el.textContent = el.getAttribute(`data-${lang}`);
+            });
 
-      <button type="submit" data-ko="로그인" data-en="Login">로그인</button>
+            koBtn.classList.toggle('active', lang === 'ko');
+            enBtn.classList.toggle('active', lang === 'en');
+            esBtn.classList.toggle('active', lang === 'es');
+        }
 
-      <p style="text-align:center; margin-top:10px;">
-        <a href="{% url 'travel:signup' %}" data-ko="회원가입" data-en="Sign Up">회원가입</a> | 
-        <a href="{% url 'travel:changeFindForm' %}" data-ko="비밀번호 찾기" data-en="Forgot Password?">비밀번호 찾기</a>
-      </p>
-    </form>
-  </div>
-
-  <script>
-    // 🌐 언어 전환 스크립트
-    const koBtn = document.getElementById('lang-ko');
-    const enBtn = document.getElementById('lang-en');
-
-    function switchLanguage(lang) {
-      document.querySelectorAll('[data-ko]').forEach(el => {
-        el.textContent = el.getAttribute(`data-${lang}`);
-      });
-      koBtn.classList.toggle('active', lang === 'ko');
-      enBtn.classList.toggle('active', lang === 'en');
-    }
-
-    koBtn.addEventListener('click', () => switchLanguage('ko'));
-    enBtn.addEventListener('click', () => switchLanguage('en'));
-  </script>
+        koBtn.addEventListener('click', () => switchLanguage('ko'));
+        enBtn.addEventListener('click', () => switchLanguage('en'));
+        esBtn.addEventListener('click', () => switchLanguage('es'));
+    </script>
 </body>
 </html>

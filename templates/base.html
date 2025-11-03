@@ -1,4 +1,5 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -71,20 +72,51 @@
 
             <nav id="navmenu" class="navmenu">
                 <ul>
-                    <li><a href="{% url 'admin:index' %}">ADMIN</a></li>
-                {% if user.is_authenticated %}
-                    <li><a href="{% url 'select' %}">AI 코스 추천</a></li>
-                    <li class="dropdown"><a href="#"><span>{{ user.username }}님</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                    <li class="dropdown"><a href="#"><span>{% trans '언어선택' %}</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
                         <ul>
-                            <li><a href="{% url 'travel:user_travel_plans' %}">나의 여행 플랜</a></li>
-                            <li><a href="{% url 'travel:diary_list' %}">내 다이어리</a></li>
-                            <li><a href="{% url 'chat' %}">여행자 채팅</a></li>
+                            <form action="{% url 'set_language' %}" method="post">
+                                {% csrf_token %}
+
+                                {% get_current_language as CURRENT_LANGUAGE %}
+                                {% get_language_info for CURRENT_LANGUAGE as LANGUAGE_INFO %}
+                                <!-- <input name="next" type="hidden" value="{{ request.path }}"> -->
+
+                                <input name="next" type="hidden" value="/"> 
+                                <li>
+                                    <!-- 한국어 버튼 -->
+                                    <button type="submit" name="language" value="ko" class="{% if LANGUAGE_CODE == 'ko' %}active-lang{% endif %}">
+                                        🇰🇷 한국어
+                                    </button>
+                                </li>
+                                <li>
+                                    <!-- 영어 버튼 -->
+                                    <button type="submit" name="language" value="en" class="{% if LANGUAGE_CODE == 'en' %}active-lang{% endif %}">
+                                        🇺🇸 English
+                                    </button>
+                                </li>
+                                <li>
+                                    <!-- 스페인어 버튼 -->
+                                    <button type="submit" name="language" value="es" class="{% if LANGUAGE_CODE == 'es' %}active-lang{% endif %}">
+                                        🇪🇸 Español
+                                    </button>
+                                </li>
+                            </form>
                         </ul>
                     </li>
-                    <li><a href="{% url 'travel:logout' %}">로그아웃</a></li>
+                    <li><a href="{% url 'admin:index' %}">{% trans "어드민" %}</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'select' %}">{% trans "AI 코스 추천" %}</a></li>
+                    <li class="dropdown"><a href="#"><span>{{ user.username }}</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="{% url 'travel:user_travel_plans' %}">{% trans "나의 여행 플랜" %}</a></li>
+                            <li><a href="{% url 'travel:diary_list' %}">{% trans "내 다이어리" %}</a></li>
+                            <li><a href="{% url 'chat' %}">{% trans "여행자 채팅" %}</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="{% url 'travel:logout' %}">{% trans "로그아웃" %}</a></li>
                 {% else %}
-                    <li><a href="{% url 'travel:login' %}">로그인</a></li>
-                    <li><a href="{% url 'travel:signup' %}">회원가입</a></li>
+                    <li><a href="{% url 'travel:login' %}">{% trans "로그인" %}</a></li>
+                    <li><a href="{% url 'travel:signup' %}">{% trans "회원가입" %}</a></li>
                 {% endif %}
                     <!-- <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
                         <ul>
@@ -126,9 +158,9 @@
     <div id="messageModal" class="message-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h3>알림</h3>
+            <h3>{% trans "알림" %}</h3>
             <div id="modalMessageBody"></div>
-            <button onclick="closeModal()">확인</button>
+            <button onclick="closeModal()">{% trans "확인" %}</button>
         </div>
     </div>
     {% endfor %}

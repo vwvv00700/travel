@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-
+{% load i18n %}
 {% block title %}여행 에이전트{% endblock %}
 
     {% block content %}
@@ -18,14 +18,14 @@
                 <div class="row align-items-center">
                     <div class="col-lg">
                         <div class="container position-relative tx-center keep-all title-wrap">
-                            <h1>당신만의 여행을 설계해주는 여행 에이전트</h1>
-                            <p>AI가 나에게 꼭 맞는 여행 계획을 추천해줘요</p>
+                            <h1>{% trans "당신만의 여행을 설계해주는 여행 에이전트" %}</h1>
+                            <p>{% trans "AI가 나에게 꼭 맞는 여행 계획을 추천해줘요" %}</p>
                         </div>
 
                         <form class="search-form tx-center" action="{% url 'travel:travel_list' %}" method="post">
                             {% csrf_token %}
                             <div class="form-wrapper">
-                                <input type="text" name="text" class="text-input" placeholder="예: 강남, 마포 2박3일 힐링" required="">
+                                <input type="text" name="text" class="text-input" placeholder="{% trans '예: 강남, 마포 2박3일 힐링' %}" required="">
                                 <button type="submit" class="subscribe-btn">
                                     <i class="bi bi-arrow-right"></i>
                                 </button>
@@ -41,7 +41,7 @@
             <!-- Section Title -->
             <div class="container section-title aos-init aos-animate" data-aos="fade-up">
                 <h2>Travel Plane</h2>
-                <div><span>사람들의</span> <span class="description-title">여행 플랜</span></div>
+                <div><span>{% trans "사람들의" %}</span> <span class="description-title">{% trans "여행 플랜" %}</span></div>
             </div><!-- End Section Title -->
 
             <div class="container aos-init aos-animate" data-aos="fade-up" data-aos-delay="100" style="padding: 0;"> 
@@ -65,7 +65,7 @@
                                     {% endfor %}
                                 </div>
                                 <div class="tour-action">
-                                    <a href="booking.html" class="btn-book">상세보기</a>
+                                    <a href="#" class="btn-book">{% trans "상세보기" %}</a>
                                         <div class="tour-rating">
                                         <i class="bi bi-star"></i>
                                         <i class="bi bi-star"></i>
@@ -80,12 +80,12 @@
                         {% endfor %}
                     </div><!-- End Tour Item -->
                 {% else %}
-                    <p class="text-center text-slate-600 text-lg py-10">여행 플랜이 없습니다.<p>
+                    <p class="text-center text-slate-600 text-lg py-10">{% trans "여행 플랜이 없습니다." %}<p>
                 {% endif %}
             </div>
 
             <div class="text-center mt-5 aos-init aos-animate" data-aos="fade-up" data-aos-delay="500">
-                <a href="tours.html" class="btn-view-all">View All Tours</a>
+                <a href="tours.html" class="btn-view-all">{% trans "더보기 +" %}</a>
             </div>
         </section>
 

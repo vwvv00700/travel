@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-
+{% load i18n %}
 {% block title %}여행 에이전트{% endblock %}
 
 {% block extra_style %}
@@ -17,12 +17,12 @@
     <!-- Page Title -->
     <div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/showcase-8.webp' %});">
         <div class="container position-relative">
-            <h1>AI 코스 선택하기</h1>
-            <p>여행지 & 여행 기간 & 여행 테마 선택하고 코스를 추천 받아보세요</p>
+            <h1>{% trans "AI 코스 선택하기" %}</h1>
+            <p>{% trans "여행지 & 여행 기간 & 여행 테마 선택하고 코스를 추천 받아보세요" %}</p>
             <nav class="breadcrumbs">
                 <ol>
-                    <li><a href="index.html">Home</a></li>
-                    <li class="current">AI 코스 추천</li>
+                    <li><a href="index.html">{% trans "Home" %}</a></li>
+                    <li class="current">{% trans "AI 코스 추천" %}</li>
                 </ol>
             </nav>
         </div>
@@ -40,8 +40,8 @@
             {% csrf_token %}
             <div class="form-wrap">
                 <div class="form-block" style="width:100%;">
-                    <h4>📅 여행 날짜</h4>
-                    <strong class="red">출발일부터 마지막 날까지 선택해주세요</strong>
+                    <h4>📅 {% trans "여행 날짜" %}</h4>
+                    <strong class="red">{% trans "출발일부터 마지막 날까지 선택해주세요" %}</strong>
                     <div class="date-range">
                         <div>
                             <!-- <label for="start_date">출발일</label> -->
@@ -58,8 +58,8 @@
                 </div>
 
                 <div class="form-block" style="width:100%;">
-                    <h4>🛫 여행지 (지도에서 선택)</h4>
-                    <strong class="red">최대 4개까지 선택 해주세요</strong>
+                    <h4>🛫 {% trans "여행지 (지도에서 선택)" %}</h4>
+                    <strong class="red">{% trans "최대 4개까지 선택 해주세요" %}</strong>
                     
                     <div id="map-container">
                         <svg version="1.1" id="Layer_1" viewBox="0 0 1400 1400" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
@@ -89,98 +89,98 @@
                             <path id="yeongdeungpo" d="M385.432,872.828 c3.914-3.196,8.258-7.184,13.503-11.502c3.549-2.922,11.847-7.633,13.003-12.003c1.547-5.849-1.958-11.689-1-19.505 c-7.127-8.824-10.49-18.873-15.503-30.506c-4.992-11.584-10.961-20.336-10.503-36.009c12.586,8.73,21.889,21.758,35.008,30.507 c6.313,4.211,14.327,6.894,21.505,10.502c21.057,10.588,42.679,22.491,66.516,29.508c4.151,20.021,4.892,40.504,12.503,56.012 c5.411,11.027,16.118,15.754,25.506,22.506c0,0.166,0,0.333,0,0.5c-9.933,15.573-19.521,31.49-27.006,49.512 c0.1,21.104-4.123,37.887-11.002,52.012c-9.291,2.553-22.559,2.559-30.507,6.501c-2.952,1.464-13.389,10.814-14.503,13.503 c-3.051,7.357-0.555,17.23-4.001,26.006c-2.515,0.152-3.951,1.384-6.001,2.001c-6.938-4.23-13.496-8.843-20.004-13.503 c0-1.168,0-2.334,0-3.501c-0.317-1.685,0.644-4.646-0.5-5.501c0-2.668,0-5.335,0-8.002c-0.316-1.684,0.645-4.646-0.5-5.502 c0-2.834,0-5.668,0-8.502c-0.316-1.684,0.645-4.645-0.5-5.501c2.547-10.949-5.78-12.446-8.002-19.005 c-2.365-6.984-2.019-15.568-4.001-23.505c-1.954-7.823-3.791-15.308-5.501-22.505c-9.452-5.885-19.485-11.189-29.007-17.004 c0-8.502,0-17.004,0-25.506c0-7.335,0-14.67,0-22.005C386.091,880.49,385.104,876.002,385.432,872.828z M597.48,900.335 c-20.856-23.653-42.328-46.692-74.017-59.514c2.068,15.437,4.544,30.464,9.502,43.01c5.697,5.112,13,14.698,21.004,17.004 c10.17,2.929,21.25,0.715,34.008,1.001C589.714,900.138,598.159,902.816,597.48,900.335z" />
                             <path id="yongsan" d="M737.012,767.305 c8.662,5.808,11.73,17.15,28.506,14.504c1.02,1.146,4.154,0.18,6.002,0.5c3.002,0,6.002,0,9.002,0c1.02,1.146,4.154,0.181,6.002,0.5 c8.139,3.197,14.717,7.955,21.504,12.502c2.967,15.711,8.664,31.341,11.004,46.011c-17.625,10.849-33.219,28.17-48.512,45.011 c-11.588,12.76-23.234,22.858-35.508,34.508c-7.422,7.045-10.861,11.924-22.006,13.003c-12.885,1.247-36.42,1.669-46.01-2.001 c-5.798-2.218-10.817-9.58-15.003-14.503c-4.786-5.628-9.421-10.618-13.503-16.004c-2.026-3.475-5.16-5.843-8.001-8.502 c-2.187-0.646-3.144-2.523-4.501-4.001c-1.958-2.376-4.125-4.543-6.501-6.501c-1.792-2.21-3.792-4.21-6.001-6.001 c-5.487-5.35-10.367-11.305-15.503-17.004c25.86-24.984,53.596-48.095,62.514-90.021c13.819-0.684,26.499-2.507,40.509-3 c2.834,0,5.668,0,8.502,0c2.344-0.324,5.988,0.654,7.502-0.5c3.334,0,6.668,0,10.002,0 C730.596,766.053,735.563,764.919,737.012,767.305z" />
                             
-                            <text x="954.25" y="1046.1">강남구</text>
-                            <text x="795.97" y="1082.53">서초구</text>
-                            <text x="1134.26" y="981.91">송파구</text>
-                            <text x="1248.76" y="808.43">강동구</text>
-                            <text x="606.88" y="990.58">동작구</text>
-                            <text x="596.47" y="1160.59">관악구</text>
-                            <text x="421.25" y="1162.33">금천구</text>
-                            <text x="464.62" y="902.11">영등포구</text>
-                            <text x="258.18" y="1028.75">구로구</text>
-                            <text x="298.08" y="905.58">양천구</text>
-                            <text x="199.19" y="718.22">강서구</text>
-                            <text x="492.38" y="751.18">마포구</text>
-                            <text x="568.71" y="457.99">은평구</text>
-                            <text x="563.51" y="655.76">서대문구</text>
-                            <text x="726.58" y="829.24">용산구</text>
-                            <text x="785.56" y="749.44">중구</text>
-                            <text x="733.52" y="643.62">종로구</text>
-                            <text x="854.96" y="558.61">성북구</text>
-                            <text x="922.61" y="794.55">성동구</text>
-                            <text x="936.49" y="660.97">동대문구</text>
-                            <text x="1070.07" y="798.02">광진구</text>
-                            <text x="1096.1" y="551.67">중랑구</text>
-                            <text x="1040.58" y="409.42">노원구</text>
-                            <text x="886.18" y="274.1">도봉구</text>
-                            <text x="841.08" y="414.62">강북구</text>
+                            <text x="954.25" y="1046.1">{% trans "강남구" %}</text>
+                            <text x="795.97" y="1082.53">{% trans "서초구" %}</text>
+                            <text x="1134.26" y="981.91">{% trans "송파구" %}</text>
+                            <text x="1248.76" y="808.43">{% trans "강동구" %}</text>
+                            <text x="606.88" y="990.58">{% trans "동작구" %}</text>
+                            <text x="596.47" y="1160.59">{% trans "관악구" %}</text>
+                            <text x="421.25" y="1162.33">{% trans "금천구" %}</text>
+                            <text x="464.62" y="902.11">{% trans "영등포구" %}</text>
+                            <text x="258.18" y="1028.75">{% trans "구로구" %}</text>
+                            <text x="298.08" y="905.58">{% trans "양천구" %}</text>
+                            <text x="199.19" y="718.22">{% trans "강서구" %}</text>
+                            <text x="492.38" y="751.18">{% trans "마포구" %}</text>
+                            <text x="568.71" y="457.99">{% trans "은평구" %}</text>
+                            <text x="563.51" y="655.76">{% trans "서대문구" %}</text>
+                            <text x="726.58" y="829.24">{% trans "용산구" %}</text>
+                            <text x="785.56" y="749.44">{% trans "중구" %}</text>
+                            <text x="733.52" y="643.62">{% trans "종로구" %}</text>
+                            <text x="854.96" y="558.61">{% trans "성북구" %}</text>
+                            <text x="922.61" y="794.55">{% trans "성동구" %}</text>
+                            <text x="936.49" y="660.97">{% trans "동대문구" %}</text>
+                            <text x="1070.07" y="798.02">{% trans "광진구" %}</text>
+                            <text x="1096.1" y="551.67">{% trans "중랑구" %}</text>
+                            <text x="1040.58" y="409.42">{% trans "노원구" %}</text>
+                            <text x="886.18" y="274.1">{% trans "도봉구" %}</text>
+                            <text x="841.08" y="414.62">{% trans "강북구" %}</text>
                         </svg>
                     </div>
 
                     <div id="selected-districts-display">
-                        선택된 지역이 없습니다.
+                        {% trans "선택된 지역이 없습니다." %}
                     </div>
 
                     <ul class="check-list" style="display: none;">
-                        <li><input type="checkbox" name="travel_gu" id="gangnam" value="gangnam"><label for="gangnam">강남구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="jongno" value="jongno"><label for="jongno">종로구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="jung" value="jung"><label for="jung">중구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="yongsan" value="yongsan"><label for="yongsan">용산구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="seongdong" value="seongdong"><label for="seongdong">성동구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gwangjin" value="gwangjin"><label for="gwangjin">광진구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="dongdaemun" value="dongdaemun"><label for="dongdaemun">동대문구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="jungnang" value="jungnang"><label for="jungnang">중랑구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="seongbuk" value="seongbuk"><label for="seongbuk">성북구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gangbuk" value="gangbuk"><label for="gangbuk">강북구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="dobong" value="dobong"><label for="dobong">도봉구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="nowon" value="nowon"><label for="nowon">노원구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="eunpyeong" value="eunpyeong"><label for="eunpyeong">은평구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="seodaemun" value="seodaemun"><label for="seodaemun">서대문구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="mapo" value="mapo"><label for="mapo">마포구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="yangcheon" value="yangcheon"><label for="yangcheon">양천구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gangseo" value="gangseo"><label for="gangseo">강서구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="guro" value="guro"><label for="guro">구로구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="geumcheon" value="geumcheon"><label for="geumcheon">금천구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="yeongdeungpo" value="yeongdeungpo"><label for="yeongdeungpo">영등포구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="dongjak" value="dongjak"><label for="dongjak">동작구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gwanak" value="gwanak"><label for="gwanak">관악구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="seocho" value="seocho"><label for="seocho">서초구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="songpa" value="songpa"><label for="songpa">송파구</label></li>
-                        <li><input type="checkbox" name="travel_gu" id="gangdong" value="gangdong"><label for="gangdong">강동구</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gangnam" value="gangnam"><label for="gangnam">{% trans "강남구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="jongno" value="jongno"><label for="jongno">{% trans "종로구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="jung" value="jung"><label for="jung">{% trans "중구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="yongsan" value="yongsan"><label for="yongsan">{% trans "용산구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="seongdong" value="seongdong"><label for="seongdong">{% trans "성동구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gwangjin" value="gwangjin"><label for="gwangjin">{% trans "광진구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="dongdaemun" value="dongdaemun"><label for="dongdaemun">{% trans "동대문구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="jungnang" value="jungnang"><label for="jungnang">{% trans "중랑구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="seongbuk" value="seongbuk"><label for="seongbuk">{% trans "성북구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gangbuk" value="gangbuk"><label for="gangbuk">{% trans "강북구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="dobong" value="dobong"><label for="dobong">{% trans "도봉구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="nowon" value="nowon"><label for="nowon">{% trans "노원구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="eunpyeong" value="eunpyeong"><label for="eunpyeong">{% trans "은평구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="seodaemun" value="seodaemun"><label for="seodaemun">{% trans "서대문구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="mapo" value="mapo"><label for="mapo">{% trans "마포구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="yangcheon" value="yangcheon"><label for="yangcheon">{% trans "양천구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gangseo" value="gangseo"><label for="gangseo">{% trans "강서구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="guro" value="guro"><label for="guro">{% trans "구로구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="geumcheon" value="geumcheon"><label for="geumcheon">{% trans "금천구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="yeongdeungpo" value="yeongdeungpo"><label for="yeongdeungpo">{% trans "영등포구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="dongjak" value="dongjak"><label for="dongjak">{% trans "동작구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gwanak" value="gwanak"><label for="gwanak">{% trans "관악구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="seocho" value="seocho"><label for="seocho">{% trans "서초구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="songpa" value="songpa"><label for="songpa">{% trans "송파구" %}</label></li>
+                        <li><input type="checkbox" name="travel_gu" id="gangdong" value="gangdong"><label for="gangdong">{% trans "강동구" %}</label></li>
                     </ul>
                 </div>
                 
                 <div class="options-wrap">
                     <div class="form-block">
-                        <h4>👩🏼‍🤝‍🧑🏻 여행 그룹</h4>
-                        <strong class="red">여행의 동행이 있는지 알려주세요</strong>
+                        <h4>👩🏼‍🤝‍🧑🏻 {% trans "여행 그룹" %}</h4>
+                        <strong class="red">{% trans "여행의 동행이 있는지 알려주세요" %}</strong>
                         <ul class="radio-list">
-                            <li><input type="radio" name="partner" id="solo" value="solo"><label for="solo">혼자</label></li>
-                            <li><input type="radio" name="partner" id="friends" value="friends"><label for="friends">친구</label></li>
-                            <li><input type="radio" name="partner" id="family" value="family"><label for="family">가족</label></li>
-                            <li><input type="radio" name="partner" id="couple" value="couple"><label for="couple">연인</label></li>
+                            <li><input type="radio" name="partner" id="solo" value="solo"><label for="solo">{% trans "혼자" %}</label></li>
+                            <li><input type="radio" name="partner" id="friends" value="friends"><label for="friends">{% trans "친구" %}</label></li>
+                            <li><input type="radio" name="partner" id="family" value="family"><label for="family">{% trans "가족" %}</label></li>
+                            <li><input type="radio" name="partner" id="couple" value="couple"><label for="couple">{% trans "연인" %}</label></li>
                         </ul>
                     </div>
     
                     <!-- 여행 테마 -->
                     <div class="form-block">
-                        <h4>📝 여행 테마</h4>
-                        <strong class="red">최대 4개까지 선택 해주세요</strong>
+                        <h4>📝 {% trans "여행 테마" %}</h4>
+                        <strong class="red">{% trans "최대 4개까지 선택 해주세요" %}</strong>
                         <ul class="check-list thema">
-                            <li><input type="checkbox" name="tema" id="cafe" value="cafe"><label for="cafe">카페</label></li>
-                            <li><input type="checkbox" name="tema" id="restaurant" value="restaurant"><label for="restaurant">맛집</label></li>
-                            <li><input type="checkbox" name="tema" id="festival" value="festival"><label for="festival">축제</label></li>
-                            <li><input type="checkbox" name="tema" id="nature" value="nature"><label for="nature">자연/산책</label></li>
-                            <li><input type="checkbox" name="tema" id="culture" value="culture"><label for="culture">문화/전시</label></li>
-                            <li><input type="checkbox" name="tema" id="park" value="park"><label for="park">테마파크</label></li>
-                            <li><input type="checkbox" name="tema" id="healing" value="healing"><label for="healing">힐링/스파</label></li>
-                            <li><input type="checkbox" name="tema" id="shopping" value="shopping"><label for="shopping">쇼핑</label></li>
+                            <li><input type="checkbox" name="tema" id="cafe" value="cafe"><label for="cafe">{% trans "카페" %}</label></li>
+                            <li><input type="checkbox" name="tema" id="restaurant" value="restaurant"><label for="restaurant">{% trans "맛집" %}</label></li>
+                            <li><input type="checkbox" name="tema" id="festival" value="festival"><label for="festival">{% trans "축제" %}</label></li>
+                            <li><input type="checkbox" name="tema" id="nature" value="nature"><label for="nature">{% trans "자연/산책" %}</label></li>
+                            <li><input type="checkbox" name="tema" id="culture" value="culture"><label for="culture">{% trans "문화/전시" %}</label></li>
+                            <li><input type="checkbox" name="tema" id="park" value="park"><label for="park">{% trans "테마파크" %}</label></li>
+                            <li><input type="checkbox" name="tema" id="healing" value="healing"><label for="healing">{% trans "힐링/스파" %}</label></li>
+                            <li><input type="checkbox" name="tema" id="shopping" value="shopping"><label for="shopping">{% trans "쇼핑" %}</label></li>
                         </ul>
                     </div>
                 </div>
             </div>
             
-            <button type="submit" class="btn btn-outline-primary">AI 추천 코스</button>
+            <button type="submit" class="btn btn-outline-primary">{% trans "AI 추천 코스" %}</button>
         </form>
     </section>
 
