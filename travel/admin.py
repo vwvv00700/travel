@@ -504,23 +504,45 @@ class UploadEntryAdmin(admin.ModelAdmin):
 # ── 다이어리 어드민 ────────────────────────────────────────────────
 @admin.register(Travel)
 class TravelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'author_id', 'start_date', 'end_date')
+    list_display = ('id', 'name', 'author_with_name', 'start_date', 'end_date')
+    list_display_links = ('name',)
     search_fields = ('name', 'description')
     list_filter = ('author_id', 'start_date')
 
+    def author_with_name(self, obj):
+        try:
+            user = User.objects.using('default').get(id=obj.author_id)
+            return f"{obj.author_id} ({user.username})"
+        except User.DoesNotExist:
+            return obj.author_id
+    author_with_name.short_description = 'Author'
+
+class DiaryEntryAdminForm(forms.ModelForm):
+    class Meta:
+        model = DiaryEntry
+        fields = '__all__'
+        widgets = {
+            'comment': forms.Textarea(attrs={'cols': 80, 'rows': 5}), # Adjust cols and rows as needed
+        }
+
 @admin.register(DiaryEntry)
 class DiaryEntryAdmin(admin.ModelAdmin):
-    list_display = ('diary_id', 'diary_name', 'author_id', 'location', 'timestamp')
+    form = DiaryEntryAdminForm # Use the custom form
+    list_display = ('diary_info', 'author_with_name', 'comment', 'timestamp') # Removed 'location'
+    list_display_links = ('comment',)
     search_fields = ('location', 'comment', 'diary__name')
     list_filter = ('author_id', 'timestamp', 'diary')
     readonly_fields = ('latitude', 'longitude')
 
-    def diary_name(self, obj):
-        return obj.diary.name
-    diary_name.short_description = '다이어리' # Column header for the diary name
-    diary_name.admin_order_field = 'diary'
+    def diary_info(self, obj):
+        return f"{obj.diary.id} ({obj.diary.name})"
+    diary_info.short_description = 'Diary'
+    diary_info.admin_order_field = 'diary__id' # Allow sorting by diary ID
 
-    def diary_id(self, obj):
-        return obj.diary.id
-    diary_id.short_description = '다이어리 ID' # Column header for the diary ID
-    diary_id.admin_order_field = 'diary__id'
+    def author_with_name(self, obj):
+        try:
+            user = User.objects.using('default').get(id=obj.author_id)
+            return f"{obj.author_id} ({user.username})"
+        except User.DoesNotExist:
+            return obj.author_id
+    author_with_name.short_description = 'Author'
