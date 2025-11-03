@@ -41,6 +41,7 @@ from .models import (
     DiaryEntry,
     Travel,
     PlaceAnalysis,
+    UserProfile,
 )
 
 from .services.LLM_analyzer import analyze_place_with_LLM
@@ -328,33 +329,46 @@ def travel_list(request):
 
     return render(request, "travel/travel_list.html", context)
 
-@require_GET
-def generate_guide_api(request):
-    """
-    /travel/generate_guide/?plan_idx=0
-    plan_idx: 0 -> 플랜 A 스타일
-              1 -> 플랜 B 스타일
-              2 -> 플랜 C 스타일
-    """
+# def travel_list(request):
+#     # 1) 검색창에서 넘어온 자연어 문장 받기
+#     if request.method == "POST":
+#         raw_text = request.POST.get("text", "").strip()
+#         if raw_text:
+#             # 유저 검색어를 파싱해서 user_query 딕셔너리로 만든다
+#             user_query = parse_user_request(raw_text)
+#         else:
+#             # 아무 것도 안 썼으면 기본값
+#             user_query = {
+#                 "areas": ["강남구", "서초구"],
+#                 "nights": 1,
+#                 "themes": ["힐링", "맛집"],
+#             }
+#     else:
+#         # GET으로 직접 /travel/list/ 들어올 때 기본값
+#         user_query = {
+#             "areas": ["강남구", "서초구"],
+#             "nights": 1,
+#             "themes": ["힐링", "맛집"],
+#         }
 
-    # 어떤 플랜 스타일로 만들지
-    try:
-        plan_idx = int(request.GET.get("plan_idx", 0))
-    except ValueError:
-        plan_idx = 0
+#     # 2) 후보 장소 랭킹 뽑기
+#     ranked_all = get_ranked_places(user_query)
 
-    user_query = parse_user_request(request)
-    ranked_all = get_ranked_places(user_query)
+#     # 3) 플랜 A/B/C 구성 (너 기존 코드 그대로 유지)
+#     plan_A = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 A", _strategy_plan_A)
+#     plan_B = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 B", _strategy_plan_B)
+#     plan_C = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 C", _strategy_plan_C)
 
-    strategies = [_strategy_plan_A, _strategy_plan_B, _strategy_plan_C]
-    if plan_idx < 0 or plan_idx >= len(strategies):
-        plan_idx = 0
-
-    plan_info = _build_plan_variant_with_guide(user_query, ranked_all, strategies[plan_idx])
-
-    return JsonResponse({
-        "guide_text": plan_info["guide_text"],
-    })
+#     # 4) 템플릿 렌더
+#     return render(
+#         request,
+#         "travel_list.html",
+#         {
+#             "plan_A": plan_A,
+#             "plan_B": plan_B,
+#             "plan_C": plan_C,
+#         },
+#     )
 
 
 @require_GET
@@ -1170,10 +1184,23 @@ AREA_LABELS = {
 }
 
 def user_travel_plans(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
+
+    request_path = request.path
+    type = ""
+
+    if "travel" in request_path:
+        type = "travel"
+    else :
+        type = "main"
     
-    travel_plans = UserSelectedPlan.objects.filter(user=request.user)
+    if type == "travel":
+        if not request.user.is_authenticated:
+            return redirect('login')
+    
+        travel_plans = UserSelectedPlan.objects.filter(user=request.user)
+    elif type == "main":
+        travel_plans = UserSelectedPlan.objects.all()
+    
 
     final_plans = [] # 최종 가공된 플랜들이 담길 리스트
 
@@ -1229,6 +1256,10 @@ def user_travel_plans(request):
 
     print("context:", context)  # 디버그 출력
 
-    return render(request, 'travel/my_travel_plan.html', context)
+    if type == "travel":
+        return render(request, 'travel/my_travel_plan.html', context)
+    elif type == "main":
+        return render(request, 'index.html', context)
+
     
     

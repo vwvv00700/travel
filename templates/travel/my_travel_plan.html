@@ -19,7 +19,7 @@
 </div><!-- End Page Title -->
 
 <div class="container mx-auto cont-wrap">
-    <div class="max-w-6xl mx-auto p-8 border-slate-200">
+    <div class="mx-auto my-travel">
 
         <div class="flex justify-between items-center mb-6">
             <a href="{% url 'select' %}" class="text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center btn-primary">
@@ -30,7 +30,7 @@
         <section id="card-list" class="card-list section" style="background: none;">
             <div class="container aos-init aos-animate" data-aos="fade-up" data-aos-delay="100" style="padding: 0;"> 
                 {% if final_plans %}
-                    <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="200">
+                    <div class="aos-init aos-animate tour-card-wrap" data-aos="fade-up" data-aos-delay="200">
                         {% for plan in final_plans %}
                         <div class="tour-card">
                             <!-- <div class="tour-image">

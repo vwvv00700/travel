@@ -1,7 +1,7 @@
 from typing import Dict, List, Any
 from datetime import datetime
 from django.db.models import Prefetch, Q
-from travel.models import Place, PlaceAnalysis
+from travel.models import Place, PlaceAnalysis, UserProfile
 
 
 def parse_user_request(request) -> Dict[str, Any]:
@@ -31,6 +31,7 @@ def parse_user_request(request) -> Dict[str, Any]:
         if request.user.is_authenticated:
             default["user_id"] = request.user.username
         return default
+
 
     raw_text = request.POST.get("searchBox", "").strip()
 
@@ -62,12 +63,45 @@ def parse_user_request(request) -> Dict[str, Any]:
             nights = max(0, delta_days - 1)
         except Exception:
             pass  # 파싱 실패하면 기본값 유지
+    
 
-    # 동행/분위기 추정 (임시 로직은 기존 그대로)
-    group = "couple" if ("커플" in raw_text or "데이트" in raw_text) else "friends"
+    # 동행 유형
+    partner = request.POST.get("partner", "").strip().lower()
+    if partner in ["solo", "혼자"]:
+        group = "solo"
+    elif partner in ["family", "가족"]:
+        group = "family"
+    elif partner in ["couple", "연인"]:
+        group = "couple"
+    elif partner in ["friends", "친구"]:
+        group = "friends"
+    
+    # group = "couple" if ("커플" in raw_text or "데이트" in raw_text) else "friends"
 
-    mbti_guess = "ENFP"
-    season = "autumn"
+
+    # MBTI -> (로그인한 유저 프로필에서 가져오기)
+    mbti = request.user.userprofile.mbti
+    if mbti :
+        mbti_guess = mbti
+    else:
+        mbti_guess = "ENFP"
+
+
+    # 사작일 과 끝일로 계절 구분하기
+    datetime_start = datetime.strptime(start_date, "%Y-%m-%d").date()
+    datatime_end = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    mid_date = datetime_start + (datatime_end - datetime_start) / 2
+    if 3 <= mid_date.month <= 5:
+        season = "spring"
+    elif 6 <= mid_date.month <= 8:
+        season = "summer"
+    elif 9 <= mid_date.month <= 11:
+        season = "autumn"
+    else:
+        season = "winter"
+
+    # season = "autumn"
     
  # ✅ 영문 구 코드 → 한글 구 이름 변환
     DISTRICT_MAP = {

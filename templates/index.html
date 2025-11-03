@@ -22,7 +22,7 @@
                             <p>AI가 나에게 꼭 맞는 여행 계획을 추천해줘요</p>
                         </div>
 
-                        <form class="search-form tx-center" action="" method="post">
+                        <form class="search-form tx-center" action="{% url 'travel:travel_list' %}" method="post">
                             {% csrf_token %}
                             <div class="form-wrapper">
                                 <input type="text" name="text" class="text-input" placeholder="예: 강남, 마포 2박3일 힐링" required="">
@@ -37,18 +37,64 @@
 
         </section><!-- /Travel Hero Section -->
 
-        <section id="card-list" class="card-list section">
-
+        <section id="card-list" class="card-list section" style="background: none;">
             <!-- Section Title -->
             <div class="container section-title aos-init aos-animate" data-aos="fade-up">
                 <h2>Travel Plane</h2>
                 <div><span>사람들의</span> <span class="description-title">여행 플랜</span></div>
             </div><!-- End Section Title -->
 
+            <div class="container aos-init aos-animate" data-aos="fade-up" data-aos-delay="100" style="padding: 0;"> 
+                {% if final_plans %}
+                    <div class="aos-init aos-animate tour-card-wrap main" data-aos="fade-up" data-aos-delay="200">
+                        {% for plan in final_plans %}
+                        <div class="tour-card">
+                            <!-- <div class="tour-image">
+                                <img src="assets/img/travel/tour-1.webp" alt="Serene Beach Retreat" class="img-fluid" loading="lazy">
+                            </div> -->
+                            <div class="tour-content">
+                                <h4>{{ plan.areas_display }} 여행</h4>
+                                <div class="tour-meta">
+                                    <span class="duration"><i class="bi bi-clock"></i> {{ plan.total_days }} Days</span>
+                                    <span class="group-size"><i class="bi bi-people"></i> {{ plan.group }}</span>
+                                </div>
+                                <!-- <p>Mauris ipsum neque, cursus ac ipsum at, iaculis facilisis ligula. Suspendisse non sapien vel enim cursus semper.</p> -->
+                                <div class="tour-highlights">
+                                    {% for tag in plan.combined_tags %}
+                                    <span>{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="tour-action">
+                                    <a href="booking.html" class="btn-book">상세보기</a>
+                                        <div class="tour-rating">
+                                        <i class="bi bi-star"></i>
+                                        <i class="bi bi-star"></i>
+                                        <i class="bi bi-star"></i>
+                                        <i class="bi bi-star"></i>
+                                        <i class="bi bi-star"></i>
+                                        <span>0.0 (0)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div><!-- End Tour Item -->
+                {% else %}
+                    <p class="text-center text-slate-600 text-lg py-10">아직 생성된 여행 플랜이 없습니다.<p>
+                {% endif %}
+            </div>
+
+            <div class="text-center mt-5 aos-init aos-animate" data-aos="fade-up" data-aos-delay="500">
+                <a href="tours.html" class="btn-view-all">View All Tours</a>
+            </div>
+        </section>
+
+        <!-- <section id="card-list" class="card-list section">
+
             <div class="container aos-init aos-animate" data-aos="fade-up" data-aos-delay="100"> 
 
                 <div class="row gy-4">
-                    
+
                 </div>    
 
                 <div class="text-center mt-5 aos-init aos-animate" data-aos="fade-up" data-aos-delay="500">
@@ -57,7 +103,7 @@
 
             </div>
 
-        </section>
+        </section> -->
 
     {% endblock %}
 

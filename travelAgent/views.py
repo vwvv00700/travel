@@ -13,6 +13,9 @@ from travel.models import TravelPlan, Place, ChatRoom, UserSelectedPlan
 logger = logging.getLogger(__name__)
 
 def main(request):
+
+    print(request.path)
+
     return render(request, "index.html")
 
 def select(request):

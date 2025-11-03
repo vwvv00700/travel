@@ -8,7 +8,7 @@ from travel import views as travel_views
 
 urlpatterns = [
     # 메인 랜딩 페이지
-    path("", main, name="main"),
+    path("", travel_views.user_travel_plans, name="main"),
 
     # AI 추천 조건 선택 페이지
     path("select/", select, name="select"),
