@@ -261,20 +261,20 @@ class Travel(models.Model):
 
 
 # # ----- 여행 계획 ------------------------------------------
-# class TravelPlan(models.Model):
-#     title = models.CharField(max_length=100)
-#     destination = models.CharField(max_length=100)
-#     start_date = models.DateField()
-#     end_date = models.DateField()
-#     description = models.TextField(blank=True, null=True)
-#     created_at = models.DateTimeField(auto_now_add=True)
+class TravelPlan(models.Model):
+    title = models.CharField(max_length=100)
+    destination = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-#     class Meta:
-#         verbose_name = "Travel Plan"
-#         verbose_name_plural = "Travel Plans"
+    class Meta:
+        verbose_name = "Travel Plan"
+        verbose_name_plural = "Travel Plans"
 
-#     def __str__(self):
-#         return f"{self.title} ({self.destination})"
+    def __str__(self):
+        return f"{self.title} ({self.destination})"
 
 # ----- 다이어리 ------------------------------------------
 class DiaryEntry(models.Model):
@@ -380,7 +380,7 @@ class UserSelectedPlan(models.Model):
 # ----- 채팅 관련 모델 ------------------------------------------
 class ChatRoom(models.Model):
     room_name = models.CharField(max_length=100, unique=True)
-    participants = models.ManyToManyField(User)
+    participants = models.ManyToManyField(User, related_name='chatrooms')
     travel_plan1 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan1')
     travel_plan2 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan2')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -390,13 +390,13 @@ class ChatRoom(models.Model):
 
 
 class ChatMessage(models.Model):
-    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')  # ✅ 추가
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} -> {self.plan.title}"
+        return f"{self.sender.username} -> {self.room.room_name}"
 
 # ----- 채팅 신고 모델 ------------------------------------------
 class ChatReport(models.Model):

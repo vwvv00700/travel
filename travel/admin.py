@@ -38,7 +38,7 @@ from .models import (
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
 from travel.models import TravelPlan
-from travel.views import create_chatroom_for_plan
+from travel.services.matching import auto_match_and_create_room
 # ── 3. 유틸리티 함수 정의 ───────────────────────────────────────────────────────
 
 
@@ -175,7 +175,7 @@ def create_travel_plan(request):
         )
         
         # ✅ 자동 매칭 실행
-        new_rooms = create_chatroom_for_plan(plan)
+        new_rooms = auto_match_and_create_room(plan)
         if new_rooms:
             message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!"
         else:

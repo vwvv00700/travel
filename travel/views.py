@@ -46,7 +46,7 @@ from .models import (
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
 from .services.itinerary_llm_gemini import generate_itinerary_guide
-from .services.matching import create_chatroom_for_plan
+from travel.services.matching import auto_match_and_create_room
 from .services.recommender import (
     parse_user_request,
     get_ranked_places,
@@ -362,7 +362,7 @@ def create_travel_plan(request):
             is_seeking_partner=True
         )
 
-        new_rooms = create_chatroom_for_plan(plan)
+        new_rooms = auto_match_and_create_room(plan)
         message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!" if new_rooms else "매칭 가능한 사용자가 아직 없습니다."
 
         return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})

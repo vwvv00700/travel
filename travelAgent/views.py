@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.contrib.auth.models import User
 
 from travel.models import TravelPlan, Place, ChatRoom, UserSelectedPlan
 
@@ -142,43 +143,50 @@ def select(request):
 @login_required
 def chat(request):
     current_user = request.user
-    partners_list = []
-
-    # try:
-    #     current_plan = UserSelectedPlan.objects.get(user=current_user)
-    # except UserSelectedPlan.DoesNotExist:
-    #     return render(request, 'travel/match_chat.html', {
-    #         'partners': [],
-    #         'current_user': current_user.username,
-    #         'message': '여행 계획이 없습니다. 여행 계획을 먼저 등록해주세요.',
-    #     })
-
-    # matched_plans = UserSelectedPlan.objects.filter(
-    #     Q(location_city=current_plan.location_city) &
-    #     Q(start_date__lte=current_plan.end_date) &
-    #     Q(end_date__gte=current_plan.start_date) &
-    #     Q(is_seeking_partner=True) &
-    #     ~Q(user=current_user)
-    # ).select_related('user').order_by('-regdate')
-
-    # for plan in matched_plans:
-    #     partner_user = plan.user
-    #     user_ids = sorted([current_user.id, partner_user.id])
-    #     room_name = f"chat_{user_ids[0]}_{user_ids[1]}"
-
-    #     room, created = ChatRoom.objects.get_or_create(
-    #         room_name=room_name,
-    #         defaults={'user1': current_user, 'user2': partner_user}
-    #     )
-
-    #     partners_list.append({
-    #         'id': room.room_name,
-    #         'name': partner_user.username,
-    #         'trip': f"{plan.location_city} ({plan.start_date.strftime('%m/%d')}~{plan.end_date.strftime('%m/%d')})"
-    #     })
-
+    # 참여자가 2명인 방만 가져오거나, 나중에 필터링하는 것이 좋습니다.
+    # 현재는 일단 모든 방을 가져와서 처리합니다.
+    current_rooms = ChatRoom.objects.filter(participants=current_user)
+    
+    room_data_list = []
+    
+    for room in current_rooms:
+        # 현재 사용자를 제외한 나머지 참가자 QuerySet
+        other_participants = room.participants.exclude(id=current_user.id)
+        
+        # ⚠️ (가정) 1:1 채팅방임을 명시적으로 확인
+        # 현재 유저를 제외한 참가자가 정확히 1명인 경우만 처리
+        if other_participants.count() != 1:
+            continue
+            
+        partner = other_participants.first()
+        
+        # ... (이후의 여행 계획 유효성 검사 및 데이터 처리 로직은 동일)
+        
+        # 🚨 NULL 체크 및 객체 유효성 확인 강화
+        # 1. 파트너가 없거나 (1인 방) -> 위에서 count로 처리했으므로 사실상 불필요
+        if not partner:
+            continue
+            
+        # 2. room.travel_plan1이 None이거나 TravelPlan 객체가 아니면 건너뜁니다.
+        if not room.travel_plan1 or not isinstance(room.travel_plan1, TravelPlan):
+            continue
+            
+        # 3. 객체와 필드가 모두 유효함을 확인했으므로, 안전하게 접근합니다.
+        try:
+            location_value = room.travel_plan1.destination 
+        except AttributeError:
+            print(f"ERROR: TravelPlan object {room.travel_plan1.id} has no 'destination' field.")
+            location_value = "ERROR: 필드 누락"
+            
+        room_data_list.append({
+            'room': room,
+            'partner': partner,
+            'partner_name': partner.username, 
+            'location': location_value, 
+        })
+            
     return render(request, 'travel/match_chat.html', {
-        'partners': partners_list,
+        'room_data_list': room_data_list, 
         'current_user': current_user.username,
         'message': None,
     })
