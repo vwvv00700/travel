@@ -247,12 +247,25 @@ class AnalysisTool(models.Model):
         verbose_name_plural = verbose_name
         default_permissions = ()  # add/change/delete/view 자동권한 생성 안 함
 
+# ----- 다이어리 태그 ------------------------------------------
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True, db_index=True)
+
+    class Meta:
+        verbose_name = "태그"
+        verbose_name_plural = "태그"
+
+    def __str__(self):
+        return self.name
+
+# ----- 다이어리 목록 ------------------------------------------
 class Travel(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    # author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author_id = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -264,13 +277,17 @@ class Travel(models.Model):
 # ----- 다이어리 ------------------------------------------
 class DiaryEntry(models.Model):
     diary = models.ForeignKey(Travel, on_delete=models.CASCADE, related_name='diary_entries') # Renamed from 'travel'
-    photo = models.ImageField(upload_to='diary_photos/%Y/%m/%d/')
+    # photo = models.ImageField(upload_to='diary_photos/%Y/%m/%d/')
+    media_file = models.FileField(upload_to='diary_media/%Y/%m/%d/', null=True)
+    media_type = models.CharField(max_length=10, blank=True)
+    tags = models.ManyToManyField('Tag', blank=True, related_name='diary_entries')
     location = models.CharField(max_length=200, blank=True)
     timestamp = models.DateTimeField(null=True, blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     comment = models.TextField(blank=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    # author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author_id = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -278,36 +295,39 @@ class DiaryEntry(models.Model):
         verbose_name_plural = '다이어리 상세'
 
     def __str__(self):
-        return f'{self.diary.name} - {self.author.username}의 {self.created_at.strftime("%Y-%m-%d")} 기록'
+        # return f'{self.diary.name} - {self.author.username}의 {self.created_at.strftime("%Y-%m-%d")} 기록'
+        return f'{self.diary.name} - Author ID: {self.author_id}의 {self.created_at.strftime("%Y-%m-%d")} 기록'
 
     def save(self, *args, **kwargs):
-        if self.photo and not self.pk: # Only process new images
-            try:
-                # Read the image data from the InMemoryUploadedFile
-                image_bytes = self.photo.read()
-                exif_data = get_exif_data(image_bytes)
+        if self.media_file and not self.pk:
+            content_type = self.media_file.file.content_type
+            if 'image' in content_type:
+                self.media_type = 'image'
+                try:
+                    image_bytes = self.media_file.read()
+                    exif_data = get_exif_data(image_bytes)
+                    logger.debug(f"Extracted EXIF Data: {exif_data}")
 
-                logger.debug(f"Extracted EXIF Data: {exif_data}") # Debug print
+                    lat, lon = get_gps_coordinates(exif_data)
+                    timestamp = get_timestamp(exif_data)
+                    logger.debug(f"Extracted Lat: {lat}, Lon: {lon}, Timestamp: {timestamp}")
 
-                lat, lon = get_gps_coordinates(exif_data)
-                timestamp = get_timestamp(exif_data)
-
-                logger.debug(f"Extracted Lat: {lat}, Lon: {lon}, Timestamp: {timestamp}") # Debug print
-
-                if lat is not None:
-                    self.latitude = lat
-                if lon is not None:
-                    self.longitude = lon
-                    # Populate location name using reverse geocoding
-                    try:
-                        self.location = get_location_name(self.latitude, self.longitude)
-                    except Exception as e:
-                        logger.error(f"Reverse geocoding 중 오류 발생: {e}")
-                        self.location = f"위도: {self.latitude:.4f}, 경도: {self.longitude:.4f}" # Fallback
-                if timestamp is not None:
-                    self.timestamp = timestamp
-            except Exception as e:
-                logger.error(f"DiaryEntry save() - 이미지 메타데이터(EXIF) 처리 중 오류 발생: {e}. GPS/시간 정보 없이 저장됩니다.")
+                    if lat is not None:
+                        self.latitude = lat
+                    if lon is not None:
+                        self.longitude = lon
+                        try:
+                            self.location = get_location_name(self.latitude, self.longitude)
+                        except Exception as e:
+                            logger.error(f"Reverse geocoding 중 오류 발생: {e}")
+                            self.location = f"위도: {self.latitude:.4f}, 경도: {self.longitude:.4f}" # Fallback
+                    if timestamp is not None:
+                        self.timestamp = timestamp
+                except Exception as e:
+                    logger.error(f"DiaryEntry save() - 이미지 메타데이터(EXIF) 처리 중 오류 발생: {e}. GPS/시간 정보 없이 저장됩니다.")
+            
+            elif 'video' in content_type:
+                self.media_type = 'video'
 
         super().save(*args, **kwargs)
         
@@ -395,7 +415,7 @@ class ChatRoom(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"ChatRoom({self.id}): {self.travel_plan1} <-> {self.travel_plan2}"
+        return f"ChatRoom({self.id}): {self.room_name}"
 
 
 class ChatMessage(models.Model):
@@ -405,7 +425,7 @@ class ChatMessage(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} -> {self.plan.title}"
+        return f"{self.sender.username}: {self.message[:50]}"
 
 # ----- 채팅 신고 모델 ------------------------------------------
 class ChatReport(models.Model):

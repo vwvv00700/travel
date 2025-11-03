@@ -44,6 +44,7 @@ from .models import (
     UserProfile,
 )
 
+from .services.diary_summarizer import summarize_diary_with_ai, generate_tags_with_ai 
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
 from .services.itinerary_llm_gemini import generate_itinerary_guide
@@ -589,7 +590,8 @@ def create_travel_diary(request):
         form = TravelForm(request.POST)
         if form.is_valid():
             travel_diary = form.save(commit=False)
-            travel_diary.author = request.user
+            # travel_diary.author = request.user
+            travel_diary.author_id = request.user.id
             travel_diary.save()  # 라우터가 diary_db로 자동 라우팅
             return redirect('travel:diary_home')
     else:
@@ -598,7 +600,8 @@ def create_travel_diary(request):
 
 @login_required
 def travel_diary_detail(request, pk):
-    travel_diary = get_object_or_404(Travel, pk=pk, author=request.user)
+    # travel_diary = get_object_or_404(Travel, pk=pk, author=request.user)
+    travel_diary = get_object_or_404(Travel, pk=pk, author_id=request.user.id)
     diary_entries = travel_diary.diary_entries.all().order_by('timestamp')
 
     # Group entries by date
@@ -622,8 +625,12 @@ def travel_diary_detail(request, pk):
             'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %i분") if entry.timestamp else '',
             'latitude': entry.latitude,
             'longitude': entry.longitude,
-            'photo_url': entry.photo.url if entry.photo else '',
-            'comment': entry.comment
+            # 'photo_url': entry.photo.url if entry.photo else '',
+            # 'comment': entry.comment
+            'media_url': entry.media_file.url if entry.media_file else '',
+            'media_type': entry.media_type,
+            'comment': entry.comment,
+            'tags': [tag.name for tag in entry.tags.all()]
         })
     diary_entries_json = json.dumps(diary_entries_data)
 
@@ -638,7 +645,8 @@ def travel_diary_detail(request, pk):
 @login_required # Ensure user is logged in to view their diary
 def diary_list(request):
     # Fetch all travel diaries for the current user
-    travel_diaries = Travel.objects.filter(author=request.user).distinct().order_by('-created_at')
+    # travel_diaries = Travel.objects.filter(author=request.user).distinct().order_by('-created_at')
+    travel_diaries = Travel.objects.filter(author_id=request.user.id).distinct().order_by('-created_at')
     return render(request, 'travel/diary_list.html', {'travel_diaries': travel_diaries})
 
 @login_required
@@ -649,16 +657,19 @@ def diary_home(request):
 def upload_diary_entry(request, travel_id=None):
     travel_diary = None
     if travel_id:
-        travel_diary = get_object_or_404(Travel, pk=travel_id, author=request.user)
+        # travel_diary = get_object_or_404(Travel, pk=travel_id, author=request.user)
+        travel_diary = get_object_or_404(Travel, pk=travel_id, author_id=request.user.id)
 
     if request.method == 'POST':
         form = DiaryEntryForm(request.POST, request.FILES, user=request.user, travel_diary=travel_diary)
         if form.is_valid():
             entry = form.save(commit=False)
-            entry.author = request.user
+            # entry.author = request.user
+            entry.author_id = request.user.id
             if travel_diary:
                 entry.diary = travel_diary
             entry.save()
+            form.save_tags()
             if not entry.latitude and not entry.timestamp:
                 messages.warning(request, "사진은 업로드되었지만, 위치나 시간 정보를 읽어올 수 없었습니다.")
             if travel_diary:
@@ -673,7 +684,8 @@ def upload_diary_entry(request, travel_id=None):
 
 @login_required
 def edit_travel_diary(request, pk):
-    travel_diary = get_object_or_404(Travel, pk=pk, author=request.user)
+    # travel_diary = get_object_or_404(Travel, pk=pk, author=request.user)
+    travel_diary = get_object_or_404(Travel, pk=pk, author_id=request.user.id)
     if request.method == 'POST':
         form = TravelForm(request.POST, instance=travel_diary)
         if form.is_valid():
@@ -687,15 +699,18 @@ def edit_travel_diary(request, pk):
 
 @login_required
 def edit_diary_entry(request, pk):
-    diary_entry = get_object_or_404(DiaryEntry, pk=pk, author=request.user)
+    # diary_entry = get_object_or_404(DiaryEntry, pk=pk, author=request.user)
+    diary_entry = get_object_or_404(DiaryEntry, pk=pk, author_id=request.user.id)
     travel_diary = diary_entry.diary
 
     if request.method == 'POST':
         form = DiaryEntryForm(request.POST, request.FILES, instance=diary_entry, user=request.user, travel_diary=travel_diary)
         if form.is_valid():
             entry = form.save(commit=False)
-            entry.author = request.user
+            # entry.author = request.user
+            entry.author_id = request.user.id
             entry.save()
+            form.save_tags()
             if not entry.latitude and not entry.timestamp:
                 messages.warning(request, "다이어리 항목이 수정되었지만, 사진에서 위치나 시간 정보를 읽어올 수 없었습니다.")
             return redirect('travel:travel_diary_detail', pk=travel_diary.pk)
@@ -707,7 +722,8 @@ def edit_diary_entry(request, pk):
 
 @login_required
 def delete_diary_entry(request, pk):
-    diary_entry = get_object_or_404(DiaryEntry, pk=pk, author=request.user)
+    # diary_entry = get_object_or_404(DiaryEntry, pk=pk, author=request.user)
+    diary_entry = get_object_or_404(DiaryEntry, pk=pk, author_id=request.user.id)
     travel_diary = diary_entry.diary
 
     if request.method == 'POST':
@@ -715,7 +731,76 @@ def delete_diary_entry(request, pk):
         return redirect('travel:travel_diary_detail', pk=travel_diary.pk)
     return render(request, 'travel/delete_diary_entry.html', {'diary_entry': diary_entry, 'travel_diary': travel_diary})
 
-from django.http import JsonResponse
+
+@login_required
+def summarize_diary_view(request, pk):
+    travel_diary = get_object_or_404(Travel, pk=pk, author_id=request.user.id)
+    
+    comments = [
+        entry.comment 
+        for entry in travel_diary.diary_entries.all() 
+        if entry.comment and entry.comment.strip()
+    ]
+
+    if not comments:
+        return JsonResponse({'summary': '요약할 코멘트가 없습니다.'})
+
+    # Import the summarizer service
+    from .services.diary_summarizer import summarize_diary_with_ai
+    try:
+        summary = summarize_diary_with_ai(comments)
+        return JsonResponse({'summary': summary})
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error generating AI summary for DiaryEntry {pk}: {e}")
+        return JsonResponse({'error': f"AI 요약 중 오류가 발생했습니다: {e}"}, status=500)
+
+
+@login_required
+def generate_tags_view(request, pk):
+    diary_entry = get_object_or_404(DiaryEntry, pk=pk, author_id=request.user.id)
+    
+    comment = diary_entry.comment
+    if not comment or not comment.strip():
+        return JsonResponse({'tags': ''}) # Return empty string if no comment
+
+    # Import the tag generator service
+    from .services.diary_summarizer import generate_tags_with_ai
+    try:
+        generated_tags = generate_tags_with_ai(comment)
+        return JsonResponse({'tags': generated_tags})
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error generating AI tags for DiaryEntry {pk}: {e}")
+        return JsonResponse({'error': f"AI 태그 생성 중 오류가 발생했습니다: {e}"}, status=500)
+
+
+@require_POST
+@login_required
+def generate_tags_from_text_view(request):
+    try:
+        data = json.loads(request.body)
+        comment = data.get('comment', '')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    if not comment or not comment.strip():
+        return JsonResponse({'tags': ''})
+
+    try:
+        generated_tags = generate_tags_with_ai(comment)
+        if generated_tags == "MISSING_OPENAI_API_KEY":
+            return JsonResponse({'error': "OPENAI_API_KEY 환경 변수가 설정되지 않았습니다."}, status=500)
+        elif generated_tags.startswith("API_CALL_ERROR:"):
+            return JsonResponse({'error': f"OpenAI API 호출 중 오류가 발생했습니다: {generated_tags[len('API_CALL_ERROR:'):].strip()}"}, status=500)
+        return JsonResponse({'tags': generated_tags})
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Unexpected error in generate_tags_from_text_view: {e}")
+        return JsonResponse({'error': f"예상치 못한 오류가 발생했습니다: {e}"}, status=500)
 
 
 # @login_required

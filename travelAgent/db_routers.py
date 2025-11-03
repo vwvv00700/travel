@@ -1,9 +1,15 @@
+# =================================================================================
+# DiaryRouter for diary-related models
+# =================================================================================
 class DiaryRouter:
     """
     A router to control all database operations on models in the
     travel application.
+    Routes all operations for the 'travel' app to the 'diary_db' database.
     """
     diary_models = {'travel', 'diaryentry', 'diarylist', 'diarydetail'} # Explicitly list models that go to diary_db
+    def _is_travel_app(self, model):
+        return model._meta.app_label == 'travel'
 
     def db_for_read(self, model, **hints):
         """
@@ -12,8 +18,7 @@ class DiaryRouter:
         """
         if model._meta.model_name in self.diary_models:
             return 'diary_db'
-        elif model._meta.app_label == 'travel': # Other travel app models go to default
-            return 'default'
+        
         return None
 
     def db_for_write(self, model, **hints):
@@ -23,21 +28,17 @@ class DiaryRouter:
         """
         if model._meta.model_name in self.diary_models:
             return 'diary_db'
-        elif model._meta.app_label == 'travel': # Other travel app models go to default
-            return 'default'
         return None
 
     def allow_relation(self, obj1, obj2, **hints):
-        """
-        Allow relations if both objects are in the same database, or if they are
-        between diary models and other travel models (which are in default).
-        """
-        if obj1._meta.app_label == 'travel' and obj2._meta.app_label == 'travel':
-            # If both are diary models, or both are non-diary models, or one is diary and other is non-diary
-            return True
+        
         # Allow relations between auth app and any other app
         if obj1._meta.app_label == 'auth' or obj2._meta.app_label == 'auth':
             return True
+        # Allow relations if both models are in the travel app
+        if obj1._meta.app_label == 'travel' and obj2._meta.app_label == 'travel':
+            return True
+        # Otherwise, default to Django's behavior
         return None
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
@@ -46,23 +47,23 @@ class DiaryRouter:
         - All other models (including other 'travel' models and framework apps
           like 'auth') migrate only to the 'default' database.
         """
-        is_diary_model = app_label == 'travel' and model_name in self.diary_models
+        # if model_name in self.diary_models:
+        #     return db == 'diary_db'
 
-        if db == 'diary_db':
-            return is_diary_model
-        else: # db == 'default' or any other db
-            return not is_diary_model
-        # if app_label == 'travel':
-        #     if model_name in self.diary_models:
-        #         return db == 'diary_db'
-        #     else: # Place, PlaceAnalysis, etc.
-        #         return db == 'default'
-        # # Allow auth app to migrate to both default and diary_db
-        # if app_label == 'auth':
-        #     return True
+        # if db == 'diary_db':
+        #     return False
+
         # return None
+        if app_label == 'travel':
+            return db == 'diary_db'
+        if db == 'diary_db':
+            return False
+        return None
 
-        
+
+# =================================================================================
+# ChatRouter for chat-related models
+# =================================================================================
 class ChatRouter:
     """
     'ChatRoom', 'ChatMessage', 'ChatReport' 모델에 대한 데이터베이스 작업을
@@ -103,6 +104,9 @@ class ChatRouter:
         if model_name in self.chat_models:
             return db == 'chat_db'
         
+        if db == 'chat_db':
+            return False
+
         # chat_models에 속하지 않는 모든 모델은 마이그레이션을 허용하지 않음 (다른 라우터에 맡김)
         return None
   

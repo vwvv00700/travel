@@ -576,15 +576,23 @@ class UploadEntryAdmin(admin.ModelAdmin):
 # ── 다이어리 어드민 ────────────────────────────────────────────────
 @admin.register(Travel)
 class TravelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'author', 'start_date', 'end_date')
-    search_fields = ('name', 'description', 'author__username')
-    list_filter = ('author', 'start_date')
+    list_display = ('id', 'name', 'author_id', 'start_date', 'end_date')
+    search_fields = ('name', 'description')
+    list_filter = ('author_id', 'start_date')
+
+    # def author_with_name(self, obj):
+    #     try:
+    #         user = User.objects.using('default').get(id=obj.author_id)
+    #         return f"{obj.author_id} ({user.username})"
+    #     except User.DoesNotExist:
+    #         return obj.author_id
+    # author_with_name.short_description = 'Author'
 
 @admin.register(DiaryEntry)
 class DiaryEntryAdmin(admin.ModelAdmin):
-    list_display = ('diary_id', 'diary_name', 'author', 'location', 'timestamp')
-    search_fields = ('location', 'comment', 'diary__name', 'author__username')
-    list_filter = ('author', 'timestamp', 'diary')
+    list_display = ('diary_id', 'diary_name', 'author_id', 'location', 'timestamp')
+    search_fields = ('location', 'comment', 'diary__name')
+    list_filter = ('author_id', 'timestamp', 'diary')
     readonly_fields = ('latitude', 'longitude')
 
     def diary_name(self, obj):
@@ -598,6 +606,38 @@ class DiaryEntryAdmin(admin.ModelAdmin):
     diary_id.admin_order_field = 'diary__id'
 
 
+# class DiaryEntryAdminForm(forms.ModelForm):
+#     class Meta:
+#         model = DiaryEntry
+#         fields = '__all__'
+#         widgets = {
+#             'comment': forms.Textarea(attrs={'cols': 80, 'rows': 5}), # Adjust cols and rows as needed
+#         }
+
+# @admin.register(DiaryEntry)
+# class DiaryEntryAdmin(admin.ModelAdmin):
+#     form = DiaryEntryAdminForm # Use the custom form
+#     list_display = ('diary_info', 'author_with_name', 'comment', 'timestamp') # Removed 'location'
+#     list_display_links = ('comment',)
+#     search_fields = ('location', 'comment', 'diary__name', 'author__username')
+#     list_filter = ('author', 'timestamp', 'diary')
+#     readonly_fields = ('latitude', 'longitude')
+
+#     def diary_info(self, obj):
+#         return f"{obj.diary.id} ({obj.diary.name})"
+#     diary_info.short_description = 'Diary'
+#     diary_info.admin_order_field = 'diary__id' # Allow sorting by diary ID
+
+#     def author_with_name(self, obj):
+#         try:
+#             user = User.objects.using('default').get(id=obj.author_id)
+#             return f"{obj.author_id} ({user.username})"
+#         except User.DoesNotExist:
+#             return obj.author_id
+#     author_with_name.short_description = 'Author'
+
+
+
 # ── 채팅 어드민 ────────────────────────────────────────────────
 @admin.register(ChatRoom)
 class ChatRoomAdmin(admin.ModelAdmin):
@@ -607,15 +647,19 @@ class ChatRoomAdmin(admin.ModelAdmin):
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'room', 'sender', 'message', 'timestamp')
-    search_fields = ('room__room_name', 'sender__username', 'message')
-    list_filter = ('room', 'sender', 'timestamp')
+    list_display = ('id', 'get_room_name', 'sender_id', 'message', 'timestamp')
+    search_fields = ('room__room_name', 'message')
+    list_filter = ('room__room_name', 'sender', 'timestamp')
     raw_id_fields = ('room', 'sender') # 데이터가 많을 때 드롭다운 대신 ID로 검색
+
+    def get_room_name(self, obj):
+        return obj.room.room_name
+    get_room_name.short_description = 'Chat Room'
 
 @admin.register(ChatReport)
 class ChatReportAdmin(admin.ModelAdmin):
-    list_display = ('id', 'reporter', 'message_id_display', 'reason_summary', 'created_at')
-    search_fields = ('reporter__username', 'message__message', 'reason')
+    list_display = ('id', 'reporter_id', 'message_id_display', 'reason_summary', 'created_at')
+    search_fields = ('message__message', 'reason')
     list_filter = ('created_at',)
     raw_id_fields = ('reporter', 'message')
 
