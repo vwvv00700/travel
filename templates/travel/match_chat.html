@@ -7,7 +7,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI 여행 파트너 채팅</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
 <style>
 :root {
     --primary-color: #FFC0CB;
@@ -23,291 +22,235 @@
 
 body {
     font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', Roboto, Arial, sans-serif;
-    margin: 0; padding: 0;
+    margin:0; padding:0; 
     background: linear-gradient(135deg, var(--bg-light) 0%, #E6E6FA 100%);
-    display: flex; justify-content: center; align-items: center;
-    min-height: 100vh; color: var(--text-dark);
+    display:flex; justify-content:center; align-items:center; min-height:100vh; color: var(--text-dark);
 }
 
 #app-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 420px;
-    height: 80vh;
-    background: white;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: var(--shadow-soft);
+    display:flex; flex-direction:column;
+    width:100%; max-width:420px; height:80vh;
+    background:white; border-radius:20px; overflow:hidden; box-shadow:var(--shadow-soft);
 }
 
-/* Sidebar */
 #sidebar {
-    width: 100%;
-    max-height: 200px;
-    background: #F8F8FF;
-    border-bottom: 1px solid var(--border-light);
-    display: flex; flex-direction: column;
+    width:100%; max-height:100%; background:#F8F8FF; display:flex; flex-direction:column;
 }
-#sidebar header {
-    padding: 15px;
-    border-bottom: 3px solid var(--secondary-color);
-    background: var(--secondary-color);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-#sidebar h2 { margin: 0; font-size: 1.2em; display: flex; align-items: center; gap: 8px; }
 
-#back-to-main-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.2em;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-#back-to-main-btn:hover { color: var(--accent-color); }
+#sidebar header { padding:15px; background:#333; color:white; display:flex; justify-content:space-between; align-items:center; }
 
-.match-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    overflow-y: auto;
-    flex-grow: 1;
-}
+#sidebar h2 { margin:0; font-size:1.2em; display:flex; align-items:center; gap:8px;}
+#back-to-main-btn { background:none; border:none; color:white; font-size:1.2em; cursor:pointer; transition:color 0.2s;}
+#back-to-main-btn:hover { color:var(--accent-color);}
+
+.match-list { list-style:none; padding:0; margin:0; overflow-y:auto; flex-grow:1;}
+
 .partner-card {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    border-bottom: 1px solid var(--border-light);
-    cursor: pointer;
-    transition: 0.2s;
+    display:flex; align-items:center; padding:15px;
+    border-bottom:1px solid var(--border-light); cursor:pointer; transition:0.2s; position:relative;
 }
-.partner-card:hover { background: var(--primary-color); }
-.partner-card.active { background: var(--primary-color); border-left: 5px solid var(--accent-color); }
-.partner-card img {
-    width: 40px; height: 40px; border-radius: 50%;
-    margin-right: 10px; border: 2px solid var(--primary-color); object-fit: cover;
-}
-.partner-name { font-weight: bold; color: var(--text-dark); }
 
-/* Chat Area */
-#chat-area { flex-grow: 1; display: flex; flex-direction: column; }
+.partner-card:hover { background:var(--primary-color);}
+.partner-card.active { background:var(--primary-color); border-left:5px solid var(--accent-color);}
+.partner-card img { width:40px; height:40px; border-radius:50%; margin-right:10px; border:2px solid var(--primary-color); object-fit:cover;}
+.partner-name { font-weight:bold; color:var(--text-dark);}
+.match-actions { position:absolute; right:10px; display:flex; gap:5px; top:50%; transform:translateY(-50%);}
+.match-actions button { padding:4px 8px; border:none; border-radius:6px; cursor:pointer; font-size:0.8em;}
+.accept-btn { background:#4caf50; color:white;}
+.reject-btn { background:#f44336; color:white;}
+
+
+#chat-area { flex-grow:1; display:none; flex-direction:column; width:100%;}
+
 .chat-header {
-    flex-shrink: 0;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 15px 20px;
-    background: var(--secondary-color);
-    color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex-shrink:0; display:flex; justify-content:space-between; align-items:center;
+    padding:15px 20px; background:var(--secondary-color); color:white; box-shadow:0 2px 4px rgba(0,0,0,0.1);
 }
-#partner-info { display: flex; align-items: center; cursor:pointer; }
-#partner-avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; border: 3px solid white; }
-#partner-name { font-weight: bold; font-size: 1.2em; }
+
+#partner-info { display:flex; align-items:center; cursor:pointer; }
+#partner-avatar { width:45px; height:45px; border-radius:50%; margin-right:15px; border:3px solid white; object-fit:cover;}
+#partner-name { font-weight:bold; font-size:1.2em;}
+
 .chat-actions .action-btn { background:none; border:none; color:white; font-size:1.2em; cursor:pointer; padding:5px; border-radius:50%; }
 
-.chat-box {
-    flex-grow: 1;
-    padding: 10px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-light);
-    scrollbar-width: thin;
-    scrollbar-color: #FFC0CB transparent;
-}
-.message { display: flex; margin-bottom: 10px; align-items: flex-end; position: relative; }
-.message-content { max-width: 65%; padding: 10px 15px; border-radius: 20px; line-height:1.4; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.message-time { font-size:0.7em; color:#888; align-self:flex-end; }
+.chat-box { flex-grow:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; background:var(--bg-light);}
+.message { display:flex; margin-bottom:10px; align-items:flex-end;}
+.message-content { max-width:65%; padding:10px 15px; border-radius:20px; line-height:1.4; box-shadow:0 1px 3px rgba(0,0,0,0.08); word-break:break-word;}
+.message-time { font-size:0.7em; color:#888; align-self:flex-end; white-space: nowrap;}
 
-.sent { justify-content:flex-end; }
-.sent .message-content { background: var(--chat-bubble-self); border-radius: 20px 5px 20px 20px; }
-.sent .message-time { order: -1; margin-right:5px; margin-left:0; }
+.sent { justify-content:flex-end;}
+.sent .message-content { background: var(--chat-bubble-self); border-radius:20px 5px 20px 20px;}
+.sent .message-time { order:-1; margin-right:5px; margin-left:0;}
+.received { justify-content:flex-start;}
+.received .message-content { background: var(--chat-bubble-partner); border:1px solid var(--primary-color); border-radius:5px 20px 20px 20px;}
+.received .message-time { order:1; margin-left:5px; margin-right:0;}
 
-.received { justify-content:flex-start; }
-.received .message-content { background: var(--chat-bubble-partner); border:1px solid var(--primary-color); border-radius:5px 20px 20px 20px; }
-.received .message-time { order:1; margin-left:5px; margin-right:0; }
+.chat-input-form { flex-shrink:0; display:flex; padding:10px; border-top:1px solid var(--border-light); background:white;}
+#msg-input { flex-grow:1; padding:12px 18px; border:2px solid var(--primary-color); border-radius:25px; font-size:1em; margin-right:10px;}
+#send-btn { width:50px; height:50px; border-radius:50%; border:none; background:var(--secondary-color); color:white; font-size:1.2em; cursor:pointer; transition:background 0.2s;}
+#send-btn:hover { background:#6495ED;}
 
-/* Chat Input */
-.chat-input-form { flex-shrink: 0; display: flex; padding: 10px; border-top: 1px solid var(--border-light); background:white; }
-#msg-input { flex-grow:1; padding:12px 18px; border:2px solid var(--primary-color); border-radius:25px; font-size:1em; margin-right:10px; }
-#send-btn { width:50px; height:50px; border-radius:50%; border:none; background: var(--secondary-color); color:white; font-size:1.2em; cursor:pointer; }
+#profile-popup { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:15px; padding:20px; box-shadow:var(--shadow-soft); z-index:100; display:none; text-align:center; max-width:300px; border:1px solid var(--border-light);}
+#profile-popup img { width:80px; height:80px; border-radius:50%; margin-bottom:10px; border:3px solid var(--primary-color);}
+#profile-popup h3 { margin:5px 0; font-size:1.4em;}
+#profile-popup p { margin:5px 0; font-size:0.9em; color:#555;}
+#profile-popup .close-popup { position:absolute; top:10px; right:10px; cursor:pointer; font-size:1.2em; color:#888;}
 
-/* Profile Popup */
-#profile-popup {
-    position: absolute;
-    top: 100px;
-    left: 40%; right: 40%;
-    background: white;
-    border-radius: 15px;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    z-index: 30;
-    display: none;
-}
-#profile-popup img { width:80px; height:80px; border-radius:50%; margin-bottom:10px; }
-#profile-popup h3 { margin:5px 0; }
-#profile-popup p { margin:3px 0; }
-#profile-popup .close-popup { position:absolute; top:10px; right:10px; cursor:pointer; font-size:1.2em; }
-#report-section { margin-top:10px; }
-#report-section form { display:flex; flex-direction:column; }
-#report-section label { margin-bottom:5px; }
-#report-section textarea { margin-top:5px; padding:5px; border-radius:5px; border:1px solid var(--border-light);}
-#open-report-btn { background:#FF4500; color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; }
-
-.hidden { display:none !important; }
+#report-section { margin-top:15px; border-top:1px dashed var(--border-light); padding-top:15px;}
+#report-section form { display:flex; flex-direction:column; align-items:flex-start;}
+#report-section label { margin-bottom:5px; font-size:0.9em;}
+#report-section textarea { margin-top:8px; padding:8px; border-radius:5px; border:1px solid var(--border-light); width:100%; box-sizing:border-box; resize:vertical;}
+#open-report-btn { background:#FF4500; color:white; border:none; padding:8px 15px; border-radius:10px; cursor:pointer; margin-top:10px; transition:background 0.2s;}
+#open-report-btn:hover { background:#CC3700;}
+#report-form button[type="submit"] { background:var(--secondary-color); color:white; border:none; padding:10px; border-radius:10px; margin-top:10px; cursor:pointer; transition:background 0.2s;}
+#report-form button[type="submit"]:hover { background:#6495ED;}
+.hidden { display:none !important;}
 
 @media(max-width:768px){
-    #app-container { max-width:100%; border-radius:0; height:100vh; }
-    #sidebar { max-height:none; width:100%; }
-    #chat-area:not(.hidden) { position:absolute; top:0; left:0; width:100%; height:100%; z-index:20;}
+    #app-container{max-width:100%; border-radius:0; height:100vh;}
+    #chat-area{position:absolute; top:0; left:0; width:100%; height:100%; z-index:20; display:none;}
+    #sidebar{border-bottom:none;}
 }
 </style>
 </head>
 <body>
 
-<script> const MY_USERNAME="{{ request.user.username|default:'Guest' }}"; </script>
+<script>
+const MY_USERNAME="{{ request.user.username }}";
+const MY_USER_ID="{{ request.user.id }}";
+</script>
 
 <div id="app-container">
-    <!-- Sidebar -->
     <aside id="sidebar">
         <header>
             <h2><i class="fas fa-users-line"></i> 파트너 매칭 목록</h2>
-            <button id="back-to-main-btn" title="메인으로"><i class="fas fa-arrow-left"></i></button>
+            <a href="{% url 'main' %}" id="back-to-main-btn" title="메인으로"><i class="fas fa-arrow-left"></i></a>
         </header>
         <ul id="match-list" class="match-list">
-            <li class="partner-card" data-room-id="1">
-                <img src="{% static 'img/ai.jpg' %}" alt="파트너">
-                <span class="partner-name">AI 파트너</span>
+        {% for data in room_data_list %}
+            <li class="partner-card" 
+                data-room-id="{{ data.room.id }}" 
+                data-partner-name="{{ data.partner.username }}"
+                data-partner-id="{{ data.partner.id }}"
+                data-location="{{ data.location }}">
+                <img src="{% static 'img/profile.png' %}" alt="{{ data.partner.username }}" 
+                     onerror="this.onerror=null;this.src='{% static 'img/profile.png' %}'">
+                <span class="partner-name">{{ data.partner.username }}</span>
+                <p style="font-size:0.8em; color:#888;">{{ data.location }} 여행</p>
+                <div class="match-actions">
+                    <button class="accept-btn">수락</button>
+                    <button class="reject-btn">거절</button>
+                </div>
             </li>
+        {% empty %}
+            <li style="padding:15px; text-align:center; color:#888;">매칭된 파트너가 없습니다.</li>
+        {% endfor %}
         </ul>
     </aside>
 
-    <!-- Chat Area -->
-    <main id="chat-area" class="hidden">
+    <main id="chat-area">
         <header class="chat-header">
             <div id="partner-info">
-                <img id="partner-avatar" src="{% static 'img/ai.jpg' %}" alt="파트너">
-                <span id="partner-name">여행 파트너 선택</span>
+                <img id="partner-avatar"
+                    src="{% static 'img/profile.png' %}" 
+                    alt="{{ data.partner.username }}" 
+                    onerror="this.src='{% static 'img/profile.png' %}'">
+                <span id="partner-name">{{ data.partner.username }}</span>
             </div>
             <div class="chat-actions">
-                <button id="back-to-list-btn" class="action-btn" title="목록으로"><i class="fas fa-arrow-left"></i></button>
+                <button class="action-btn" id="back-to-list-btn" title="목록으로"><i class="fas fa-arrow-left"></i></button>
             </div>
         </header>
-
-        <div id="chat-box" class="chat-box"></div>
-
-        <footer class="chat-input-form">
+        <div class="chat-box" id="chat-box"></div>
+        <form class="chat-input-form" onsubmit="return false;">
             <input type="text" id="msg-input" placeholder="메시지를 입력하세요..." autocomplete="off">
-            <button id="send-btn" title="전송"><i class="fas fa-paper-plane"></i></button>
-        </footer>
+            <button type="button" id="send-btn"><i class="fas fa-paper-plane"></i></button>
+        </form>
     </main>
 </div>
 
-<!-- Profile Popup -->
-<div id="profile-popup">
-    <span class="close-popup"><i class="fas fa-times"></i></span>
-    <img id="popup-avatar" src="{% static 'img/ai.jpg' %}" alt="프로필">
-    <h3 id="popup-name">파트너 이름</h3>
-    <p id="popup-age">나이: 25</p>
-    <p id="popup-gender">성별: 여</p>
-    <p id="popup-intro">소개: 안녕하세요!</p>
-
-    <div id="report-section">
-        <button id="open-report-btn">신고하기</button>
-        <form id="report-form" class="hidden">
-            <label><input type="checkbox" name="reason" value="욕설"> 욕설</label>
-            <label><input type="checkbox" name="reason" value="스팸"> 스팸</label>
-            <label><input type="checkbox" name="reason" value="기타"> 기타</label>
-            <textarea name="detail" placeholder="상세 내용을 입력하세요"></textarea>
-            <button type="submit">신고 제출</button>
-        </form>
-    </div>
-</div>
-
 <script>
-    const matchList = document.getElementById('match-list');
-    const chatBox = document.getElementById('chat-box');
-    const msgInput = document.getElementById('msg-input');
-    const sendBtn = document.getElementById('send-btn');
-    const partnerNameDisplay = document.getElementById('partner-name');
-    const chatArea = document.getElementById('chat-area');
-    const partnerListContainer = document.getElementById('sidebar');
-    const backToListBtn = document.getElementById('back-to-list-btn');
-    const profilePopup = document.getElementById('profile-popup');
-    const popupName = document.getElementById('popup-name');
-    const popupAvatar = document.getElementById('popup-avatar');
-    const popupAge = document.getElementById('popup-age');
-    const popupGender = document.getElementById('popup-gender');
-    const popupIntro = document.getElementById('popup-intro');
-    const openReportBtn = document.getElementById('open-report-btn');
-    const reportForm = document.getElementById('report-form');
-    const backToMainBtn = document.getElementById('back-to-main-btn');
+const matchList = document.getElementById('match-list');
+const chatBox = document.getElementById('chat-box');
+const msgInput = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+const partnerNameDisplay = document.getElementById('partner-name');
+const chatArea = document.getElementById('chat-area');
+const sidebar = document.getElementById('sidebar');
 
-    let currentPartnerId = null;
+let currentRoom = null;
+let chatSocket = null;
 
-    // ✅ 메인으로 이동 버튼
-    backToMainBtn.addEventListener('click', ()=>{
-        window.location.href = "{% url 'main' %}";
-    });
+// 메시지 표시
+function displayMessage(message, sender, timestamp=null){
+    const isSent = sender===MY_USERNAME;
+    const div = document.createElement('div');
+    div.classList.add('message', isSent?'sent':'received');
+    const time = timestamp ? new Date(timestamp).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})
+                          : new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    div.innerHTML = `<span class="message-content">${message}</span><span class="message-time">${time}</span>`;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 
-    function displayMessage(message, sender, time=null) {
-        const isSent = sender===MY_USERNAME;
-        const div = document.createElement('div');
-        div.classList.add('message', isSent?'sent':'received');
-        div.innerHTML = `<span class="message-content">${message}</span>
-                        <span class="message-time">${time||new Date().toLocaleTimeString()}</span>`;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
+// 시스템 메시지
+function displaySystem(message){
+    const div = document.createElement('div');
+    div.style.cssText='text-align:center;color:#aaa;margin:10px 0;font-size:0.85em;';
+    div.textContent = message;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// WebSocket 연결
+function connectWebSocket(roomId){
+    if(chatSocket) chatSocket.close();
+    const protocol = location.protocol==='https:' ? 'wss:' : 'ws:';
+    const wsURL = `${protocol}//${location.host}/ws/chat/${roomId}/`;
+    chatSocket = new WebSocket(wsURL);
+
+    chatSocket.onopen = ()=> displaySystem(`채팅방 ${roomId} 접속`);
+    chatSocket.onmessage = e=>{
+        const data = JSON.parse(e.data);
+        displayMessage(data.message, data.username, data.timestamp);
+    };
+    chatSocket.onclose = e=> displaySystem(`채팅 종료 (code: ${e.code})`);
+    chatSocket.onerror = e=> displaySystem('채팅 에러 발생');
+}
+
+// 메시지 전송
+function sendMessage(){
+    if(!msgInput.value.trim() || !chatSocket || chatSocket.readyState!==WebSocket.OPEN) return;
+    chatSocket.send(JSON.stringify({'message':msgInput.value,'sender':MY_USERNAME,'user_id':MY_USER_ID,'room_id':currentRoom}));
+    msgInput.value='';
+}
+
+sendBtn.addEventListener('click', sendMessage);
+msgInput.addEventListener('keypress', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
+
+// 파트너 선택 및 수락/거절 버튼
+matchList.addEventListener('click', e=>{
+    const card = e.target.closest('.partner-card');
+    if(!card) return;
+
+    const acceptBtn = e.target.closest('.accept-btn');
+    const rejectBtn = e.target.closest('.reject-btn');
+
+    if(acceptBtn){
+        currentRoom = card.dataset.roomId;
+        connectWebSocket(currentRoom);
+        partnerNameDisplay.textContent = card.dataset.partnerName;
+        chatArea.style.display='flex';
+        sidebar.style.display='none';
+        card.style.background='#d4f0d4'; // 수락 표시
+        return;
     }
 
-    // 프로필 보기
-    document.getElementById('partner-info').addEventListener('click', ()=>{
-        profilePopup.style.display='block';
-        popupName.textContent = partnerNameDisplay.textContent;
-    });
-
-    // 프로필 닫기
-    profilePopup.querySelector('.close-popup').addEventListener('click', ()=>{
-        profilePopup.style.display='none';
-        reportForm.classList.add('hidden');
-    });
-
-    // 신고 폼 열기
-    openReportBtn.addEventListener('click', ()=>{ reportForm.classList.toggle('hidden'); });
-
-    // 메시지 전송
-    function sendMessage() {
-        const msg = msgInput.value.trim();
-        if(!msg) return;
-        displayMessage(msg, MY_USERNAME);
-        msgInput.value='';
-        setTimeout(()=>displayMessage(msg+' 👍','AI 파트너'),500);
+    if(rejectBtn){
+        card.style.display='none'; // 거절 시 카드 제거
+        return;
     }
-
-    sendBtn.addEventListener('click',sendMessage);
-    msgInput.addEventListener('keypress',e=>{if(e.key==='Enter') sendMessage();});
-
-    // 파트너 선택
-    matchList.addEventListener('click', e=>{
-        const card = e.target.closest('.partner-card'); if(!card) return;
-        currentPartnerId = card.dataset.roomId;
-        document.querySelectorAll('.partner-card').forEach(c=>c.classList.remove('active'));
-        card.classList.add('active');
-        partnerNameDisplay.textContent = card.querySelector('.partner-name').textContent;
-        chatBox.innerHTML='';
-        chatArea.classList.remove('hidden');
-        partnerListContainer.classList.add('hidden');
-    });
-
-    // 목록으로 돌아가기
-    backToListBtn.addEventListener('click', ()=>{
-        chatArea.classList.add('hidden');
-        partnerListContainer.classList.remove('hidden');
-    });
+});
 </script>
-
 </body>
 </html>

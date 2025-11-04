@@ -1,7 +1,7 @@
 /* 전체 레이아웃 */
+main {background: #fff;}
 .page-wrap {
-    max-width: 1300px;
-    margin: 0 auto;
+    width: 100%;
     padding: 2rem 1rem 4rem;
     font-family: 'Poppins', 'Pretendard', sans-serif;
     color: #222;
@@ -26,6 +26,8 @@
 
 /* 본문 - 왼쪽 일정 / 오른쪽 지도 */
 .planner-body {
+    max-width: 1300px;
+    margin: 0 auto;
     display: flex;
     flex-wrap: wrap;
     gap: 2rem;
@@ -39,14 +41,17 @@
     min-width: 340px;
     background: #fafafa;
     border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     padding: 1rem;
 
     display: flex;
     flex-direction: column;
-
-    max-height: 75vh;         /* 화면 안에서만 스크롤 되게 */
+    /* max-height: 75vh; */
     overflow: hidden;
+    height: 620px;
+
+    box-sizing:border-box;
+
+    border: solid 1px #e1e0e0
 }
 
 /* Day 리스트 전체를 감싸는 영역 -> 여기만 스크롤 */
@@ -64,7 +69,7 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 30px;
 }
 .plan-label-btn {
     border: 1px solid #333;
@@ -90,14 +95,25 @@
 
 .plan-action-wrap {
     flex-shrink: 0;
-    margin-bottom: 0.75rem;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content:space-between;
+}
+.plan-action-wrap input {
+    width: 270px;
+    border-radius: 4px;
+    border: solid 1px #e1e0e0;
+    padding: 0 8px;
+    background: #fff;
+    color: #333;
+    font-size: 14px;
 }
 .save-plan-btn {
-    background:#0a61e8;
+    background:#333;
     color:#fff;
     border:0;
     border-radius:4px;
-    font-size:0.85rem;
+    font-size:0.8rem;
     font-weight:600;
     padding:8px 12px;
     cursor:pointer;
@@ -205,15 +221,16 @@
     flex: 2 1 600px;
     min-width: 500px;
     border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-
+    background: #fafafa;
     display: flex;
     flex-direction: column;
-
-    max-height: 75vh;
+    /* max-height: 75vh; */
     position: relative;
     overflow: hidden;
+
+    padding-top:0;
+    box-sizing: border-box;
+    border: solid 1px #e1e0e0;
 }
 .map-header {
     display: flex;
@@ -253,7 +270,7 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    padding: 0 1rem 1rem;
+    padding: 1rem;
 }
 
 #mapArea {
@@ -282,12 +299,13 @@
 
 /* 가이드 */
 .guide-wrap {
+    max-width: 1300px;
+    margin: 0 auto;
     margin-top: 2rem;
 }
 .guide-card {
-    background: #fff;
+    background: #fafafa;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     padding: 1rem 1.2rem;
     margin: 0 auto;
 }

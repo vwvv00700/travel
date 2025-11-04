@@ -74,7 +74,7 @@ function syncMapHeightToList() {
     const mapEl = document.getElementById("mapArea");
     if (!left || !right || !mapEl) return;
 
-    const h = left.getBoundingClientRect().height;
+    const h = 620
     right.style.height = h + "px";
     mapEl.style.height = (h - 60) + "px"; // 지도 헤더(탭 영역) 높이만큼 뺌
     if (map) map.invalidateSize();
@@ -220,6 +220,8 @@ async function renderMapForDay(dayIdx) {
     if (!map) return;
     clearRouteLayers();
 
+    console.log(planData)
+
     const waypointsByDay = planData.day_waypoints || [];
     const waypoints = waypointsByDay[dayIdx - 1] || [];
 
@@ -313,7 +315,7 @@ function renderItineraryListFromPlan(planIdx) {
     if (!PLANS) return;
     const planData = PLANS[planIdx];
     if (!planData) return;
-
+    
     const container = document.getElementById("itineraryContainer");
     if (!container) return;
 
@@ -580,6 +582,8 @@ function setupSaveButton() {
     btn.addEventListener("click", async () => {
         const planId = btn.getAttribute("data-plan-id");
 
+        const planTitle = document.getElementById("planTitle").value
+        
         // 날짜와 유저 정보는 travel_list 뷰에서 context로 내려와야 함
         const uq = window.USER_QUERY || {};
         const startDate = uq.start_date || "";
@@ -591,6 +595,8 @@ function setupSaveButton() {
         bodyData.set("user_id", userId);
         bodyData.set("trip_start_date", startDate);
         bodyData.set("trip_end_date", endDate);
+
+        bodyData.set("plan_title", planTitle);
 
         try {
             const res = await fetch("/travel/select_plan/", {

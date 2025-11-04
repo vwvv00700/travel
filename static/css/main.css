@@ -54,7 +54,7 @@
 /*--------------------------------------------------------------
 # General Styling & Shared Classes
 --------------------------------------------------------------*/
-.header { z-index: 9999 }
+.header, header { z-index: 9999 }
 .header.absolut-top{ position: absolute; top: 0; right: 0; left: 0; }
 
 body {
@@ -425,7 +425,7 @@ section, .section { color: var(--default-color); background-color: var(--backgro
 .card-list .tour-card .tour-content .tour-highlights { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 40px; }
 .card-list .tour-card .tour-content .tour-highlights span { background-color: color-mix(in srgb, var(--accent-color), transparent 90%); color: var(--accent-color); padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: 500; }
 .card-list .tour-card .tour-content .tour-action { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
-.card-list .tour-card .tour-content .tour-action .btn-book { background-color: var(--accent-color); color: var(--contrast-color); padding: 12px 25px; border-radius: 6px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; font-size: 14px; }
+.card-list .tour-card .tour-content .tour-action .btn-book { background-color: var(--accent-color); color: var(--contrast-color); padding: 12px 25px; border-radius: 6px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; font-size: 14px; margin-top:0; }
 .card-list .tour-card .tour-content .tour-action .btn-book:hover { background-color: color-mix(in srgb, var(--accent-color), black 15%); transform: translateY(-2px); color: var(--contrast-color); }
 .card-list .tour-card .tour-content .tour-action .tour-rating { display: flex; align-items: center; gap: 3px; font-size: 14px; }
 .card-list .tour-card .tour-content .tour-action .tour-rating i { color: #ffc107; font-size: 12px; }
@@ -433,11 +433,11 @@ section, .section { color: var(--default-color); background-color: var(--backgro
 .card-list .btn-view-all { background-color: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); padding: 15px 35px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; font-size: 16px; display: inline-block; }
 .card-list .btn-view-all:hover { background-color: var(--accent-color); color: var(--contrast-color); transform: translateY(-2px); box-shadow: 0 4px 15px color-mix(in srgb, var(--accent-color), transparent 60%); }
 
-.my-travel{ max-width: 1280px; width: 1280px; padding: 2rem 0; }
+.my-travel{ max-width: 1280px; width: 1152px;}
 
-.card-list .container {max-width: 1280px; width: 1280px;}
-.card-list .tour-card-wrap {display: flex; gap: 20px; flex-wrap: wrap;}
-.card-list .tour-card-wrap > div{width: calc(100% / 4 - 20px);}
+.card-list .container {max-width: 1280px; width: 100%;}
+.card-list .tour-card-wrap {display: flex; gap: 13px; flex-wrap: wrap;}
+.card-list .tour-card-wrap > div{width: calc(100% / 4 - 10px);}
 
 @media (max-width: 768px) {
   .card-list .tour-card .tour-content { padding: 20px; }
@@ -638,85 +638,27 @@ section, .section { color: var(--default-color); background-color: var(--backgro
 /* ─────────── 반응형 ─────────── */
 @media (max-width: 768px) {
     html, body{height: auto;}
-    header {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 15px 25px;
-    }
-
-    header h1 {
-        font-size: 1.5rem;
-    }
-
-    .hero h2 {
-        font-size: 2rem;
-    }
-
-    .hero p {
-        font-size: 1rem;
-    }
-
-    .search-box input {
-        font-size: 0.9rem;
-        padding: 12px;
-    }
-
-    .search-box button {
-        padding: 12px 18px;
-        font-size: 0.9rem;
-    }
-
-    .form-select{
-        padding:30px 0;
-    }
-
-    footer {
-        text-align: center;
-        padding: 20px 0;
-    }
-
-    .form-block ul li {
-        width: calc(33% - 10px);
-    }
+    header { flex-direction: column; align-items: flex-start; padding: 15px 25px; }
+    header h1 { font-size: 1.5rem; }
+    .hero h2 { font-size: 2rem; }
+    .hero p { font-size: 1rem; }
+    .search-box input { font-size: 0.9rem; padding: 12px;}
+    .search-box button { padding: 12px 18px; font-size: 0.9rem;}
+    .form-select{ padding:30px 0; }
+    footer { text-align: center; padding: 20px 0; }
+    .form-block ul li { width: calc(33% - 10px); }
 }
 
 @media (max-width: 480px) {
-    header{
-        height: 100px;
-    }
-
-    .cont-wrap {
-        padding-top: 100px;
-    }
-
-    .cont-wrap h2 {
-        font-size: 2rem;
-    }
-
-    .cont-wrap p {
-        font-size: 1rem;
-    }
-
-    .hero {
-        height: 70vh;
-    }
-
-    .hero h2 {
-        font-size: 1.6rem;
-    }
-
-    .hero p {
-        font-size: 0.9rem;
-    }
-
-    .search-box {
-        border-radius: 20px;
-    }
-
-    .search-box input, .search-box button {
-        width: 80%;
-    }
-
+    header{ height: 100px; }
+    .cont-wrap { padding-top: 100px; }
+    .cont-wrap h2 { font-size: 2rem; }
+    .cont-wrap p { font-size: 1rem; }
+    .hero { height: 70vh; }
+    .hero h2 { font-size: 1.6rem; }
+    .hero p { font-size: 0.9rem; }
+    .search-box { border-radius: 20px; }
+    .search-box input, .search-box button { width: 80%; }
     .search-box button {
         width: 20%;
         border-top: 1px solid #ddd;
@@ -815,101 +757,3 @@ section, .section { color: var(--default-color); background-color: var(--backgro
 #map-container svg { width: 100%; height: auto; }
 
 #selected-districts-display { width: 100%; min-height: 50px; padding: 15px 20px; border-radius: 8px; color: #333; font-weight: 500; box-sizing: border-box; text-align: center; }
-
-/*--------------------------------------------------------------
-# 다이어리
---------------------------------------------------------------*/
-.diary-cont {max-width: 960px; margin: 0 auto; background-color: unset;}
-
-@media (max-width: 768px) {
-    .diary-cont .diary-form{background-color: unset; box-shadow: unset;}
-    .diary-cont .datetime-box{flex-direction: column;}
-
-/* ─────────── 반응형 ─────────── */
-@media (max-width: 768px) {
-    html, body{height: auto;}
-    header {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 15px 25px;
-    }
-
-    header h1 {
-        font-size: 1.5rem;
-    }
-
-    .hero h2 {
-        font-size: 2rem;
-    }
-
-    .hero p {
-        font-size: 1rem;
-    }
-
-    .search-box input {
-        font-size: 0.9rem;
-        padding: 12px;
-    }
-
-    .search-box button {
-        padding: 12px 18px;
-        font-size: 0.9rem;
-    }
-
-    .form-select{
-        padding:30px 0;
-    }
-
-    footer {
-        text-align: center;
-        padding: 20px 0;
-    }
-
-    .form-block ul li {
-        width: calc(33% - 10px);
-    }
-}
-
-@media (max-width: 480px) {
-    header{
-        height: 100px;
-    }
-
-    .cont-wrap {
-        padding-top: 100px;
-    }
-
-    .cont-wrap h2 {
-        font-size: 2rem;
-    }
-
-    .cont-wrap p {
-        font-size: 1rem;
-    }
-
-    .hero {
-        height: 70vh;
-    }
-
-    .hero h2 {
-        font-size: 1.6rem;
-    }
-
-    .hero p {
-        font-size: 0.9rem;
-    }
-
-    .search-box {
-        border-radius: 20px;
-    }
-
-    .search-box input, .search-box button {
-        width: 80%;
-    }
-
-    .search-box button {
-        width: 20%;
-        border-top: 1px solid #ddd;
-    }
-}
-

@@ -274,6 +274,22 @@ class Travel(models.Model):
         default_permissions = ()
 
 
+# # ----- 여행 계획 ------------------------------------------
+class TravelPlan(models.Model):
+    title = models.CharField(max_length=100)
+    destination = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Travel Plan"
+        verbose_name_plural = "Travel Plans"
+
+    def __str__(self):
+        return f"{self.title} ({self.destination})"
+
 # ----- 다이어리 ------------------------------------------
 class DiaryEntry(models.Model):
     diary = models.ForeignKey(Travel, on_delete=models.CASCADE, related_name='diary_entries') # Renamed from 'travel'
@@ -330,26 +346,7 @@ class DiaryEntry(models.Model):
                 self.media_type = 'video'
 
         super().save(*args, **kwargs)
-        
-# class UserProfile(models.Model):
-#     user = models.OneToOneField(
-#         User,
-#         on_delete=models.CASCADE,
-#         related_name="profile"
-#     )
-#     nickname = models.CharField(max_length=30, blank=True)
-#     bio = models.TextField(blank=True)
-#     # 예: 선호 여행 타입, 관심 도시 등 자유롭게 확장 가능
-#     preferred_style = models.CharField(
-#         max_length=50,
-#         blank=True,
-#         help_text="ex) 힐링 위주, 맛집 위주, 액티비티 위주 등"
-#     )
-#     mbti = models.CharField(max_length=10, blank=True)
-
-#     def __str__(self):
-#         return self.nickname or self.user.username
-    
+            
 
 class TravelPlan(models.Model):
     # ✅ 새로 추가된 필드들
@@ -400,8 +397,10 @@ class UserSelectedPlan(models.Model):
     start_date = models.DateField(null=False, blank=False)
     end_date = models.DateField(null=False, blank=False)
 
+    plan_title = models.CharField(max_length=100, null=False, blank=False)
+
     class Meta:
-        unique_together = ("user", "plan", "start_date", "end_date")
+        unique_together = (("user", "plan_title", "plan", "start_date", "end_date"),)
 
     def __str__(self):
         return f"{self.user.username} -> {self.plan.title} ({self.start_date} ~ {self.end_date})"
@@ -409,7 +408,7 @@ class UserSelectedPlan(models.Model):
 # ----- 채팅 관련 모델 ------------------------------------------
 class ChatRoom(models.Model):
     room_name = models.CharField(max_length=100, unique=True)
-    participants = models.ManyToManyField(User)
+    participants = models.ManyToManyField(User, related_name='chatrooms')
     travel_plan1 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan1')
     travel_plan2 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan2')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -419,13 +418,13 @@ class ChatRoom(models.Model):
 
 
 class ChatMessage(models.Model):
-    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')  # ✅ 추가
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.sender.username}: {self.message[:50]}"
+        return f"{self.sender.username} -> {self.room.room_name}"
 
 # ----- 채팅 신고 모델 ------------------------------------------
 class ChatReport(models.Model):

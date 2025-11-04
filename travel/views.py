@@ -22,6 +22,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.db import transaction # 트랜잭션을 사용해 안전하게 처리
+from django.utils.safestring import mark_safe
 
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
@@ -48,13 +49,16 @@ from .services.diary_summarizer import summarize_diary_with_ai, generate_tags_wi
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
 from .services.itinerary_llm_gemini import generate_itinerary_guide
-from .services.matching import create_chatroom_for_plan
+from travel.services.matching import auto_match_and_create_room
 from .services.recommender import (
     parse_user_request,
     get_ranked_places,
     split_into_days,
     build_map_paths,
 )
+
+import logging
+logger = logging.getLogger('travelAgent')
 
 # -------------------------------------------------------------------
 # 여행 Plane 뷰 -------- START
@@ -266,6 +270,7 @@ def travel_list(request):
 
     # 1) 유저 조건 파싱
     user_query = parse_user_request(request)
+    print(f"DEBUG: user_query = {user_query}")
 
     # 2) 후보 장소 스코어링
     ranked_all = get_ranked_places(user_query)
@@ -311,7 +316,6 @@ def travel_list(request):
         })
 
     plans_json = json.dumps(plans_light, ensure_ascii=False)
-
     # 첫 노출은 플랜 A 기준
     initial_plan_idx = 0
 
@@ -468,7 +472,7 @@ def create_travel_plan(request):
             is_seeking_partner=True
         )
 
-        new_rooms = create_chatroom_for_plan(plan)
+        new_rooms = auto_match_and_create_room(plan)
         message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!" if new_rooms else "매칭 가능한 사용자가 아직 없습니다."
 
         return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
@@ -802,241 +806,9 @@ def generate_tags_from_text_view(request):
         logger.error(f"Unexpected error in generate_tags_from_text_view: {e}")
         return JsonResponse({'error': f"예상치 못한 오류가 발생했습니다: {e}"}, status=500)
 
-
-# @login_required
-# def travel_agent_viewer(request):
-#     if request.method == 'POST':
-#         # Store selections in session
-#         request.session['selected_districts'] = request.POST.getlist('travel_gu')
-#         request.session['travel_days'] = request.POST.get('days')
-#         request.session['selected_themes'] = request.POST.getlist('tema')
-
-#         context = {
-#             'selected_districts': request.session['selected_districts'],
-#             'travel_days': request.session['travel_days'],
-#             'selected_themes': request.session['selected_themes'],
-#         }
-#         return render(request, 'travel/travel_agent_viewer.html', context)
-    
-#     # If accessed via GET or other methods, redirect to the start
-#     return redirect('travel:travel_list')
-
 import logging
-
-# ... (other imports)
-
 logger = logging.getLogger(__name__)
 
-# ... (other views)
-
-# @login_required
-# def get_ai_recommendations(request):
-#     # --- Start of New Logging ---
-#     logger.info(f"[AI Recommendations] Session - Districts: {request.session.get('selected_districts')}")
-#     logger.info(f"[AI Recommendations] Session - Days: {request.session.get('travel_days')}")
-#     logger.info(f"[AI Recommendations] Session - Themes: {request.session.get('selected_themes')}")
-#     # --- End of New Logging ---
-#     try:
-#         client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
-
-#         selected_districts = request.session.get('selected_districts', [])
-#         travel_days = request.session.get('travel_days', '1')
-#         selected_themes = request.session.get('selected_themes', [])
-
-#         # --- Start of New Fallback Logic ---
-#         # --- Start of District Name Mapping ---
-#         district_map = {
-#             'jongno': '종로구', 'junggu': '중구', 'yongsan': '용산구', 'seongdong': '성동구',
-#             'gwangjin': '광진구', 'dongdaemun': '동대문구', 'jungnang': '중랑구', 'seongbuk': '성북구',
-#             'gangbuk': '강북구', 'dobong': '도봉구', 'nowon': '노원구', 'eunpyeong': '은평구',
-#             'seodaemun': '서대문구', 'mapo': '마포구', 'yangcheon': '양천구', 'gangseo': '강서구',
-#             'guro': '구로구', 'geumcheon': '금천구', 'yeongdeungpo': '영등포구', 'dongjak': '동작구',
-#             'gwanak': '관악구', 'seocho': '서초구', 'gangnam': '강남구', 'songpa': '송파구',
-#             'gangdong': '강동구'
-#         }
-#         korean_districts = [district_map.get(d.lower()) for d in selected_districts if district_map.get(d.lower())]
-#         logger.info(f"Mapped Korean districts for query: {korean_districts}")
-#         # --- End of District Name Mapping ---
-
-#         fallback_activated = False
-
-#         def perform_query(filter_by_theme):
-#             base_query = Place.objects.all()
-#             if korean_districts:
-#                 district_q = Q()
-#                 for district in korean_districts:
-#                     district_q |= Q(city_gu__icontains=district)
-#                 base_query = base_query.filter(district_q)
-
-#             if filter_by_theme and selected_themes:
-#                 theme_q = Q()
-#                 for theme in selected_themes:
-#                     theme_q |= Q(analysis__themes_csv__icontains=theme)
-#                 base_query = base_query.filter(theme_q).distinct()
-            
-#             # Query each category separately
-#             restaurants = base_query.filter(category='restaurants').order_by('-rating')
-#             attractions = base_query.filter(category='attractions').order_by('-rating')
-#             accommodations = base_query.filter(category='accommodations').order_by('-rating')
-#             return attractions, restaurants, accommodations
-
-#         # 1. Initial query with theme filter
-#         attractions_query, restaurants_query, accommodations_query = perform_query(filter_by_theme=True)
-
-#         # 2. Fallback query without theme filter if initial result is empty
-#         if not attractions_query.exists() and not restaurants_query.exists():
-#             fallback_activated = True
-#             logger.info("Fallback activated: No results with theme filter, querying by district only.")
-#             attractions_query, restaurants_query, accommodations_query = perform_query(filter_by_theme=False)
-
-#         def get_place_data(place):
-#             return {
-#                 'id': place.id,
-#                 'name': place.name,
-#                 'address': place.address,
-#                 'rating': place.rating,
-#                 'reviewCnt': place.reviewCnt,
-#                 'themes': place.analysis.themes_csv.split(',') if hasattr(place, 'analysis') and place.analysis.themes_csv else [],
-#             }
-
-#         relevant_attractions = [get_place_data(p) for p in attractions_query.select_related('analysis')[:30]]
-#         relevant_restaurants = [get_place_data(p) for p in restaurants_query.select_related('analysis')[:40]]
-#         relevant_accommodations = [get_place_data(p) for p in accommodations_query.select_related('analysis')[:20]]
-
-#         logger.info(f"Found {len(relevant_attractions)} attractions, {len(relevant_restaurants)} restaurants, {len(relevant_accommodations)} accommodations.")
-#         if not relevant_attractions and not relevant_restaurants:
-#             return JsonResponse({"trip_plan": [], "suggested_accommodation": None})
-
-#         # 2. Construct OpenAI Prompt
-#         system_message = """
-#         You are an expert travel planner in Korea, tasked with creating a detailed itinerary.
-#         You will receive user preferences and lists of available attractions, restaurants, and accommodations for the selected area.
-
-#         **Your Task:**
-#         1.  **Create a Day-by-Day Plan:** Generate a travel plan for the number of days the user specified.
-#         2.  **Structure by District:** Group the recommendations by the districts the user selected. For each day, try to focus on places within one district to minimize travel time.
-#         3.  **Daily Itinerary Logic:** For each day in the plan:
-#             a.  Select one primary tourist attraction from the `attractions` list that fits the user's themes.
-#             b.  Based on the attraction's location, find one nearby, high-rated restaurant from the `restaurants` list for **lunch** and one for **dinner**.
-#             c.  You do not need to recommend breakfast.
-#         4.  **Accommodation:** From the `accommodations` list, select **only one** high-rated and centrally located accommodation for the entire trip. It should be reasonably accessible to the recommended attractions.
-#         5.  **Output Format:** You MUST provide the output in a single JSON object with two top-level keys:
-#             - `suggested_accommodation`: An object containing the details of the single recommended accommodation.
-#             - `trip_plan`: An array of objects, where each object represents a day's plan.
-
-#         **JSON Structure Example:**
-#         ```json
-#         {
-#           "suggested_accommodation": {
-#             "name": "Hotel ABC",
-#             "address": "123 Main St, Gangnam-gu",
-#             "rating": 4.8,
-#             "recommendation_reason": "Centrally located with excellent reviews."
-#           },
-#           "trip_plan": [
-#             {
-#               "day": 1,
-#               "district": "강남구",
-#               "attraction": {
-#                   "name": "COEX Aquarium",
-#                   "address": "513, Yeongdong-daero, Gangnam-gu",
-#                   "recommendation_reason": "A great spot for family fun and fits the 'healing' theme."
-#               },
-#               "meals": {
-#                 "lunch": {
-#                     "name": "Gangnam Gyoza",
-#                     "address": "Nearby COEX",
-#                     "recommendation_reason": "Famous for its dumplings, a short walk from the aquarium."
-#                 },
-#                 "dinner": {
-#                     "name": "Tosokchon Samgyetang",
-#                     "address": "Another part of Gangnam",
-#                     "recommendation_reason": "A hearty and healthy dinner after a long day."
-#                 }
-#               }
-#             }
-#           ]
-#         }
-#         ```
-#         **Important:** Adhere strictly to this JSON structure. Do not add extra commentary outside of the JSON object.
-#         """
-        
-#         fallback_info = ""
-#         if fallback_activated:
-#             fallback_info = "Note: We could not find places that perfectly matched your selected themes. However, here are some popular places in your chosen districts. Please create the best possible course from this list, keeping the original themes in mind if possible."
-
-#         # travel_days is like 'day4', we need the number 4.
-#         num_days = int(''.join(filter(str.isdigit, travel_days))) if travel_days else 1
-
-#         user_message_content = f"""
-#         {fallback_info}
-
-#         **User Preferences:**
-#         - Travel Duration: {num_days} day(s)
-#         - Selected Districts: {korean_districts}
-#         - Selected Themes: {selected_themes}
-
-#         **Available Places:**
-#         - Attractions: {json.dumps(relevant_attractions, ensure_ascii=False, indent=2)}
-#         - Restaurants: {json.dumps(relevant_restaurants, ensure_ascii=False, indent=2)}
-#         - Accommodations: {json.dumps(relevant_accommodations, ensure_ascii=False, indent=2)}
-
-#         Please generate the trip plan in the specified JSON format.
-#         """
-
-#         messages = [
-#             {"role": "system", "content": system_message},
-#             {"role": "user", "content": user_message_content}
-#         ]
-
-#         response = client.chat.completions.create(
-#             model="gpt-4o",
-#             messages=messages,
-#             response_format={"type": "json_object"}
-#         )
-        
-#         llm_response_content = response.choices[0].message.content
-#         parsed_response = json.loads(llm_response_content)
-        
-#         return JsonResponse(parsed_response)
-
-#     except json.JSONDecodeError as e:
-#         logger.error(f"LLM JSON parsing failed: {e}. Raw response: {llm_response_content}")
-#         return JsonResponse({"error": f"AI 응답을 처리하는 중 오류가 발생했습니다." }, status=500)
-#     except Exception as e:
-#         logger.error(f"An error occurred in get_ai_recommendations: {e}")
-#         return JsonResponse({"error": f"AI 추천을 생성하는 중 오류가 발생했습니다: {e}"}, status=500)
-
-#         messages = [
-#             {"role": "system", "content": system_message},
-#             {"role": "user", "content": user_message_content}
-#         ]
-
-#         response = client.chat.completions.create(
-#             model="gpt-4o",
-#             messages=messages,
-#             response_format={"type": "json_object"}
-#         )
-        
-#         llm_response_content = response.choices[0].message.content
-#         parsed_response = json.loads(llm_response_content)
-        
-#         recommendations = parsed_response.get("recommendations", [])
-        
-#         if not recommendations:
-#             for key, value in parsed_response.items():
-#                 if isinstance(value, list) and all(isinstance(item, dict) and "name" in item for item in value):
-#                     recommendations = value
-#                     break
-
-#         return JsonResponse({"recommendations": recommendations})
-
-#     except json.JSONDecodeError as e:
-#         logger.error(f"LLM JSON parsing failed: {e}. Raw response: {llm_response_content}")
-#         return JsonResponse({"error": f"AI 응답을 처리하는 중 오류가 발생했습니다." }, status=500)
-#     except Exception as e:
-#         logger.error(f"An error occurred in get_ai_recommendations: {e}")
-#         return JsonResponse({"error": f"AI 추천을 생성하는 중 오류가 발생했습니다: {e}"}, status=500)
 
 @require_POST
 def select_plan(request):
@@ -1052,6 +824,8 @@ def select_plan(request):
     trip_start = request.POST.get("trip_start_date", "").strip()
     trip_end   = request.POST.get("trip_end_date", "").strip()
 
+    plan_title = request.POST.get("plan_title", "").strip()
+
     try:
         plan = TravelPlan.objects.get(id=plan_id)
     except TravelPlan.DoesNotExist:
@@ -1062,6 +836,7 @@ def select_plan(request):
         plan=plan,
         start_date = trip_start,
         end_date = trip_end,
+        plan_title = plan_title,
     )
 
     if not created:
@@ -1322,6 +1097,9 @@ def user_travel_plans(request):
         start_date = plan.start_date
         end_date = plan.end_date
 
+        plan_title = plan.plan_title
+        plan_id = plan.id
+
         processed_plan = {
             'areas_display': areas_display,      
             'combined_tags': combined_tags,      
@@ -1330,6 +1108,8 @@ def user_travel_plans(request):
             'total_days': total_days,
             'start_date': start_date,
             'end_date': end_date,
+            'plan_title': plan_title,
+            'plan_id': plan_id,
         }
 
         final_plans.append(processed_plan)
@@ -1347,4 +1127,81 @@ def user_travel_plans(request):
         return render(request, 'index.html', context)
 
     
+def travel_plan_detail(request, plan_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    print("Requested plan_id:", plan_id)
+
+    try:
+        user_selected_plan = UserSelectedPlan.objects.get(id=plan_id, user=request.user)
+    except UserSelectedPlan.DoesNotExist:
+        return HttpResponse("해당 여행 계획을 찾을 수 없습니다.", status=404)
     
+    travel_plan = user_selected_plan.plan
+    user = user_selected_plan.user
+
+    day_plans = travel_plan.data.get("day_plans", [])
+    html_parts = []
+
+    # print(travel_plan.data)  # 디버그 출력
+
+    for day_idx, stops in enumerate(day_plans, start=1):
+        html_parts.append(
+            "<div class='spot-item-list' style='padding: 10px 0;'>"
+            f"<h3 style='margin:16px 0; color:#fff; background: #333; padding: 5px 10px; width: 60px; font-size: 14px; border-radius: 4px;'>Day {day_idx}</h3>"
+        )
+
+        if not isinstance(stops, list):
+            continue
+        
+        for order_idx, stop in enumerate(stops, start=1):
+            name = stop.get("name", "")
+            category = stop.get("category", "")
+            address = stop.get("address", "")
+
+            # 우리가 serialize_day_plans_for_js 에서 넣어줬던 필드들
+            themes_csv = stop.get("themes_csv", "")  # 예: 힐링/휴식, 인스타감성, ...
+            group_couple = stop.get("group_couple", "")  # 커플선호 80 같은 수치
+            season_autumn = stop.get("season_autumn", "")  # 가을매력 90 같은 수치
+
+            lat = stop.get("lat", 0.0)
+            lng = stop.get("lng", 0.0)
+
+            # 카드 스타일 비슷하게
+            html_parts.append(
+                f'<div class="spot-item" data-day={day_idx} data-order={order_idx - 1} data-lat={lat} data-lng={lng}>'
+                '<div class="spot-order">'
+                f'<div class="spot-order-num">{order_idx}</div>'
+                # <div class="spot-order-dist">4.7 km</div>
+                '</div>'
+
+                '<div class="spot-meta">'
+                f'<div class="spot-name">{name}'
+                f'<span class="spot-cat">({category})</span>'
+                '</div>'
+                f'<p class="spot-desc">{themes_csv}</p>'
+                f'<span>커플선호 : {group_couple}</span>'
+                f'<span>가을매력 : {season_autumn}</span>'
+                '</p>'
+                f'<p class="spot-desc spot-addr">{address}</p>'
+                '</div>'
+                '</div>'
+            )
+
+        html_parts.append("</div>")
+    list_html = mark_safe("".join(html_parts))
+    # print("Generated list_html for plan detail.")
+    # print(list_html)  # 디버그 출력
+
+    context = {
+        'list_html': list_html,
+        'user': user,
+        # 'plans_json': json.dumps(travel_plan.data, ensure_ascii=False),
+        'plans_json': json.dumps(travel_plan.data, ensure_ascii=False),
+        "initial_plan_idx": 0,
+        "MAPBOX_ACCESS_TOKEN": settings.MAPBOX_ACCESS_TOKEN,
+    }
+
+    return render(request, 'travel/travel_plan_detail.html', context)
+

@@ -43,6 +43,7 @@ urlpatterns = [
     path("travel/create/", views.create_travel_plan, name="create_travel_plan"),
 
     path("my_plans/", views.user_travel_plans, name="user_travel_plans"),
+    path("plans_detail/<str:plan_id>/", views.travel_plan_detail, name="travel_plan_detail"),
 
     # 사용자 인증 관련
     # 로그인

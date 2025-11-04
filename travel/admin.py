@@ -38,34 +38,8 @@ from .models import (
 from .services.LLM_analyzer import analyze_place_with_LLM
 from .services.analysis_loader import create_or_update_analysis_from_json
 from travel.models import TravelPlan
-from travel.views import create_chatroom_for_plan
+from travel.services.matching import auto_match_and_create_room
 # ── 3. 유틸리티 함수 정의 ───────────────────────────────────────────────────────
-
-
-# @admin.register(UserProfile)
-# class UserProfileAdmin(admin.ModelAdmin):
-#     list_display = ("user", "nickname", "preferred_style", "mbti")
-#     search_fields = ("user__username", "nickname")
-
-
-# class UserProfileInline(admin.StackedInline):
-#     model = UserProfile
-#     can_delete = False
-#     verbose_name_plural = "Personal info"
-
-
-# class CustomUserAdmin(UserAdmin):
-#     inlines = (UserProfileInline,)
-#     list_display = ('username', 'get_mbti', 'email', 'first_name', 'last_name', 'is_staff')
-
-#     def get_mbti(self, obj):
-#         return obj.profile.mbti
-#     get_mbti.short_description = 'MBTI'
-
-
-# admin.site.unregister(User)
-# admin.site.register(User, CustomUserAdmin)
-
 
 # ─────────────────────────────────────────────
 # TravelPlan Admin
@@ -96,7 +70,7 @@ class TravelPlanAdmin(admin.ModelAdmin):
 
 @admin.register(UserSelectedPlan)
 class UserSelectedPlanAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "plan", "travel_dates", "selected_at")
+    list_display = ("id", "user", "plan_title", "plan", "travel_dates", "selected_at")
     search_fields = ("user__username", "plan__title")
     readonly_fields = ("selected_at", "plan_preview")  # ### 수정: plan_preview 추가
 
@@ -178,30 +152,30 @@ GU_SUFFIXES = ("구", "군", "시")
 
 
 @login_required
-# def create_travel_plan(request):
-#     if request.method == "POST":
-#         city = request.POST.get("location_city")
-#         start_date = request.POST.get("start_date")
-#         end_date = request.POST.get("end_date")
+def create_travel_plan(request):
+    if request.method == "POST":
+        city = request.POST.get("location_city")
+        start_date = request.POST.get("start_date")
+        end_date = request.POST.get("end_date")
         
-#         plan = TravelPlan.objects.create(
-#             user=request.user,
-#             location_city=city,
-#             start_date=start_date,
-#             end_date=end_date,
-#             is_seeking_partner=True
-#         )
+        plan = TravelPlan.objects.create(
+            user=request.user,
+            location_city=city,
+            start_date=start_date,
+            end_date=end_date,
+            is_seeking_partner=True
+        )
         
-#         # ✅ 자동 매칭 실행
-#         new_rooms = create_chatroom_for_plan(plan)
-#         if new_rooms:
-#             message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!"
-#         else:
-#             message = "매칭 가능한 사용자가 아직 없습니다."
+        # ✅ 자동 매칭 실행
+        new_rooms = auto_match_and_create_room(plan)
+        if new_rooms:
+            message = f"{len(new_rooms)}개의 채팅방이 생성되었습니다!"
+        else:
+            message = "매칭 가능한 사용자가 아직 없습니다."
         
-#         return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
+        return render(request, "travel/travel_plan_created.html", {"plan": plan, "message": message})
     
-#     return render(request, "travel/create_travel_plan.html")
+    return render(request, "travel/create_travel_plan.html")
 
 def split_kr_address(addr: str) -> tuple[str | None, str | None, str | None]:
     if not addr:
@@ -580,13 +554,6 @@ class TravelAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     list_filter = ('author_id', 'start_date')
 
-    # def author_with_name(self, obj):
-    #     try:
-    #         user = User.objects.using('default').get(id=obj.author_id)
-    #         return f"{obj.author_id} ({user.username})"
-    #     except User.DoesNotExist:
-    #         return obj.author_id
-    # author_with_name.short_description = 'Author'
 
 @admin.register(DiaryEntry)
 class DiaryEntryAdmin(admin.ModelAdmin):
@@ -604,38 +571,6 @@ class DiaryEntryAdmin(admin.ModelAdmin):
         return obj.diary.id
     diary_id.short_description = '다이어리 ID' # Column header for the diary ID
     diary_id.admin_order_field = 'diary__id'
-
-
-# class DiaryEntryAdminForm(forms.ModelForm):
-#     class Meta:
-#         model = DiaryEntry
-#         fields = '__all__'
-#         widgets = {
-#             'comment': forms.Textarea(attrs={'cols': 80, 'rows': 5}), # Adjust cols and rows as needed
-#         }
-
-# @admin.register(DiaryEntry)
-# class DiaryEntryAdmin(admin.ModelAdmin):
-#     form = DiaryEntryAdminForm # Use the custom form
-#     list_display = ('diary_info', 'author_with_name', 'comment', 'timestamp') # Removed 'location'
-#     list_display_links = ('comment',)
-#     search_fields = ('location', 'comment', 'diary__name', 'author__username')
-#     list_filter = ('author', 'timestamp', 'diary')
-#     readonly_fields = ('latitude', 'longitude')
-
-#     def diary_info(self, obj):
-#         return f"{obj.diary.id} ({obj.diary.name})"
-#     diary_info.short_description = 'Diary'
-#     diary_info.admin_order_field = 'diary__id' # Allow sorting by diary ID
-
-#     def author_with_name(self, obj):
-#         try:
-#             user = User.objects.using('default').get(id=obj.author_id)
-#             return f"{obj.author_id} ({user.username})"
-#         except User.DoesNotExist:
-#             return obj.author_id
-#     author_with_name.short_description = 'Author'
-
 
 
 # ── 채팅 어드민 ────────────────────────────────────────────────

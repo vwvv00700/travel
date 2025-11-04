@@ -186,6 +186,7 @@
     <!-- Main JS File -->
     <script src="{% static 'js/main.js' %}"></script>
 
+    {% block map_scripts %}
     <script>
         // 팝업 관련 변수 설정
         const modal = document.getElementById('messageModal');
@@ -230,6 +231,7 @@
             }
         }
     </script>
+    {% endblock %}
 
 </body>
 </html>
