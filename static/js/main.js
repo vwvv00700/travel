@@ -188,4 +188,29 @@
         });
     }); 
 
+    function setLanguage(langCode) {
+        // 현재 전체 경로를 가져옵니다. (예: /ko/travel/diary/1/)
+        var fullPath = "{{ request.get_full_path|escapejs }}";
+        
+        // 경로에서 기존 언어 코드를 제거하거나, 새로운 언어 코드로 대체합니다.
+        // 이 로직은 URL 시작 부분의 언어 코드(예: /en/, /ko/)를 처리하도록 설계되었습니다.
+        
+        var newPath;
+        // 1. 현재 언어 코드(/ko/, /en/ 등)를 제거합니다.
+        if (fullPath.match(/^\/([a-z]{2,})\//)) { 
+            // 언어 코드가 있다면 제거합니다.
+            newPath = fullPath.replace(/^\/([a-z]{2,})\//, '/'); 
+        } else {
+            // 언어 코드가 없다면 (기본 언어), 그대로 둡니다.
+            newPath = fullPath;
+        }
+
+        // 2. 제거된 경로 앞에 새 언어 코드를 붙여줍니다.
+        // Django의 set_language 뷰는 next가 상대 경로일 때 언어 코드를 붙여주므로,
+        // 언어 코드를 **제거한 경로만** next에 넣어주면 됩니다! (가장 간단)
+        
+        // 하지만 안전하게, 현재 언어 코드를 제거한 순수 경로를 넣습니다.
+        document.getElementById('next-path').value = newPath;
+    }
+
 })();

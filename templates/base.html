@@ -77,11 +77,18 @@
                             <form action="{% url 'set_language' %}" method="post">
                                 {% csrf_token %}
 
-                                {% get_current_language as CURRENT_LANGUAGE %}
-                                {% get_language_info for CURRENT_LANGUAGE as LANGUAGE_INFO %}
-                                <!-- <input name="next" type="hidden" value="{{ request.path }}"> -->
+                                {% get_current_language as CURRENT_LANG %}
+                                {% get_language_info for CURRENT_LANG as LANGUAGE_INFO %}
+    
+                                {% if CURRENT_LANG == "ko" %}
+                                    {# 현재 언어가 'ko'이고 prefix가 없는 경우, 전체 경로를 넘깁니다. #}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                {% else %}
+                                    {# 현재 언어가 'en' 또는 'es'일 경우, '/xx/' (3글자)를 제거한 경로를 넘깁니다. #}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path|slice:'3:' }}">
+                                {% endif %}
 
-                                <input name="next" type="hidden" value="/"> 
+
                                 <li>
                                     <!-- 한국어 버튼 -->
                                     <button type="submit" name="language" value="ko" class="{% if LANGUAGE_CODE == 'ko' %}active-lang{% endif %}">
@@ -170,6 +177,8 @@
 
     <!-- Preloader -->
     <div id="preloader"></div>
+
+    
 
     <!-- Vendor JS Files -->
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>

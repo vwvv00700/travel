@@ -1126,82 +1126,77 @@ def user_travel_plans(request):
     elif type == "main":
         return render(request, 'index.html', context)
 
-    
+
 def travel_plan_detail(request, plan_id):
     if not request.user.is_authenticated:
         return redirect('login')
 
-    print("Requested plan_id:", plan_id)
-
     try:
-        user_selected_plan = UserSelectedPlan.objects.get(id=plan_id, user=request.user)
+        usp = UserSelectedPlan.objects.get(id=plan_id)
     except UserSelectedPlan.DoesNotExist:
-        return HttpResponse("해당 여행 계획을 찾을 수 없습니다.", status=404)
+        messages.error(request, "해당 여행 계획을 찾을 수 없습니다.")
     
-    travel_plan = user_selected_plan.plan
-    user = user_selected_plan.user
+        # 2. 메인 페이지의 URL 이름('main')으로 리다이렉트합니다.
+        #    (사용자 HTML 코드에서 {% url 'main' %}을 사용하는 것을 보고 'main'으로 가정했습니다.)
+        return redirect('main')
 
-    day_plans = travel_plan.data.get("day_plans", [])
+    tp = usp.plan
+    data = tp.data or {}
+
+    # travel_list.js가 기대하는 형태로 단일 플랜을 배열로 래핑
+    plan_light = [{
+        "id": tp.id,
+        "name": tp.title or "저장된 플랜",
+        "guide_text": data.get("guide_text", ""),
+        "day_plans": data.get("day_plans", []),
+        "day_waypoints": data.get("day_waypoints", []),  # ★ 경로/마커 핵심
+    }]
+
+    # 좌측 리스트 SSR (옵션: template에서 {{ list_html }} 그대로 씀)
     html_parts = []
-
-    # print(travel_plan.data)  # 디버그 출력
-
-    for day_idx, stops in enumerate(day_plans, start=1):
+    for day_idx, stops in enumerate(data.get("day_plans", []), start=1):
         html_parts.append(
-            "<div class='spot-item-list' style='padding: 10px 0;'>"
-            f"<h3 style='margin:16px 0; color:#fff; background: #333; padding: 5px 10px; width: 60px; font-size: 14px; border-radius: 4px;'>Day {day_idx}</h3>"
+            f'<div class="day-block">'
+            f'  <div class="day-title" data-day="{day_idx}">Day {day_idx}'
+            f'    <span class="day-total-dist"></span>'
+            f'  </div>'
         )
-
-        if not isinstance(stops, list):
-            continue
-        
-        for order_idx, stop in enumerate(stops, start=1):
-            name = stop.get("name", "")
-            category = stop.get("category", "")
-            address = stop.get("address", "")
-
-            # 우리가 serialize_day_plans_for_js 에서 넣어줬던 필드들
-            themes_csv = stop.get("themes_csv", "")  # 예: 힐링/휴식, 인스타감성, ...
-            group_couple = stop.get("group_couple", "")  # 커플선호 80 같은 수치
-            season_autumn = stop.get("season_autumn", "")  # 가을매력 90 같은 수치
-
-            lat = stop.get("lat", 0.0)
-            lng = stop.get("lng", 0.0)
-
-            # 카드 스타일 비슷하게
-            html_parts.append(
-                f'<div class="spot-item" data-day={day_idx} data-order={order_idx - 1} data-lat={lat} data-lng={lng}>'
-                '<div class="spot-order">'
-                f'<div class="spot-order-num">{order_idx}</div>'
-                # <div class="spot-order-dist">4.7 km</div>
-                '</div>'
-
-                '<div class="spot-meta">'
-                f'<div class="spot-name">{name}'
-                f'<span class="spot-cat">({category})</span>'
-                '</div>'
-                f'<p class="spot-desc">{themes_csv}</p>'
-                f'<span>커플선호 : {group_couple}</span>'
-                f'<span>가을매력 : {season_autumn}</span>'
-                '</p>'
-                f'<p class="spot-desc spot-addr">{address}</p>'
-                '</div>'
-                '</div>'
-            )
-
-        html_parts.append("</div>")
-    list_html = mark_safe("".join(html_parts))
-    # print("Generated list_html for plan detail.")
-    # print(list_html)  # 디버그 출력
+        if stops:
+            for i, stop in enumerate(stops):
+                place = (stop or {}).get("place", {}) or {}
+                analysis = (stop or {}).get("analysis", {}) or {}
+                name = place.get("name", "")
+                cat  = place.get("category", "")
+                lat  = place.get("lat", "")
+                lon  = place.get("lon", "")
+                addr = place.get("address") or ""
+                html_parts.append(
+                    f'''<div class="spot-item"
+                           data-day="{day_idx}"
+                           data-order="{i}"
+                           data-lat="{lat}"
+                           data-lng="{lon}">
+                          <div class="spot-order">
+                            <div class="spot-order-num">{i+1}</div>
+                          </div>
+                          <div class="spot-meta">
+                            <div class="spot-name">{name} <span class="spot-cat">({cat})</span></div>
+                            <p class="spot-desc">{analysis.get("themes_csv","")}</p>
+                            {f'<p class="spot-desc spot-addr">{addr}</p>' if addr else ''}
+                          </div>
+                        </div>'''
+                )
+        else:
+            html_parts.append('<div class="spot-desc">추천 장소가 부족합니다.</div>')
+        html_parts.append('</div>')
 
     context = {
-        'list_html': list_html,
-        'user': user,
-        # 'plans_json': json.dumps(travel_plan.data, ensure_ascii=False),
-        'plans_json': json.dumps(travel_plan.data, ensure_ascii=False),
+        "plans_json": json.dumps(plan_light, ensure_ascii=False),   # → const PLANS = ...
         "initial_plan_idx": 0,
-        "MAPBOX_ACCESS_TOKEN": settings.MAPBOX_ACCESS_TOKEN,
+        "MAPBOX_ACCESS_TOKEN": getattr(settings, "MAPBOX_ACCESS_TOKEN", ""),
+        "day_plans": data.get("day_plans", []),                    # Day 탭 생성용
+        "list_html": mark_safe("".join(html_parts)),               # 좌측 리스트
+        "user": request.user,
+        'error_boolean': False,
     }
-
-    return render(request, 'travel/travel_plan_detail.html', context)
-
+    return render(request, "travel/travel_plan_detail.html", context)

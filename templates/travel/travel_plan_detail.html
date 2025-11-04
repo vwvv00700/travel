@@ -12,12 +12,16 @@
 <!-- Page Title -->
 <div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/destination-20.webp' %});">
     <div class="container position-relative">
-        <h1><span class="user-name">{{user}}</span> {% trans "님의 여행 플랜" %}</h1>
+        <h1>
+            {% blocktrans %}
+                <span class="user-name">{{ user }}</span>님의 여행 플랜
+            {% endblocktrans %}
+        </h1>
         <p>{% trans "일정을 공유하고 정보를 얻어가세요." %}</p>
         <nav class="breadcrumbs">
             <ol>
                 <li><a href="{% url 'main' %}">{% trans "Home" %}</a></li>
-                <li class="current"><span class="user-name">{{user}}</span> {% trans "님의 여행 플랜" %}</li>
+                <li class="current">{% trans "여행 플랜" %}</li>
             </ol>
         </nav>
     </div>
@@ -28,7 +32,7 @@
     <div class="page-wrap">
 
         <!-- 본문 두 칸 레이아웃 -->
-        <section class="planner-body">
+        <section class="planner-body" style="padding: 0;">
 
             <!-- 왼쪽 패널 -->
             <aside class="itinerary-panel">

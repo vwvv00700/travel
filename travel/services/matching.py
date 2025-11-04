@@ -1,16 +1,16 @@
 from datetime import date
-from travel.models import TravelPlan, ChatRoom
+from travel.models import TravelPlan, ChatRoom, UserSelectedPlan
 from django.db.models import Q
 
 def dates_overlap(start1, end1, start2, end2):
     """날짜 범위가 겹치는지 체크"""
     return max(start1, start2) <= min(end1, end2)
 
-def auto_match_and_create_room(new_plan: TravelPlan):
+def auto_match_and_create_room(new_plan: UserSelectedPlan):
     """자동 매칭: 목적지 + 날짜 겹침 + 방 없는 사용자"""
     
     # 1. 매칭 후보군 검색 (자신 제외, 같은 목적지)
-    candidates = TravelPlan.objects.filter(
+    candidates = UserSelectedPlan.objects.filter(
         location_city=new_plan.location_city # models.py에서 location_city 필드 사용
     ).exclude(user=new_plan.user) # 같은 사용자 제외
 

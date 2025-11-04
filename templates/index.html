@@ -65,7 +65,7 @@
                                     {% endfor %}
                                 </div>
                                 <div class="tour-action">
-                                    <a href="#" class="btn-book">{% trans "상세보기" %}</a>
+                                    <a href="{% url 'travel:travel_plan_detail' plan_id=plan.plan_id %}" class="btn-book">{% trans "상세보기" %}</a>
                                     <!-- <div class="tour-rating">
                                         <i class="bi bi-star"></i>
                                         <i class="bi bi-star"></i>
