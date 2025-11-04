@@ -624,6 +624,41 @@ def create_diary_from_plan(request, plan_id):
     return redirect('travel:travel_diary_detail', pk=new_diary.pk)
 
 
+def ensure_plan_available(plan_pk):
+    """
+    diary_db에 TravelPlan 레코드가 존재하도록 보장한다.
+    기본 DB(default)에만 존재하는 경우 복제하여 반환한다.
+    """
+    if not plan_pk:
+        return None
+
+    try:
+        plan_id = int(plan_pk)
+    except (TypeError, ValueError):
+        return None
+
+    existing_plan = TravelPlan.objects.using('diary_db').filter(pk=plan_id).first()
+    if existing_plan:
+        return existing_plan
+
+    try:
+        source_plan = TravelPlan.objects.using('default').get(pk=plan_id)
+    except TravelPlan.DoesNotExist:
+        return None
+
+    plan_clone = TravelPlan(
+        id=source_plan.pk,
+        title=source_plan.title,
+        user_query=source_plan.user_query,
+        data=source_plan.data,
+        created_at=source_plan.created_at,
+    )
+    # auth_user 테이블이 diary_db에 없으므로 FK 충돌을 피하기 위해 owner 정보는 비워 둔다.
+    plan_clone.owner_id = None
+    plan_clone.save(using='diary_db')
+    return plan_clone
+
+
 @login_required
 def create_travel_diary(request):
     user_plan_qs = UserSelectedPlan.objects.filter(user=request.user).order_by('-selected_at')
@@ -638,6 +673,7 @@ def create_travel_diary(request):
         areas_display = ", ".join(korean_areas) if korean_areas else "전체 지역"
 
         processed_plans.append({
+            'plan_id': p.plan.id,
             'name': p.plan.title,
             'start_date': p.start_date.strftime('%Y-%m-%d'),
             'end_date': p.end_date.strftime('%Y-%m-%d'),
@@ -658,6 +694,18 @@ def create_travel_diary(request):
         if form.is_valid():
             travel_diary = form.save(commit=False)
             travel_diary.author_id = request.user.id
+
+            plan_id_raw = post_data.get('plan_id')
+            try:
+                plan_id_val = int(plan_id_raw) if plan_id_raw else None
+            except (TypeError, ValueError):
+                plan_id_val = None
+
+            if plan_id_val:
+                synced_plan = ensure_plan_available(plan_id_val)
+                if synced_plan:
+                    travel_diary.plan_id = synced_plan.pk
+
             travel_diary.save()
             return redirect('travel:diary_home')
     else:
@@ -704,9 +752,41 @@ def travel_diary_detail(request, pk):
 
     print("DEBUG: diary_entries_json content:", diary_entries_json) # Debug print
 
+    display_plan = travel_diary.plan
+    if display_plan:
+        synced_plan = ensure_plan_available(display_plan.pk)
+        if synced_plan:
+            display_plan = synced_plan
+    else:
+        plan_title_hint = None
+        if travel_diary.name:
+            match = re.search(r'\(([^)]+)\)\s*$' , travel_diary.name)
+            if match:
+                plan_title_hint = match.group(1).strip()
+
+        candidate_qs = UserSelectedPlan.objects.filter(user=request.user).select_related('plan').order_by('-selected_at')
+        if travel_diary.start_date:
+            candidate_qs = candidate_qs.filter(start_date=travel_diary.start_date)
+        if travel_diary.end_date:
+            candidate_qs = candidate_qs.filter(end_date=travel_diary.end_date)
+        if plan_title_hint:
+            candidate_qs = candidate_qs.filter(plan__title=plan_title_hint)
+
+        candidate = candidate_qs.first()
+        if candidate:
+            synced_plan = ensure_plan_available(candidate.plan_id)
+            if synced_plan:
+                display_plan = synced_plan
+                if travel_diary.plan_id != synced_plan.pk:
+                    travel_diary.plan = synced_plan
+                    travel_diary.save(update_fields=['plan'])
+            else:
+                display_plan = candidate.plan
+
     processed_plan_data = None
-    if travel_diary.plan:
-        plan = travel_diary.plan
+    plan_day_plans = []
+    if display_plan:
+        plan = display_plan
         english_areas = plan.user_query.get('areas', []) if plan.user_query else []
         korean_areas = []
         for area_key in english_areas:
@@ -720,13 +800,18 @@ def travel_diary_detail(request, pk):
             'end_date': travel_diary.end_date.strftime('%Y-%m-%d') if travel_diary.end_date else '',
             'areas_display': areas_display,
         }
+        if isinstance(plan.data, dict):
+            plan_day_plans = plan.data.get('day_plans', []) or []
+            if not isinstance(plan_day_plans, list):
+                plan_day_plans = []
 
     return render(request, 'travel/travel_diary_detail.html', {
         'travel_diary': travel_diary,
-        'travel_plan': travel_diary.plan, # Pass the plan to the template
+        'travel_plan': display_plan, # Pass the plan to the template
         'entries_by_date': entries_by_date,
         'diary_entries_json': diary_entries_json,
         'processed_plan_data': processed_plan_data,
+        'plan_day_plans': plan_day_plans,
     })
 
 @login_required # Ensure user is logged in to view their diary

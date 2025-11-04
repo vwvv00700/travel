@@ -123,6 +123,7 @@
                         <span id="plan-title-display" class="ml-2 text-gray-500 flex-shrink-0"></span>
 
                         <input type="hidden" id="hidden-plan-title" name="plan_title">
+                        <input type="hidden" id="hidden-plan-id" name="plan_id">
 
                     </div>
 
@@ -162,24 +163,6 @@
 
             
 
-                <!-- Plan Details Information Window -->
-
-                <div id="plan-details-window" class="hidden mt-8 p-6 bg-white rounded-lg shadow-md border border-slate-200">
-
-                    <h2 class="text-2xl font-bold text-slate-800 mb-4">선택된 여행 플랜 정보</h2>
-
-                    <div id="plan-duration" class="mb-4 text-slate-600"></div>
-
-                    <div id="plan-day-tabs" class="border-b border-gray-200 mb-4"></div>
-
-                    <div id="plan-itinerary" class="flex overflow-x-auto space-x-4 p-2"></div>
-
-                </div>
-
-            </div>
-
-            
-
             <!-- Import Plan Modal -->
 
         <div id="import-plan-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
@@ -213,6 +196,8 @@
                                     </div>
 
                                                                 <button type="button" class="select-plan-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded"
+
+                                                                    data-plan-id="{{ plan.plan_id }}"
 
                                                                     data-plan-name="{{ plan.name }}"
 
@@ -267,6 +252,8 @@
                                         const planTitleDisplay = document.getElementById('plan-title-display');
 
                                         const hiddenPlanTitle = document.getElementById('hidden-plan-title');
+
+                                        const hiddenPlanId = document.getElementById('hidden-plan-id');
 
                                         const startDateField = document.getElementById('id_start_date');
 
@@ -405,6 +392,10 @@
                                                 planTitleDisplay.textContent = `(${planName})`;
 
                                                 hiddenPlanTitle.value = planName;
+
+                                                if (hiddenPlanId) {
+                                                    hiddenPlanId.value = this.dataset.planId || '';
+                                                }
 
                                     
 

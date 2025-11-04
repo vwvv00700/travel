@@ -26,61 +26,17 @@
 
         {% if travel_plan and processed_plan_data %}
         <!-- Plan Details Information Window -->
-        <div id="plan-details-window" class="mb-6 p-6 bg-white rounded-lg shadow-md border border-slate-200">
+        <div id="plan-details-window" class="hidden mb-6 p-6 bg-white rounded-lg shadow-md border border-slate-200">
             <h2 id="plan-details-title" class="text-2xl font-bold text-slate-800 mb-4">선택된 여행 플랜 정보</h2>
-            <div id="plan-duration" class="mb-2 text-slate-600">
-                <span class="font-bold">기간:</span> {{ processed_plan_data.start_date }} ~ {{ processed_plan_data.end_date }}
-            </div>
-            <div id="plan-day-tabs" class="border-b border-gray-200 mb-4">
-                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                    {% for day_plan in travel_plan.data.day_plans %}
-                        <a href="#" data-day="{{ forloop.counter }}" class="day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm {% if forloop.first %}border-indigo-500 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
-                            {{ forloop.counter }}일차
-                        </a>
-                    {% endfor %}
-                </nav>
-            </div>
-            <div id="plan-itinerary" class="flex overflow-x-auto space-x-4 p-2 bg-slate-50 rounded-lg">
-                {% for place in travel_plan.data.day_plans|first %}
-                    <div class="flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-                        <h4 class="font-bold text-md text-slate-900 truncate">{{ place.name }}</h4>
-                        <p class="text-sm text-gray-500">{{ place.category }}</p>
-                        <p class="text-xs text-gray-500 mt-1 truncate">{{ place.address }}</p>
-                    </div>
-                {% endfor %}
-            </div>
+            <div id="plan-duration" class="mb-4 text-slate-600"></div>
+            <div id="plan-day-tabs" class="border-b border-gray-200 mb-4"></div>
+            <div id="plan-itinerary" class="flex overflow-x-auto space-x-4 p-2"></div>
         </div>
         {% endif %}
 
-        {% if travel_plan and travel_plan.data.day_plans %}
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold text-slate-800 mb-4">여행 계획</h2>
-            <div class="border-b border-gray-200">
-                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                    {% for day_plan in travel_plan.data.day_plans %}
-                        <a href="#" data-day="{{ forloop.counter }}" class="day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm {% if forloop.first %}border-indigo-500 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
-                            {{ forloop.counter }}일차
-                        </a>
-                    {% endfor %}
-                </nav>
-            </div>
-
-            <div class="mt-4">
-                {% for day_plan in travel_plan.data.day_plans %}
-                <div id="day-{{ forloop.counter }}-content" class="day-content {% if not forloop.first %}hidden{% endif %}">
-                    <div class="flex overflow-x-auto space-x-4 p-2">
-                        {% for place in day_plan %}
-                            <div class="flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-                                <h4 class="font-bold text-md text-slate-900 truncate">{{ place.name }}</h4>
-                                <p class="text-sm text-gray-500">{{ place.category }}</p>
-                                <p class="text-xs text-gray-500 mt-1 truncate">{{ place.address }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+        {% if travel_plan and processed_plan_data %}
+        {{ plan_day_plans|json_script:"selected-plan-day-plans" }}
+        {{ processed_plan_data|json_script:"selected-plan-meta" }}
         {% endif %}
 
         <div class="my-6 text-right">
@@ -185,36 +141,98 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const dayTabs = document.querySelectorAll('.day-tab');
-        const dayContents = document.querySelectorAll('.day-content');
+        const planWindow = document.getElementById('plan-details-window');
+        const planMetaEl = document.getElementById('selected-plan-meta');
+        const planDayPlansEl = document.getElementById('selected-plan-day-plans');
+        const planDetailsTitle = document.getElementById('plan-details-title');
+        const planDurationEl = document.getElementById('plan-duration');
+        const planDayTabsEl = document.getElementById('plan-day-tabs');
+        const planItineraryEl = document.getElementById('plan-itinerary');
 
-        dayTabs.forEach(tab => {
-            tab.addEventListener('click', function(e) {
-                e.preventDefault();
+        if (planWindow && planMetaEl && planDetailsTitle && planDurationEl && planDayTabsEl && planItineraryEl) {
+            try {
+                const planMeta = JSON.parse(planMetaEl.textContent);
+                const dayPlans = planDayPlansEl ? JSON.parse(planDayPlansEl.textContent) : [];
+                const areasSuffix = planMeta.areas_display ? ` (${planMeta.areas_display})` : '';
 
-                // Deactivate all tabs
-                dayTabs.forEach(t => {
-                    t.classList.remove('border-indigo-500', 'text-indigo-600');
-                    t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
-                });
+                planDetailsTitle.textContent = `${planMeta.name || '선택된 여행 플랜 정보'}${areasSuffix}`;
+                planDurationEl.textContent = (planMeta.start_date && planMeta.end_date)
+                    ? `전체 일정: ${planMeta.start_date} ~ ${planMeta.end_date}`
+                    : '';
 
-                // Activate the clicked tab
-                this.classList.add('border-indigo-500', 'text-indigo-600');
-                this.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                planDayTabsEl.innerHTML = '';
+                planItineraryEl.innerHTML = '';
+                planWindow.classList.remove('hidden');
 
-                // Hide all content
-                dayContents.forEach(content => {
-                    content.classList.add('hidden');
-                });
+                const nav = document.createElement('nav');
+                nav.className = '-mb-px flex space-x-8';
+                nav.setAttribute('aria-label', 'Tabs');
+                planDayTabsEl.appendChild(nav);
 
-                // Show the corresponding content
-                const day = this.getAttribute('data-day');
-                const contentToShow = document.getElementById(`day-${day}-content`);
-                if (contentToShow) {
-                    contentToShow.classList.remove('hidden');
+                const allDayPlans = Array.isArray(dayPlans) ? dayPlans : [];
+
+                function renderDay(index) {
+                    planItineraryEl.innerHTML = '';
+                    const places = allDayPlans[index] || [];
+
+                    if (!places.length) {
+                        const empty = document.createElement('p');
+                        empty.className = 'text-sm text-slate-500';
+                        empty.textContent = '등록된 일정이 없습니다.';
+                        planItineraryEl.appendChild(empty);
+                        return;
+                    }
+
+                    places.forEach(place => {
+                        const placeEl = document.createElement('div');
+                        placeEl.className = 'flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4';
+                        placeEl.innerHTML = `
+                            <h4 class="font-bold text-md text-slate-900 truncate">${place.name || '이름 없음'}</h4>
+                            <p class="text-sm text-gray-500">${place.category || ''}</p>
+                            <p class="text-xs text-gray-500 mt-1 truncate">${place.address || ''}</p>
+                        `;
+                        planItineraryEl.appendChild(placeEl);
+                    });
                 }
-            });
-        });
+
+                allDayPlans.forEach((_, idx) => {
+                    const day = idx + 1;
+                    const tab = document.createElement('a');
+                    tab.href = '#';
+                    tab.dataset.dayIndex = idx;
+                    tab.className = 'day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
+
+                    if (idx === 0) {
+                        tab.classList.add('border-indigo-500', 'text-indigo-600');
+                    } else {
+                        tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    }
+
+                    tab.textContent = `${day}일차`;
+                    tab.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        nav.querySelectorAll('.day-tab').forEach(t => {
+                            t.classList.remove('border-indigo-500', 'text-indigo-600');
+                            t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                        });
+                        this.classList.add('border-indigo-500', 'text-indigo-600');
+                        this.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                        renderDay(Number(this.dataset.dayIndex));
+                    });
+
+                    nav.appendChild(tab);
+                });
+
+                if (allDayPlans.length > 0) {
+                    renderDay(0);
+                } else {
+                    planItineraryEl.innerHTML = '<p class="text-sm text-slate-500">등록된 일정이 없습니다.</p>';
+                }
+            } catch (error) {
+                console.error('여행 플랜 정보를 불러오는 중 오류가 발생했습니다.', error);
+            }
+        }
     });
 </script>
 
