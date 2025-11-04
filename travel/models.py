@@ -260,6 +260,7 @@ class Tag(models.Model):
 
 # ----- 다이어리 목록 ------------------------------------------
 class Travel(models.Model):
+    plan = models.ForeignKey('TravelPlan', on_delete=models.SET_NULL, null=True, blank=True, related_name='diaries')
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     start_date = models.DateField(null=True, blank=True)

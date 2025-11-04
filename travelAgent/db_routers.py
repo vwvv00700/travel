@@ -7,7 +7,7 @@ class DiaryRouter:
     travel application.
     Routes all operations for the 'travel' app to the 'diary_db' database.
     """
-    diary_models = {'travel', 'diaryentry', 'diarylist', 'diarydetail'} # Explicitly list models that go to diary_db
+    diary_models = {'travel', 'diaryentry', 'tag', 'diarylist', 'diarydetail'} # Explicitly list models that go to diary_db
     def _is_travel_app(self, model):
         return model._meta.app_label == 'travel'
 

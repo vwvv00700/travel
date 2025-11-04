@@ -24,7 +24,38 @@
         <p class="text-slate-600 mb-6">{{ travel_diary.start_date|date:"Y년 m월 d일" }} - {{ travel_diary.end_date|date:"Y년 m월 d일" }}</p>
         <p class="text-slate-700 mb-8">{{ travel_diary.description|default:"설명이 없습니다." }}</p>
 
-        <div class="my-6 text-center">
+        {% if travel_plan and travel_plan.data.day_plans %}
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">여행 계획</h2>
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    {% for day_plan in travel_plan.data.day_plans %}
+                        <a href="#" data-day="{{ forloop.counter }}" class="day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm {% if forloop.first %}border-indigo-500 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                            {{ forloop.counter }}일차
+                        </a>
+                    {% endfor %}
+                </nav>
+            </div>
+
+            <div class="mt-4">
+                {% for day_plan in travel_plan.data.day_plans %}
+                <div id="day-{{ forloop.counter }}-content" class="day-content {% if not forloop.first %}hidden{% endif %}">
+                    <div class="flex overflow-x-auto space-x-4 p-2">
+                        {% for place in day_plan %}
+                            <div class="flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                                <h4 class="font-bold text-md text-slate-900 truncate">{{ place.name }}</h4>
+                                <p class="text-sm text-gray-500">{{ place.category }}</p>
+                                <p class="text-xs text-gray-500 mt-1 truncate">{{ place.address }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="my-6 text-right">
             <button id="ai-summary-btn" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 ease-in-out">
                 <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> AI 요약 보기
             </button>
@@ -123,6 +154,41 @@
         </div>
     </div>
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dayTabs = document.querySelectorAll('.day-tab');
+        const dayContents = document.querySelectorAll('.day-content');
+
+        dayTabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // Deactivate all tabs
+                dayTabs.forEach(t => {
+                    t.classList.remove('border-indigo-500', 'text-indigo-600');
+                    t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                });
+
+                // Activate the clicked tab
+                this.classList.add('border-indigo-500', 'text-indigo-600');
+                this.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                // Hide all content
+                dayContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+
+                // Show the corresponding content
+                const day = this.getAttribute('data-day');
+                const contentToShow = document.getElementById(`day-${day}-content`);
+                if (contentToShow) {
+                    contentToShow.classList.remove('hidden');
+                }
+            });
+        });
+    });
+</script>
 
 <script id="diary-entries-data" type="application/json">
     {{ diary_entries_json|safe }}

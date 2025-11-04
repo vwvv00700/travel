@@ -584,19 +584,78 @@ def analyze_selected_places_view(request):
     # 알 수 없는 action → 선택화면
     return redirect(request.path)
 
+from datetime import datetime, timedelta
+
+@login_required
+def create_diary_from_plan(request, plan_id):
+    user_plan = get_object_or_404(UserSelectedPlan, id=plan_id, user=request.user)
+    travel_plan = user_plan.plan
+
+    # Check if a diary already exists for this plan
+    existing_diary = Travel.objects.filter(plan=travel_plan, author_id=request.user.id).first()
+    if existing_diary:
+        messages.info(request, "이 플랜에 대한 다이어리가 이미 존재합니다.")
+        return redirect('travel:travel_diary_detail', pk=existing_diary.pk)
+
+    # Create a new Travel diary
+    new_diary = Travel.objects.create(
+        plan=travel_plan,
+        name=travel_plan.title,
+        start_date=user_plan.start_date,
+        end_date=user_plan.end_date,
+        author_id=request.user.id
+    )
+
+    # Create DiaryEntry for each place in the plan
+    if 'day_plans' in travel_plan.data:
+        for day_index, day_plan in enumerate(travel_plan.data['day_plans']):
+            current_date = user_plan.start_date + timedelta(days=day_index)
+            for place_data in day_plan:
+                DiaryEntry.objects.create(
+                    diary=new_diary,
+                    author_id=request.user.id,
+                    location=place_data.get('name'),
+                    timestamp=datetime.combine(current_date, datetime.min.time()).replace(hour=12), # Noon
+                    latitude=place_data.get('lat'),
+                    longitude=place_data.get('lng'),
+                )
+
+    messages.success(request, "여행 플랜에서 다이어리를 성공적으로 생성했습니다.")
+    return redirect('travel:travel_diary_detail', pk=new_diary.pk)
+
+
 @login_required
 def create_travel_diary(request):
+    user_plan_qs = UserSelectedPlan.objects.filter(user=request.user).order_by('-selected_at')
+    
+    processed_plans = []
+    for p in user_plan_qs:
+        processed_plans.append({
+            'name': p.plan.title,
+            'start_date': p.start_date.strftime('%Y-%m-%d'),
+            'end_date': p.end_date.strftime('%Y-%m-%d'),
+            'day_plans_json': json.dumps(p.plan.data.get('day_plans', [])),
+        })
+
     if request.method == 'POST':
-        form = TravelForm(request.POST)
+        post_data = request.POST.copy()
+        user_title = post_data.get('name', '').strip()
+        plan_title = post_data.get('plan_title', '').strip()
+
+        if plan_title:
+            full_title = f"{user_title} ({plan_title})" if user_title else f"({plan_title})"
+            post_data['name'] = full_title.strip()
+
+        form = TravelForm(post_data)
         if form.is_valid():
             travel_diary = form.save(commit=False)
-            # travel_diary.author = request.user
             travel_diary.author_id = request.user.id
-            travel_diary.save()  # 라우터가 diary_db로 자동 라우팅
+            travel_diary.save()
             return redirect('travel:diary_home')
     else:
         form = TravelForm()
-    return render(request, 'travel/create_travel_diary.html', {'form': form})
+    
+    return render(request, 'travel/create_travel_diary.html', {'form': form, 'user_plans': processed_plans})
 
 @login_required
 def travel_diary_detail(request, pk):
@@ -622,7 +681,7 @@ def travel_diary_detail(request, pk):
         diary_entries_data.append({
             'id': entry.id,
             'location': entry.location,
-            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %i분") if entry.timestamp else '',
+            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %M분") if entry.timestamp else '',
             'latitude': entry.latitude,
             'longitude': entry.longitude,
             # 'photo_url': entry.photo.url if entry.photo else '',
@@ -638,6 +697,7 @@ def travel_diary_detail(request, pk):
 
     return render(request, 'travel/travel_diary_detail.html', {
         'travel_diary': travel_diary,
+        'travel_plan': travel_diary.plan, # Pass the plan to the template
         'entries_by_date': entries_by_date,
         'diary_entries_json': diary_entries_json,
     })
@@ -1323,6 +1383,7 @@ def user_travel_plans(request):
         end_date = plan.end_date
 
         processed_plan = {
+            'plan_id': plan.id,
             'areas_display': areas_display,      
             'combined_tags': combined_tags,      
             'season': season,

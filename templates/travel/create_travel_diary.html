@@ -10,23 +10,19 @@
         margin: 2rem auto;
         padding: 0 1rem;
     }
-
     .diary-header {
         text-align: center;
         margin-bottom: 2.5rem;
     }
-
     .diary-form {
         background-color: #ffffff;
         padding: 2rem;
         border-radius: 12px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
-
     .form-group {
         margin-bottom: 1.5rem;
     }
-
     .form-label {
         display: block;
         font-size: 0.875rem;
@@ -34,7 +30,6 @@
         color: #1f2937;
         margin-bottom: 0.5rem;
     }
-
     .form-input {
         width: 100%;
         padding: 0.75rem;
@@ -43,18 +38,15 @@
         font-size: 1rem;
         transition: all 0.3s;
     }
-
     .form-input:focus {
         outline: none;
         border-color: #0ea5e9;
         box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
     }
-
     .form-textarea {
         min-height: 200px;
         resize: vertical;
     }
-
     .submit-btn {
         display: inline-block;
         padding: 0.75rem 1.5rem;
@@ -67,20 +59,15 @@
         cursor: pointer;
         width: 100%;
     }
-
     .submit-btn:hover {
         background-color: #0284c7;
     }
-
-    /* Hide Django's default form rendering */
     .form-group p {
         margin: 0;
     }
-
     .form-group label {
         display: none;
     }
-
     .form-group input,
     .form-group textarea {
         width: 100%;
@@ -94,7 +81,6 @@
 {% endblock %}
 
 {% block content %}
-<!-- Page Title -->
 <div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/destination-16.webp' %});">
     <div class="container position-relative">
         <h1>나만의 여행 다이어리 작성</h1>
@@ -106,38 +92,399 @@
             </ol>
         </nav>
     </div>
-</div><!-- End Page Title -->
+</div>
 
-
-<!-- <div class="diary-container"> -->
 <div class="section diary-cont">
-    <!-- <div class="diary-header">
-        <h2 class="text-3xl font-bold text-slate-800 mb-2">나만의 여행 다이어리 작성</h2>
-        <p class="text-slate-600">특별했던 여행의 순간을 기록해보세요</p>
-    </div> -->
+    <div class="flex justify-end mb-4">
+        <button type="button" id="import-plan-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">
+            <i class="fa-solid fa-file-import mr-2"></i> 여행플랜 가지고 오기
+        </button>
+    </div>
 
     <form class="diary-form" method="post">
         {% csrf_token %}
+
+        <!-- Plan Details Information Window -->
+        <div id="plan-details-window" class="hidden mb-6 p-6 bg-white rounded-lg shadow-md border border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">선택된 여행 플랜 정보</h2>
+            <div id="plan-duration" class="mb-4 text-slate-600"></div>
+            <div id="plan-day-tabs" class="border-b border-gray-200 mb-4"></div>
+            <div id="plan-itinerary" class="flex overflow-x-auto space-x-4 p-2"></div>
+        </div>
+
+                <div class="form-group">
+
+                    <label class="form-label">제목</label>
+
+                    <div class="flex items-center border border-gray-300 rounded-lg p-2">
+
+                        <input type="text" id="id_name" name="name" class="flex-grow outline-none bg-transparent" placeholder="다이어리 제목을 입력하세요">
+
+                        <span id="plan-title-display" class="ml-2 text-gray-500 flex-shrink-0"></span>
+
+                        <input type="hidden" id="hidden-plan-title" name="plan_title">
+
+                    </div>
+
+                </div>
+
         
-        <div class="form-group">
-            <label class="form-label">제목</label>
-            {{ form.name }}
-        </div>
 
-        <div class="form-group">
-            <label class="form-label">여행 날짜</label>
-            <div class="flex gap-4 datetime-box">
-                {{ form.start_date }}
-                {{ form.end_date }}
+                <div class="form-group">
+
+                    <label class="form-label">여행 날짜</label>
+
+                    <div class="flex gap-4 datetime-box">
+
+                        {{ form.start_date }}
+
+                        {{ form.end_date }}
+
+                    </div>
+
+                </div>
+
+        
+
+                <div class="form-group">
+
+                    <label class="form-label">내용</label>
+
+                    {{ form.description }}
+
+                </div>
+
+        
+
+                <button type="submit" class="submit-btn">다이어리 저장하기</button>
+
+                </form>
+
+            
+
+                <!-- Plan Details Information Window -->
+
+                <div id="plan-details-window" class="hidden mt-8 p-6 bg-white rounded-lg shadow-md border border-slate-200">
+
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">선택된 여행 플랜 정보</h2>
+
+                    <div id="plan-duration" class="mb-4 text-slate-600"></div>
+
+                    <div id="plan-day-tabs" class="border-b border-gray-200 mb-4"></div>
+
+                    <div id="plan-itinerary" class="flex overflow-x-auto space-x-4 p-2"></div>
+
+                </div>
+
             </div>
+
+            
+
+            <!-- Import Plan Modal -->
+
+        <div id="import-plan-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+
+                <div class="flex justify-between items-center pb-3">
+
+                    <h3 class="text-2xl font-bold text-gray-900">가져올 여행 플랜 선택</h3>
+
+                    <button id="import-plan-close-btn" class="text-gray-400 hover:text-gray-600 text-2xl font-semibold">&times;</button>
+
+                </div>
+
+                <div class="mt-2 mb-4">
+
+                    {% if user_plans %}
+
+                        <ul class="space-y-3">
+
+                            {% for plan in user_plans %}
+
+                                <li class="p-4 bg-gray-50 rounded-lg flex justify-between items-center">
+
+                                    <div>
+
+                                        <p class="font-semibold">{{ plan.name }}</p>
+
+                                        <p class="text-sm text-gray-600">{{ plan.start_date }} ~ {{ plan.end_date }}</p>
+
+                                    </div>
+
+                                    <button type="button" class="select-plan-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded"
+
+                                        data-plan-name="{{ plan.name }}"
+
+                                        data-start-date="{{ plan.start_date }}"
+
+                                        data-end-date="{{ plan.end_date }}"
+
+                                        data-day-plans='{{ plan.day_plans_json|safe }}'>
+
+                                        선택
+
+                                    </button>
+
+                                </li>
+
+                            {% endfor %}
+
+                        </ul>
+
+                    {% else %}
+
+                        <p>가져올 수 있는 여행 플랜이 없습니다.</p>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="form-group">
-            <label class="form-label">내용</label>
-            {{ form.description }}
-        </div>
+        
 
-        <button type="submit" class="submit-btn">다이어리 저장하기</button>
-    </form>
-</div>
+        <script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const importBtn = document.getElementById('import-plan-btn');
+
+            const modal = document.getElementById('import-plan-modal');
+
+            const closeBtn = document.getElementById('import-plan-close-btn');
+
+            const selectBtns = document.querySelectorAll('.select-plan-btn');
+
+        
+
+            const nameField = document.getElementById('id_name');
+
+            const planTitleDisplay = document.getElementById('plan-title-display');
+
+            const hiddenPlanTitle = document.getElementById('hidden-plan-title');
+
+            const startDateField = document.getElementById('id_start_date');
+
+            const endDateField = document.getElementById('id_end_date');
+
+        
+
+            const planDetailsWindow = document.getElementById('plan-details-window');
+
+            const planDurationEl = document.getElementById('plan-duration');
+
+            const planDayTabsEl = document.getElementById('plan-day-tabs');
+
+            const planItineraryEl = document.getElementById('plan-itinerary');
+
+        
+
+            let allDayPlans = [];
+
+        
+
+            function displayItineraryForDay(dayIndex) {
+
+                planItineraryEl.innerHTML = '';
+
+                const dayPlan = allDayPlans[dayIndex];
+
+                if (!dayPlan) return;
+
+        
+
+                dayPlan.forEach(place => {
+
+                    const placeEl = document.createElement('div');
+
+                    placeEl.className = 'flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4';
+
+                    placeEl.innerHTML = `
+
+                        <h4 class="font-bold text-md text-slate-900 truncate">${place.name}</h4>
+
+                        <p class="text-sm text-gray-500">${place.category}</p>
+
+                        <p class="text-xs text-gray-500 mt-1 truncate">${place.address}</p>
+
+                    `;
+
+                    planItineraryEl.appendChild(placeEl);
+
+                });
+
+            }
+
+        
+
+            function handleDayTabClick(e) {
+
+                e.preventDefault();
+
+                document.querySelectorAll('.day-tab').forEach(t => {
+
+                    t.classList.remove('border-indigo-500', 'text-indigo-600');
+
+                    t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                });
+
+                e.target.classList.add('border-indigo-500', 'text-indigo-600');
+
+                e.target.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                
+
+                const dayIndex = parseInt(e.target.dataset.day, 10) - 1;
+
+                displayItineraryForDay(dayIndex);
+
+            }
+
+        
+
+            if (importBtn) {
+
+                importBtn.addEventListener('click', () => {
+
+                    modal.classList.remove('hidden');
+
+                });
+
+            }
+
+        
+
+            if (closeBtn) {
+
+                closeBtn.addEventListener('click', () => {
+
+                    modal.classList.add('hidden');
+
+                });
+
+            }
+
+        
+
+            if (modal) {
+
+                modal.addEventListener('click', function(event) {
+
+                    if (event.target === modal) {
+
+                        modal.classList.add('hidden');
+
+                    }
+
+                });
+
+            }
+
+        
+
+            selectBtns.forEach(btn => {
+
+                btn.addEventListener('click', function() {
+
+                    const planName = this.dataset.planName;
+
+                    
+
+                    // Set the non-editable part and the hidden input
+
+                    planTitleDisplay.textContent = `(${planName})`;
+
+                    hiddenPlanTitle.value = planName;
+
+        
+
+                    // Set dates
+
+                    if (startDateField) startDateField.value = this.dataset.startDate;
+
+                    if (endDateField) endDateField.value = this.dataset.endDate;
+
+                    
+
+                    // Show and populate plan details window
+
+                    planDetailsWindow.classList.remove('hidden');
+
+                    planDurationEl.textContent = `전체 일정: ${this.dataset.startDate} ~ ${this.dataset.endDate}`;
+
+                    
+
+                    allDayPlans = JSON.parse(this.dataset.dayPlans);
+
+                    planDayTabsEl.innerHTML = '';
+
+        
+
+                    if (allDayPlans.length > 0) {
+
+                        const nav = document.createElement('nav');
+
+                        nav.className = '-mb-px flex space-x-8';
+
+                        nav.setAttribute('aria-label', 'Tabs');
+
+        
+
+                        allDayPlans.forEach((_, index) => {
+
+                            const day = index + 1;
+
+                            const tabLink = document.createElement('a');
+
+                            tabLink.href = '#';
+
+                            tabLink.dataset.day = day;
+
+                            tabLink.className = 'day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
+
+                            if (index === 0) {
+
+                                tabLink.classList.add('border-indigo-500', 'text-indigo-600');
+
+                            } else {
+
+                                tabLink.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                            }
+
+                            tabLink.textContent = `${day}일차`;
+
+                            tabLink.addEventListener('click', handleDayTabClick);
+
+                            nav.appendChild(tabLink);
+
+                        });
+
+                        planDayTabsEl.appendChild(nav);
+
+        
+
+                        displayItineraryForDay(0);
+
+                    } else {
+
+                        planItineraryEl.innerHTML = '<p>이 플랜에는 상세 일정이 없습니다.</p>';
+
+                    }
+
+        
+
+                    modal.classList.add('hidden');
+
+                });
+
+            });
+
+        });
+
+        </script>
 {% endblock %}
