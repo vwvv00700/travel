@@ -1,18 +1,18 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load i18n %}
 {% block title %}나의 여행 계획{% endblock %}
 
 {% block content %}
 <!-- Page Title -->
 <div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/destination-20.webp' %});">
     <div class="container position-relative">
-        <h1>나의 여행 플랜</h1>
-        <p>내가 저장한 여행의 일정을 확인해보세요.</p>
+        <h1>{% trans "나의 여행 플랜" %}</h1>
+        <p>{% trans "내가 저장한 여행의 일정을 확인해보세요." %}</p>
         <nav class="breadcrumbs">
             <ol>
-                <li><a href="{% url 'main' %}">Home</a></li>
-                <li class="current">나의 여행 플랜</li>
+                <li><a href="{% url 'main' %}">{% trans "Home" %}</a></li>
+                <li class="current">{% trans "나의 여행 플랜" %}</li>
             </ol>
         </nav>
     </div>
@@ -23,7 +23,7 @@
 
         <div class="flex justify-between items-center mb-6">
             <a href="{% url 'select' %}" class="text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center btn-primary">
-                <i class="fa-solid fa-plus mr-2"></i> 여행 플랜 추천받기
+                <i class="fa-solid fa-plus mr-2"></i> {% trans "여행 플랜 추천받기" %}
             </a>
         </div>
 
@@ -37,9 +37,9 @@
                                 <img src="assets/img/travel/tour-1.webp" alt="Serene Beach Retreat" class="img-fluid" loading="lazy">
                             </div> -->
                             <div class="tour-content">
-                                <h4>{{ plan.areas_display }} 여행</h4>
+                                <h4>{{ plan.areas_display }} {% trans "여행" %}</h4>
                                 <div class="tour-meta">
-                                    <span class="duration"><i class="bi bi-clock"></i> {{ plan.total_days }} Days</span>
+                                    <span class="duration"><i class="bi bi-clock"></i> {{ plan.total_days }} {% trans "Days" %}</span>
                                     <span class="group-size"><i class="bi bi-people"></i> {{ plan.group }}</span>
                                 </div>
                                 <!-- <p>Mauris ipsum neque, cursus ac ipsum at, iaculis facilisis ligula. Suspendisse non sapien vel enim cursus semper.</p> -->
@@ -49,7 +49,7 @@
                                     {% endfor %}
                                 </div>
                                 <div class="tour-action">
-                                    <a href="booking.html" class="btn-book">상세보기</a>
+                                    <a href="#" class="btn-book">{% trans "상세보기" %}</a>
                                         <div class="tour-rating">
                                         <i class="bi bi-star"></i>
                                         <i class="bi bi-star"></i>
@@ -64,7 +64,7 @@
                         {% endfor %}
                     </div><!-- End Tour Item -->
                 {% else %}
-                    <p class="text-center text-slate-600 text-lg py-10">아직 생성된 여행 플랜이 없습니다. 새로운 플랜을 추천받아 보세요!</p>
+                    <p class="text-center text-slate-600 text-lg py-10">{% trans "아직 생성된 여행 플랜이 없습니다. 새로운 플랜을 추천받아 보세요!" %}</p>
                 {% endif %}
             </div>
         </section>

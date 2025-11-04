@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load i18n %}
 {% block title %}여행 다이어리 작성{% endblock %}
 
 {% block diary_style %}
@@ -97,12 +97,12 @@
 <!-- Page Title -->
 <div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/destination-16.webp' %});">
     <div class="container position-relative">
-        <h1>나만의 여행 다이어리 작성</h1>
-        <p>특별했던 여행의 순간을 기록해보세요</p>
+        <h1>{% trans "나만의 여행 다이어리 작성" %}</h1>
+        <p>{% trans "특별했던 여행의 순간을 기록해보세요" %}</p>
         <nav class="breadcrumbs">
             <ol>
-                <li><a href="{% url 'main' %}">Home</a></li>
-                <li class="current">여행 다이어리 작성</li>
+                <li><a href="{% url 'main' %}">{% trans "Home" %}</a></li>
+                <li class="current">{% trans "여행 다이어리 작성" %}</li>
             </ol>
         </nav>
     </div>
@@ -120,12 +120,12 @@
         {% csrf_token %}
         
         <div class="form-group">
-            <label class="form-label">제목</label>
+            <label class="form-label">{% trans "제목" %}</label>
             {{ form.name }}
         </div>
 
         <div class="form-group">
-            <label class="form-label">여행 날짜</label>
+            <label class="form-label">{% trans "여행 날짜" %}</label>
             <div class="flex gap-4 datetime-box">
                 {{ form.start_date }}
                 {{ form.end_date }}
@@ -133,11 +133,11 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">내용</label>
+            <label class="form-label">{% trans "내용" %}</label>
             {{ form.description }}
         </div>
 
-        <button type="submit" class="submit-btn">다이어리 저장하기</button>
+        <button type="submit" class="submit-btn">{% trans "다이어리 저장하기" %}</button>
     </form>
 </div>
 {% endblock %}
