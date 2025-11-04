@@ -670,10 +670,11 @@ def travel_diary_detail(request, pk):
     # travel_diary = get_object_or_404(Travel, pk=pk, author=request.user)
     travel_diary = get_object_or_404(Travel, pk=pk, author_id=request.user.id)
     diary_entries = travel_diary.diary_entries.all().order_by('timestamp')
+    media_entries = diary_entries.filter(media_file__isnull=False).exclude(media_file__exact='')
 
     # Group entries by date
     grouped_entries = defaultdict(list)
-    for entry in diary_entries:
+    for entry in media_entries:
         if entry.timestamp:
             grouped_entries[entry.timestamp.date()].append(entry)
 
@@ -685,7 +686,7 @@ def travel_diary_detail(request, pk):
     
     # Prepare data for JavaScript map (ensure photo__url is correctly accessed)
     diary_entries_data = []
-    for entry in diary_entries:
+    for entry in media_entries:
         diary_entries_data.append({
             'id': entry.id,
             'location': entry.location,
@@ -703,11 +704,29 @@ def travel_diary_detail(request, pk):
 
     print("DEBUG: diary_entries_json content:", diary_entries_json) # Debug print
 
+    processed_plan_data = None
+    if travel_diary.plan:
+        plan = travel_diary.plan
+        english_areas = plan.user_query.get('areas', []) if plan.user_query else []
+        korean_areas = []
+        for area_key in english_areas:
+            korean_name = AREA_LABELS.get(area_key, area_key)
+            korean_areas.append(korean_name)
+        areas_display = ", ".join(korean_areas) if korean_areas else "전체 지역"
+
+        processed_plan_data = {
+            'name': plan.title,
+            'start_date': travel_diary.start_date.strftime('%Y-%m-%d') if travel_diary.start_date else '',
+            'end_date': travel_diary.end_date.strftime('%Y-%m-%d') if travel_diary.end_date else '',
+            'areas_display': areas_display,
+        }
+
     return render(request, 'travel/travel_diary_detail.html', {
         'travel_diary': travel_diary,
         'travel_plan': travel_diary.plan, # Pass the plan to the template
         'entries_by_date': entries_by_date,
         'diary_entries_json': diary_entries_json,
+        'processed_plan_data': processed_plan_data,
     })
 
 @login_required # Ensure user is logged in to view their diary
