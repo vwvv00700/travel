@@ -106,7 +106,7 @@
 
         <!-- Plan Details Information Window -->
         <div id="plan-details-window" class="hidden mb-6 p-6 bg-white rounded-lg shadow-md border border-slate-200">
-            <h2 class="text-2xl font-bold text-slate-800 mb-4">선택된 여행 플랜 정보</h2>
+            <h2 id="plan-details-title" class="text-2xl font-bold text-slate-800 mb-4">선택된 여행 플랜 정보</h2>
             <div id="plan-duration" class="mb-4 text-slate-600"></div>
             <div id="plan-day-tabs" class="border-b border-gray-200 mb-4"></div>
             <div id="plan-itinerary" class="flex overflow-x-auto space-x-4 p-2"></div>
@@ -212,279 +212,291 @@
 
                                     </div>
 
-                                    <button type="button" class="select-plan-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded"
+                                                                <button type="button" class="select-plan-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded"
 
-                                        data-plan-name="{{ plan.name }}"
+                                                                    data-plan-name="{{ plan.name }}"
 
-                                        data-start-date="{{ plan.start_date }}"
+                                                                    data-start-date="{{ plan.start_date }}"
 
-                                        data-end-date="{{ plan.end_date }}"
+                                                                    data-end-date="{{ plan.end_date }}"
 
-                                        data-day-plans='{{ plan.day_plans_json|safe }}'>
+                                                                    data-day-plans='{{ plan.day_plans_json|safe }}'
 
-                                        선택
+                                                                    data-areas-display="{{ plan.areas_display }}">
 
-                                    </button>
+                                                                    선택
 
-                                </li>
+                                                                </button>
 
-                            {% endfor %}
+                                                            </li>
 
-                        </ul>
+                                                        {% endfor %}
 
-                    {% else %}
+                                                    </ul>
 
-                        <p>가져올 수 있는 여행 플랜이 없습니다.</p>
+                                                {% else %}
 
-                    {% endif %}
+                                                    <p>가져올 수 있는 여행 플랜이 없습니다.</p>
 
-                </div>
+                                                {% endif %}
 
-            </div>
+                                            </div>
 
-        </div>
+                                        </div>
 
-        
+                                    </div>
 
-        <script>
+                                    
 
-        document.addEventListener('DOMContentLoaded', function() {
+                                    <script>
 
-            const importBtn = document.getElementById('import-plan-btn');
+                                    document.addEventListener('DOMContentLoaded', function() {
 
-            const modal = document.getElementById('import-plan-modal');
+                                        const importBtn = document.getElementById('import-plan-btn');
 
-            const closeBtn = document.getElementById('import-plan-close-btn');
+                                        const modal = document.getElementById('import-plan-modal');
 
-            const selectBtns = document.querySelectorAll('.select-plan-btn');
+                                        const closeBtn = document.getElementById('import-plan-close-btn');
 
-        
+                                        const selectBtns = document.querySelectorAll('.select-plan-btn');
 
-            const nameField = document.getElementById('id_name');
+                                    
 
-            const planTitleDisplay = document.getElementById('plan-title-display');
+                                        const nameField = document.getElementById('id_name');
 
-            const hiddenPlanTitle = document.getElementById('hidden-plan-title');
+                                        const planTitleDisplay = document.getElementById('plan-title-display');
 
-            const startDateField = document.getElementById('id_start_date');
+                                        const hiddenPlanTitle = document.getElementById('hidden-plan-title');
 
-            const endDateField = document.getElementById('id_end_date');
+                                        const startDateField = document.getElementById('id_start_date');
 
-        
+                                        const endDateField = document.getElementById('id_end_date');
 
-            const planDetailsWindow = document.getElementById('plan-details-window');
+                                    
 
-            const planDurationEl = document.getElementById('plan-duration');
+                                        const planDetailsWindow = document.getElementById('plan-details-window');
 
-            const planDayTabsEl = document.getElementById('plan-day-tabs');
+                                        const planDetailsTitle = document.getElementById('plan-details-title'); // New ID for the h2
 
-            const planItineraryEl = document.getElementById('plan-itinerary');
+                                        const planDurationEl = document.getElementById('plan-duration');
 
-        
+                                        const planDayTabsEl = document.getElementById('plan-day-tabs');
 
-            let allDayPlans = [];
+                                        const planItineraryEl = document.getElementById('plan-itinerary');
 
-        
+                                    
 
-            function displayItineraryForDay(dayIndex) {
+                                        let allDayPlans = [];
 
-                planItineraryEl.innerHTML = '';
+                                    
 
-                const dayPlan = allDayPlans[dayIndex];
+                                        function displayItineraryForDay(dayIndex) {
 
-                if (!dayPlan) return;
+                                            planItineraryEl.innerHTML = '';
 
-        
+                                            const dayPlan = allDayPlans[dayIndex];
 
-                dayPlan.forEach(place => {
+                                            if (!dayPlan) return;
 
-                    const placeEl = document.createElement('div');
+                                    
 
-                    placeEl.className = 'flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4';
+                                            dayPlan.forEach(place => {
 
-                    placeEl.innerHTML = `
+                                                const placeEl = document.createElement('div');
 
-                        <h4 class="font-bold text-md text-slate-900 truncate">${place.name}</h4>
+                                                placeEl.className = 'flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4';
 
-                        <p class="text-sm text-gray-500">${place.category}</p>
+                                                placeEl.innerHTML = `
 
-                        <p class="text-xs text-gray-500 mt-1 truncate">${place.address}</p>
+                                                    <h4 class="font-bold text-md text-slate-900 truncate">${place.name}</h4>
 
-                    `;
+                                                    <p class="text-sm text-gray-500">${place.category}</p>
 
-                    planItineraryEl.appendChild(placeEl);
+                                                    <p class="text-xs text-gray-500 mt-1 truncate">${place.address}</p>
 
-                });
+                                                `;
 
-            }
+                                                planItineraryEl.appendChild(placeEl);
 
-        
+                                            });
 
-            function handleDayTabClick(e) {
+                                        }
 
-                e.preventDefault();
+                                    
 
-                document.querySelectorAll('.day-tab').forEach(t => {
+                                        function handleDayTabClick(e) {
 
-                    t.classList.remove('border-indigo-500', 'text-indigo-600');
+                                            e.preventDefault();
 
-                    t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                                            document.querySelectorAll('.day-tab').forEach(t => {
 
-                });
+                                                t.classList.remove('border-indigo-500', 'text-indigo-600');
 
-                e.target.classList.add('border-indigo-500', 'text-indigo-600');
+                                                t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
 
-                e.target.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                                            });
 
-                
+                                            e.target.classList.add('border-indigo-500', 'text-indigo-600');
 
-                const dayIndex = parseInt(e.target.dataset.day, 10) - 1;
+                                            e.target.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
 
-                displayItineraryForDay(dayIndex);
+                                            
 
-            }
+                                            const dayIndex = parseInt(e.target.dataset.day, 10) - 1;
 
-        
+                                            displayItineraryForDay(dayIndex);
 
-            if (importBtn) {
+                                        }
 
-                importBtn.addEventListener('click', () => {
+                                    
 
-                    modal.classList.remove('hidden');
+                                        if (importBtn) {
 
-                });
+                                            importBtn.addEventListener('click', () => {
 
-            }
+                                                modal.classList.remove('hidden');
 
-        
+                                            });
 
-            if (closeBtn) {
+                                        }
 
-                closeBtn.addEventListener('click', () => {
+                                    
 
-                    modal.classList.add('hidden');
+                                        if (closeBtn) {
 
-                });
+                                            closeBtn.addEventListener('click', () => {
 
-            }
+                                                modal.classList.add('hidden');
 
-        
+                                            });
 
-            if (modal) {
+                                        }
 
-                modal.addEventListener('click', function(event) {
+                                    
 
-                    if (event.target === modal) {
+                                        if (modal) {
 
-                        modal.classList.add('hidden');
+                                            modal.addEventListener('click', function(event) {
 
-                    }
+                                                if (event.target === modal) {
 
-                });
+                                                    modal.classList.add('hidden');
 
-            }
+                                                }
 
-        
+                                            });
 
-            selectBtns.forEach(btn => {
+                                        }
 
-                btn.addEventListener('click', function() {
+                                    
 
-                    const planName = this.dataset.planName;
+                                        selectBtns.forEach(btn => {
 
-                    
+                                            btn.addEventListener('click', function() {
 
-                    // Set the non-editable part and the hidden input
+                                                const planName = this.dataset.planName;
 
-                    planTitleDisplay.textContent = `(${planName})`;
+                                                const areasDisplay = this.dataset.areasDisplay;
 
-                    hiddenPlanTitle.value = planName;
+                                                
 
-        
+                                                // Set the non-editable part and the hidden input
 
-                    // Set dates
+                                                planTitleDisplay.textContent = `(${planName})`;
 
-                    if (startDateField) startDateField.value = this.dataset.startDate;
+                                                hiddenPlanTitle.value = planName;
 
-                    if (endDateField) endDateField.value = this.dataset.endDate;
+                                    
 
-                    
+                                                // Set dates
 
-                    // Show and populate plan details window
+                                                if (startDateField) startDateField.value = this.dataset.startDate;
 
-                    planDetailsWindow.classList.remove('hidden');
+                                                if (endDateField) endDateField.value = this.dataset.endDate;
 
-                    planDurationEl.textContent = `전체 일정: ${this.dataset.startDate} ~ ${this.dataset.endDate}`;
+                                                
 
-                    
+                                                // Show and populate plan details window
 
-                    allDayPlans = JSON.parse(this.dataset.dayPlans);
+                                                planDetailsWindow.classList.remove('hidden');
 
-                    planDayTabsEl.innerHTML = '';
+                                                if (planDetailsTitle) {
 
-        
+                                                    planDetailsTitle.textContent = `${planName} (${areasDisplay})`;
 
-                    if (allDayPlans.length > 0) {
+                                                }
 
-                        const nav = document.createElement('nav');
+                                                planDurationEl.textContent = `전체 일정: ${this.dataset.startDate} ~ ${this.dataset.endDate}`;
 
-                        nav.className = '-mb-px flex space-x-8';
+                                                
 
-                        nav.setAttribute('aria-label', 'Tabs');
+                                                allDayPlans = JSON.parse(this.dataset.dayPlans);
 
-        
+                                                planDayTabsEl.innerHTML = '';
 
-                        allDayPlans.forEach((_, index) => {
+                                    
 
-                            const day = index + 1;
+                                                if (allDayPlans.length > 0) {
 
-                            const tabLink = document.createElement('a');
+                                                    const nav = document.createElement('nav');
 
-                            tabLink.href = '#';
+                                                    nav.className = '-mb-px flex space-x-8';
 
-                            tabLink.dataset.day = day;
+                                                    nav.setAttribute('aria-label', 'Tabs');
 
-                            tabLink.className = 'day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
+                                    
 
-                            if (index === 0) {
+                                                    allDayPlans.forEach((_, index) => {
 
-                                tabLink.classList.add('border-indigo-500', 'text-indigo-600');
+                                                        const day = index + 1;
 
-                            } else {
+                                                        const tabLink = document.createElement('a');
 
-                                tabLink.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                                                        tabLink.href = '#';
 
-                            }
+                                                        tabLink.dataset.day = day;
 
-                            tabLink.textContent = `${day}일차`;
+                                                        tabLink.className = 'day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
 
-                            tabLink.addEventListener('click', handleDayTabClick);
+                                                        if (index === 0) {
 
-                            nav.appendChild(tabLink);
+                                                            tabLink.classList.add('border-indigo-500', 'text-indigo-600');
 
-                        });
+                                                        } else {
 
-                        planDayTabsEl.appendChild(nav);
+                                                            tabLink.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
 
-        
+                                                        }
 
-                        displayItineraryForDay(0);
+                                                        tabLink.textContent = `${day}일차`;
 
-                    } else {
+                                                        tabLink.addEventListener('click', handleDayTabClick);
 
-                        planItineraryEl.innerHTML = '<p>이 플랜에는 상세 일정이 없습니다.</p>';
+                                                        nav.appendChild(tabLink);
 
-                    }
+                                                    });
 
-        
+                                                    planDayTabsEl.appendChild(nav);
 
-                    modal.classList.add('hidden');
+                                    
 
-                });
+                                                    displayItineraryForDay(0);
 
-            });
+                                                } else {
 
-        });
+                                                    planItineraryEl.innerHTML = '<p>이 플랜에는 상세 일정이 없습니다.</p>';
 
-        </script>
+                                                }
+
+                                    
+
+                                                modal.classList.add('hidden');
+
+                                            });
+
+                                        });
+
+                                    });
+
+                                    </script>
 {% endblock %}

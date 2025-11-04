@@ -630,11 +630,19 @@ def create_travel_diary(request):
     
     processed_plans = []
     for p in user_plan_qs:
+        english_areas = p.plan.user_query.get('areas', [])
+        korean_areas = []
+        for area_key in english_areas:
+            korean_name = AREA_LABELS.get(area_key, area_key)
+            korean_areas.append(korean_name)
+        areas_display = ", ".join(korean_areas) if korean_areas else "전체 지역"
+
         processed_plans.append({
             'name': p.plan.title,
             'start_date': p.start_date.strftime('%Y-%m-%d'),
             'end_date': p.end_date.strftime('%Y-%m-%d'),
             'day_plans_json': json.dumps(p.plan.data.get('day_plans', [])),
+            'areas_display': areas_display,
         })
 
     if request.method == 'POST':
