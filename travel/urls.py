@@ -14,6 +14,7 @@ urlpatterns = [
     path('llm-analysis/', views.analyze_selected_places_view, name='llm_analysis'),
     
     # 다이어리
+    path("create_diary_from_plan/<int:plan_id>/", views.create_diary_from_plan, name="create_diary_from_plan"),
     path("upload/", views.upload_diary_entry, name="upload_diary_entry"),
     path("upload/<int:travel_id>/", views.upload_diary_entry, name="upload_diary_entry_to_travel"),
     path("diary/", views.diary_list, name="diary_list"),

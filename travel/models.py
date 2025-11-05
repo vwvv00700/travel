@@ -260,6 +260,7 @@ class Tag(models.Model):
 
 # ----- 다이어리 목록 ------------------------------------------
 class Travel(models.Model):
+    plan = models.ForeignKey('TravelPlan', on_delete=models.SET_NULL, null=True, blank=True, related_name='diaries')
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     start_date = models.DateField(null=True, blank=True)
@@ -272,23 +273,6 @@ class Travel(models.Model):
         verbose_name = '다이어리 목록'
         verbose_name_plural = '다이어리 목록'
         default_permissions = ()
-
-
-# # ----- 여행 계획 ------------------------------------------
-class TravelPlan(models.Model):
-    title = models.CharField(max_length=100)
-    destination = models.CharField(max_length=100)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    description = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Travel Plan"
-        verbose_name_plural = "Travel Plans"
-
-    def __str__(self):
-        return f"{self.title} ({self.destination})"
 
 # ----- 다이어리 ------------------------------------------
 class DiaryEntry(models.Model):

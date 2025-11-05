@@ -40,4 +40,9 @@ class Migration(migrations.Migration):
             name="travel_plan2_pk",
             field=models.IntegerField(blank=True, null=True),
         ),
+        # migrations.AddField(
+        #     model_name='travel',
+        #     name='plan',
+        #     field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='diaries', to='travel.travelplan'),
+        # ),
     ]

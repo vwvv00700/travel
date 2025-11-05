@@ -110,7 +110,7 @@
                             </form>
                         </ul>
                     </li>
-                    <li><a href="{% url 'admin:index' %}">{% trans "어드민" %}</a></li>
+                    <!-- <li><a href="{% url 'admin:index' %}">{% trans "어드민" %}</a></li> -->
                 {% if user.is_authenticated %}
                     <li><a href="{% url 'select' %}">{% trans "AI 코스 추천" %}</a></li>
                     <li class="dropdown"><a href="#"><span>{{ user.username }}</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>

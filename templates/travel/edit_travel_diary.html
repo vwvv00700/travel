@@ -3,6 +3,21 @@
 {% load i18n %}
 {% block title %}다이어리 수정{% endblock %}
 
+{% block diary_style %}
+<link href="{% static 'css/diary.css' %}" rel="stylesheet">
+<style>
+    .edit-diary{display: flex; flex-direction: column; gap: 10px;}
+    .edit-diary p{display: flex; gap: 10px;}
+    .edit-diary p label {font-weight: 700;}
+    .edit-diary p:nth-child(3){flex-direction: column;}
+    .edit-diary p:nth-child(2), .edit-diary p:nth-child(4),
+    .edit-diary p:nth-child(5){align-items: center;}
+    #id_description{width: 100%; border: 1px solid #d1d5db; border-radius: 5px; resize: none; padding: 10px; box-sizing: border-box;}
+    #id_start_date, #id_end_date, #id_name {width: 100%; border: 1px solid #d1d5db; border-radius: 5px; box-sizing: border-box; line-height: 40px; padding: 5px 15px;}
+    label[for="id_start_date"], label[for="id_end_date"]{width: 100px;}
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Page Title -->
 <div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/destination-16.webp' %});">
@@ -20,7 +35,7 @@
 <section>
     <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md border border-slate-200">
         <h1 class="text-3xl font-bold text-slate-800 mb-6 text-center">{{ travel_diary.name }} {% trans "다이어리 수정" %}</h1>
-        <form method="post" class="space-y-6">
+        <form method="post" class="space-y-6 edit-diary">
             {% csrf_token %}
             {% if form.non_field_errors %}
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -30,8 +45,10 @@
                 </div>
             {% endif %}
             {{ form.as_p }}
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out">{% trans "수정 완료" %}</button>
-            <a href="{% url 'travel:travel_diary_detail' pk=travel_diary.pk %}" class="w-full block text-center bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out mt-2">{% trans "취소" %}</a>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out">{% trans "수정 완료" %}</button>
+                <a href="{% url 'travel:travel_diary_detail' pk=travel_diary.pk %}" class="w-full block text-center bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out">{% trans "취소" %}</a>
+            </div>
         </form>
     </div>
 </section>

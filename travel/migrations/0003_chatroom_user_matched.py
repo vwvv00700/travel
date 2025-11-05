@@ -15,4 +15,8 @@ class Migration(migrations.Migration):
             name="user_matched",
             field=models.BooleanField(default=True),
         ),
+        # migrations.RemoveField(
+        #     model_name='travel',
+        #     name='plan',
+        # ),
     ]

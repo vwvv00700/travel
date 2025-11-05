@@ -85,3 +85,8 @@
     transition: all 0.3s;
     resize: none;
 }
+
+#id_comment {
+    width: 100%;
+    resize: none;
+}

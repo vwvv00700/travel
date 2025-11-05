@@ -23,6 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.db import transaction # 트랜잭션을 사용해 안전하게 처리
 from django.utils.safestring import mark_safe
+from django.db import connections
 
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
@@ -586,63 +587,274 @@ def analyze_selected_places_view(request):
     # 알 수 없는 action → 선택화면
     return redirect(request.path)
 
+from datetime import datetime, timedelta
+
+@login_required
+def create_diary_from_plan(request, plan_id):
+    user_plan = get_object_or_404(UserSelectedPlan, id=plan_id, user=request.user)
+    travel_plan = user_plan.plan
+
+    # Check if a diary already exists for this plan
+    existing_diary = Travel.objects.filter(plan=travel_plan, author_id=request.user.id).first()
+    if existing_diary:
+        messages.info(request, "이 플랜에 대한 다이어리가 이미 존재합니다.")
+        return redirect('travel:travel_diary_detail', pk=existing_diary.pk)
+
+    # Create a new Travel diary
+    new_diary = Travel.objects.create(
+        plan=travel_plan,
+        name=travel_plan.title,
+        start_date=user_plan.start_date,
+        end_date=user_plan.end_date,
+        author_id=request.user.id
+    )
+
+    # Create DiaryEntry for each place in the plan
+    if 'day_plans' in travel_plan.data:
+        for day_index, day_plan in enumerate(travel_plan.data['day_plans']):
+            current_date = user_plan.start_date + timedelta(days=day_index)
+            for place_data in day_plan:
+                DiaryEntry.objects.create(
+                    diary=new_diary,
+                    author_id=request.user.id,
+                    location=place_data.get('name'),
+                    timestamp=datetime.combine(current_date, datetime.min.time()).replace(hour=12), # Noon
+                    latitude=place_data.get('lat'),
+                    longitude=place_data.get('lng'),
+                )
+
+    messages.success(request, "여행 플랜에서 다이어리를 성공적으로 생성했습니다.")
+    return redirect('travel:travel_diary_detail', pk=new_diary.pk)
+
+
+def ensure_plan_available(plan_pk):
+    """
+    diary_db에 TravelPlan 레코드가 존재하도록 보장한다.
+    기본 DB(default)에만 존재하는 경우 복제하여 반환한다.
+    """
+    if not plan_pk:
+        return None
+
+    try:
+        plan_id = int(plan_pk)
+    except (TypeError, ValueError):
+        return None
+
+    existing_plan = TravelPlan.objects.using('diary_db').filter(pk=plan_id).first()
+    if existing_plan:
+        return existing_plan
+
+    try:
+        source_plan = TravelPlan.objects.using('default').get(pk=plan_id)
+    except TravelPlan.DoesNotExist:
+        return None
+
+    plan_clone = TravelPlan(
+        id=source_plan.pk,
+        title=source_plan.title,
+        user_query=source_plan.user_query,
+        data=source_plan.data,
+        created_at=source_plan.created_at,
+    )
+    # auth_user 테이블이 diary_db에 없으므로 FK 충돌을 피하기 위해 owner 정보는 비워 둔다.
+    plan_clone.owner_id = None
+
+    diary_conn = connections['diary_db']
+    try:
+        with diary_conn.cursor() as cursor:
+            cursor.execute('PRAGMA foreign_keys=OFF')
+        plan_clone.save(using='diary_db', force_insert=True)
+    finally:
+        with diary_conn.cursor() as cursor:
+            cursor.execute('PRAGMA foreign_keys=ON')
+
+    return plan_clone
+
+
 @login_required
 def create_travel_diary(request):
+    user_plan_qs = UserSelectedPlan.objects.filter(user=request.user).order_by('-selected_at')
+    
+    processed_plans = []
+    for p in user_plan_qs:
+        english_areas = p.plan.user_query.get('areas', [])
+        korean_areas = []
+        for area_key in english_areas:
+            korean_name = AREA_LABELS.get(area_key, area_key)
+            korean_areas.append(korean_name)
+        areas_display = ", ".join(korean_areas) if korean_areas else "전체 지역"
+
+        processed_plans.append({
+            'plan_id': p.plan.id,
+            'name': p.plan.title,
+            'start_date': p.start_date.strftime('%Y-%m-%d'),
+            'end_date': p.end_date.strftime('%Y-%m-%d'),
+            'day_plans_json': json.dumps(p.plan.data.get('day_plans', [])),
+            'areas_display': areas_display,
+        })
+
     if request.method == 'POST':
-        form = TravelForm(request.POST)
+        post_data = request.POST.copy()
+        user_title = post_data.get('name', '').strip()
+        plan_title = post_data.get('plan_title', '').strip()
+
+        if plan_title:
+            full_title = f"{user_title} ({plan_title})" if user_title else f"({plan_title})"
+            post_data['name'] = full_title.strip()
+
+        form = TravelForm(post_data)
         if form.is_valid():
             travel_diary = form.save(commit=False)
-            # travel_diary.author = request.user
             travel_diary.author_id = request.user.id
-            travel_diary.save()  # 라우터가 diary_db로 자동 라우팅
+
+            plan_id_raw = post_data.get('plan_id')
+            try:
+                plan_id_val = int(plan_id_raw) if plan_id_raw else None
+            except (TypeError, ValueError):
+                plan_id_val = None
+
+            if plan_id_val:
+                synced_plan = ensure_plan_available(plan_id_val)
+                if synced_plan:
+                    travel_diary.plan_id = synced_plan.pk
+
+            travel_diary.save()
             return redirect('travel:diary_home')
     else:
         form = TravelForm()
-    return render(request, 'travel/create_travel_diary.html', {'form': form})
+    
+    return render(request, 'travel/create_travel_diary.html', {'form': form, 'user_plans': processed_plans})
 
 @login_required
 def travel_diary_detail(request, pk):
-    # travel_diary = get_object_or_404(Travel, pk=pk, author=request.user)
     travel_diary = get_object_or_404(Travel, pk=pk, author_id=request.user.id)
     diary_entries = travel_diary.diary_entries.all().order_by('timestamp')
+    media_entries = diary_entries.filter(media_file__isnull=False).exclude(media_file__exact='')
 
-    # Group entries by date
+    # Group entries by date for the timeline view
     grouped_entries = defaultdict(list)
-    for entry in diary_entries:
+    for entry in media_entries:
         if entry.timestamp:
             grouped_entries[entry.timestamp.date()].append(entry)
 
-    # Sort dates for consistent display
-    sorted_dates = sorted(grouped_entries.keys())
+    # Try to find the associated travel plan
+    display_plan = travel_diary.plan
+    if not display_plan:
+        # Fallback logic to find a plan if not directly linked
+        plan_title_hint = None
+        if travel_diary.name:
+            match = re.search(r'\(([^)]+)\)\s*$', travel_diary.name)
+            if match:
+                plan_title_hint = match.group(1).strip()
 
-    # Prepare data for template: list of (date, entries_for_date) tuples
-    entries_by_date = [(date, grouped_entries[date]) for date in sorted_dates]
-    
-    # Prepare data for JavaScript map (ensure photo__url is correctly accessed)
-    diary_entries_data = []
-    for entry in diary_entries:
-        diary_entries_data.append({
+        candidate_qs = UserSelectedPlan.objects.filter(user=request.user).select_related('plan').order_by('-selected_at')
+        if travel_diary.start_date:
+            candidate_qs = candidate_qs.filter(start_date=travel_diary.start_date)
+        if travel_diary.end_date:
+            candidate_qs = candidate_qs.filter(end_date=travel_diary.end_date)
+        if plan_title_hint:
+            candidate_qs = candidate_qs.filter(plan__title=plan_title_hint)
+
+        candidate = candidate_qs.first()
+        if candidate:
+            display_plan = candidate.plan
+            # Optionally link it for future lookups
+            travel_diary.plan = ensure_plan_available(candidate.plan_id)
+            travel_diary.save(update_fields=['plan'])
+
+    # --- New Combined Data Structure for Timeline ---
+    combined_days = []
+    unmatched_entries = []
+    remaining_entries = grouped_entries.copy()
+
+    if display_plan and travel_diary.start_date and isinstance(display_plan.data, dict):
+        plan_day_plans = display_plan.data.get('day_plans', []) or []
+        if isinstance(plan_day_plans, list):
+            for i, day_plan_stops in enumerate(plan_day_plans):
+                current_date = travel_diary.start_date + timedelta(days=i)
+                combined_days.append({
+                    "day_index": i,
+                    "day_number": i + 1,
+                    "date": current_date,
+                    "plan_stops": day_plan_stops,
+                    "diary_entries": grouped_entries.get(current_date, [])
+                })
+                if current_date in remaining_entries:
+                    del remaining_entries[current_date]
+
+    for date, entries in sorted(remaining_entries.items()):
+        unmatched_entries.extend(entries)
+
+    # --- New Unified Location Data for Map ---
+    map_locations = {}
+
+    # 1. Process plan locations
+    if display_plan and isinstance(display_plan.data, dict):
+        plan_day_plans = display_plan.data.get('day_plans', []) or []
+        for day_plan in plan_day_plans:
+            for place in day_plan:
+                try:
+                    lat, lon = place.get('lat'), place.get('lng')
+                    if lat and lon:
+                        key = f"{float(lat):.6f},{float(lon):.6f}"
+                        if key not in map_locations:
+                            map_locations[key] = {
+                                'lat': lat,
+                                'lon': lon,
+                                'name': place.get('name'),
+                                'type': 'plan', # Initially marked as plan
+                                'plan_details': place,
+                                'diary_entries': []
+                            }
+                except (ValueError, TypeError):
+                    continue # Skip if lat/lon are invalid
+
+    # 2. Process diary entries and merge
+    diary_entries_data_for_map = []
+    for entry in media_entries:
+        entry_data = {
             'id': entry.id,
             'location': entry.location,
-            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %i분") if entry.timestamp else '',
+            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %M분") if entry.timestamp else '',
             'latitude': entry.latitude,
             'longitude': entry.longitude,
-            # 'photo_url': entry.photo.url if entry.photo else '',
-            # 'comment': entry.comment
             'media_url': entry.media_file.url if entry.media_file else '',
             'media_type': entry.media_type,
             'comment': entry.comment,
             'tags': [tag.name for tag in entry.tags.all()]
-        })
-    diary_entries_json = json.dumps(diary_entries_data)
+        }
+        diary_entries_data_for_map.append(entry_data)
 
-    print("DEBUG: diary_entries_json content:", diary_entries_json) # Debug print
+        if entry.latitude is not None and entry.longitude is not None:
+            try:
+                key = f"{float(entry.latitude):.6f},{float(entry.longitude):.6f}"
+                if key in map_locations:
+                    # Location exists from plan, update type to 'both'
+                    map_locations[key]['type'] = 'both'
+                    map_locations[key]['diary_entries'].append(entry_data)
+                else:
+                    # New location only from diary
+                    map_locations[key] = {
+                        'lat': entry.latitude,
+                        'lon': entry.longitude,
+                        'name': entry.location or '위치 정보 없음',
+                        'type': 'diary',
+                        'plan_details': None,
+                        'diary_entries': [entry_data]
+                    }
+            except (ValueError, TypeError):
+                continue # Skip if lat/lon are invalid
 
-    return render(request, 'travel/travel_diary_detail.html', {
+    context = {
         'travel_diary': travel_diary,
-        'entries_by_date': entries_by_date,
-        'diary_entries_json': diary_entries_json,
-    })
+        'combined_days': combined_days,
+        'unmatched_entries': unmatched_entries,
+        'travel_plan': display_plan,
+        'map_locations_json': json.dumps(list(map_locations.values()), ensure_ascii=False),
+        'diary_entries_json': json.dumps(diary_entries_data_for_map, ensure_ascii=False), # Keep for original side panel logic if needed
+    }
+
+    return render(request, 'travel/travel_diary_detail.html', context)
 
 @login_required # Ensure user is logged in to view their diary
 def diary_list(request):
@@ -1099,6 +1311,7 @@ def user_travel_plans(request):
         plan_id = plan.id
 
         processed_plan = {
+            'plan_id': plan.id,
             'areas_display': areas_display,      
             'combined_tags': combined_tags,      
             'season': season,
