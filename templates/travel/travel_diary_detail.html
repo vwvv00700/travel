@@ -134,6 +134,32 @@
 
         <!-- Location Sort View -->
         <div id="location-sort-view" class="diary-view hidden">
+            <!-- Map Controls: Filter and Legend -->
+            <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                <!-- Filter Buttons -->
+                <div id="map-filter-buttons" class="flex items-center space-x-2">
+                    <button data-filter="all" class="map-filter-btn bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold shadow-md">전체</button>
+                    <button data-filter="plan" class="map-filter-btn bg-white text-gray-700 px-4 py-2 rounded-md text-sm font-semibold border border-gray-300">계획</button>
+                    <button data-filter="diary" class="map-filter-btn bg-white text-gray-700 px-4 py-2 rounded-md text-sm font-semibold border border-gray-300">다이어리</button>
+                </div>
+
+                <!-- Map Legend -->
+                <div id="map-legend" class="flex items-center space-x-4 p-2 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center">
+                        <img src="{% static 'markers/marker1.png' %}" alt="Plan Marker" class="w-5 h-5 mr-1">
+                        <span class="text-xs text-gray-600">계획</span>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="{% static 'markers/marker2.png' %}" alt="Diary Marker" class="w-5 h-5 mr-1">
+                        <span class="text-xs text-gray-600">다이어리</span>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="{% static 'markers/marker3.png' %}" alt="Both Marker" class="w-5 h-5 mr-1">
+                        <span class="text-xs text-gray-600">계획+다이어리</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex flex-col md:flex-row gap-6">
                 <div id="map" class="w-full md:w-1/2 h-[500px] rounded-lg shadow-md"></div>
                 <div id="location-photos" class="w-full md:w-1/2 h-[500px] overflow-y-auto bg-slate-50 p-4 rounded-lg shadow-md border border-slate-200">
@@ -161,6 +187,7 @@
         let clusterer = null;
         let markers = [];
         let currentInfowindow = null;
+        let currentFilter = 'all'; // Initial filter
 
         const markerImagePaths = {
             plan: '{% static "markers/marker1.png" %}',
@@ -179,16 +206,12 @@
                 minLevel: 5,
                 disableClickZoom: true
             });
-            displayMarkers();
+            createMarkers(); // Create all markers once
+            displayMarkers(); // Initial display with 'all' filter
         }
 
-        function displayMarkers() {
-            if (!clusterer) return;
-            clusterer.clear();
-            markers = [];
-            const bounds = new kakao.maps.LatLngBounds();
-
-            mapLocations.forEach(locData => {
+        function createMarkers() {
+            markers = mapLocations.map(locData => {
                 const position = new kakao.maps.LatLng(locData.lat, locData.lon);
                 const imageSrc = markerImagePaths[locData.type] || markerImagePaths.diary;
                 const imageSize = new kakao.maps.Size(32, 32);
@@ -215,18 +238,35 @@
                     currentInfowindow = infowindow;
                     displayLocationDetails(locData);
                 });
+                return marker;
+            });
+        }
 
-                markers.push(marker);
-                bounds.extend(position);
+        function displayMarkers() {
+            if (!clusterer) return;
+            clusterer.clear();
+            const bounds = new kakao.maps.LatLngBounds();
+
+            const filteredMarkers = markers.filter(marker => {
+                const type = marker.locationData.type;
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'plan') return type === 'plan' || type === 'both';
+                if (currentFilter === 'diary') return type === 'diary' || type === 'both';
+                return true;
             });
 
-            clusterer.addMarkers(markers);
-            if (!bounds.isEmpty()) map.setBounds(bounds);
-
-            kakao.maps.event.addListener(clusterer, 'clusterclick', function(cluster) {
-                const clusteredLocs = cluster.getMarkers().map(m => m.locationData);
-                displayClusteredDetails(clusteredLocs);
+            filteredMarkers.forEach(marker => {
+                bounds.extend(marker.getPosition());
             });
+
+            clusterer.addMarkers(filteredMarkers);
+            if (filteredMarkers.length > 0 && !bounds.isEmpty()) {
+                map.setBounds(bounds);
+            } else if (filteredMarkers.length === 0) {
+                // If no markers, center on Seoul
+                map.setCenter(new kakao.maps.LatLng(37.5665, 126.9780));
+                map.setLevel(9);
+            }
         }
 
         function displayLocationDetails(locData) {
@@ -322,7 +362,56 @@
         timeSortBtn.addEventListener('click', showTimeSortView);
         locationSortBtn.addEventListener('click', showLocationSortView);
 
+        // --- MAP FILTER BUTTON LOGIC ---
+        const filterButtons = document.querySelectorAll('.map-filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                currentFilter = this.dataset.filter;
+                displayMarkers();
+
+                // Update button styles
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('bg-white', 'text-gray-700');
+                });
+                this.classList.add('bg-indigo-600', 'text-white');
+                this.classList.remove('bg-white', 'text-gray-700');
+            });
+        });
+
         showTimeSortView();
+
+        // --- UNIFIED DAY TABS LOGIC ---
+        const dayTabs = document.querySelectorAll('.unified-day-tab');
+        const dayContents = document.querySelectorAll('.unified-day-content');
+
+        dayTabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetDay = this.dataset.targetDay;
+
+                // Update tab styles
+                dayTabs.forEach(t => {
+                    t.classList.remove('border-indigo-500', 'text-indigo-600');
+                    t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                });
+                this.classList.add('border-indigo-500', 'text-indigo-600');
+                this.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                // Update content visibility
+                dayContents.forEach(content => {
+                    if (targetDay === 'all') {
+                        content.style.display = 'block';
+                    } else {
+                        if (content.dataset.dayIndex === targetDay) {
+                            content.style.display = 'block';
+                        } else {
+                            content.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        });
     });
 </script>
 {% endblock %}
