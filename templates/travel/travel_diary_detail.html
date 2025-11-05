@@ -297,11 +297,21 @@
         const timeSortView = document.getElementById('time-sort-view');
         const locationSortView = document.getElementById('location-sort-view');
 
-        function showTimeSortView() { /* ... unchanged ... */ }
+        function showTimeSortView() {
+            timeSortView.classList.remove('hidden');
+            locationSortView.classList.add('hidden');
+            timeSortBtn.classList.add('border-indigo-500', 'text-indigo-600');
+            timeSortBtn.classList.remove('border-transparent', 'text-gray-500');
+            locationSortBtn.classList.add('border-transparent', 'text-gray-500');
+            locationSortBtn.classList.remove('border-indigo-500', 'text-indigo-600');
+        }
+
         function showLocationSortView() {
             timeSortView.classList.add('hidden');
             locationSortView.classList.remove('hidden');
             locationSortBtn.classList.add('border-indigo-500', 'text-indigo-600');
+            locationSortBtn.classList.remove('border-transparent', 'text-gray-500');
+            timeSortBtn.classList.add('border-transparent', 'text-gray-500');
             timeSortBtn.classList.remove('border-indigo-500', 'text-indigo-600');
             if (!map) {
                 initializeMap();
