@@ -1,0 +1,193 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* --- 기본 스타일 --- */
+    .tab-container {
+    margin: 20px 0;
+    }
+    ul li {list-style: none;}
+
+    .tab-buttons {display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .tab-buttons button { border: 1px solid #ccc; background-color: #f8f8f8; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    .tab-buttons button.active { background-color: #333; color: white; border-color: #333; }
+    .tab-content { border: 1px solid #ccc; border-radius: 8px; padding: 15px; background-color: #fff; height: 400px; overflow: scroll;}
+
+    .category-block {display: none;}
+    .category-block.active {display: block;}
+
+    /* 버튼 스타일 */
+    .button, .btn-select-category, .btn-clear-category { background-color: #333; color: white; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer;}
+    .button:hover {background-color: #333;}
+
+    ul.list_place{display: flex; gap: 10px; flex-wrap: wrap;}
+    label{padding: 5px 10px; border:solid 1px #417690; border-radius: 10px; color: #333; display: block; box-sizing: border-box;}
+</style>
+
+<div class="content" style="margin:20px;">
+
+  <form method="post" action="{{ post_url }}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="analyze">
+
+    {% if grouped_places %}
+      <!-- ✅ 탭 버튼 영역 -->
+      <div class="tab-container">
+        <div class="tab-buttons">
+          {% for category, places in grouped_places.items %}
+            <button type="button" class="tab-btn" data-category="{{ category }}">
+              {{ category }}
+            </button>
+          {% endfor %}
+        </div>
+
+        <!-- ✅ 탭 내용 영역 -->
+        <div class="tab-content">
+          {% for category, places in grouped_places.items %}
+          <div class="category-block" id="tab-{{ category }}" data-category="{{ category }}">
+            <h3 style="margin-top:0;">{{ category }}</h3>
+
+            <!-- 툴바 -->
+            <div style="margin:5px 0 10px 0; display:flex; align-items:center; gap:10px;">
+              <button type="button" class="btn-select-category" data-category="{{ category }}">▶ 100개 자동 선택</button>
+              <button type="button" class="btn-clear-category" data-category="{{ category }}">✖ 선택 해제</button>
+              <strong>선택 수: <span class="sel-count" data-category="{{ category }}">0</span> / 100</strong>
+            </div>
+
+            <ul style="list-style:none; padding-left:10px;" class="list_place">
+              {% for place in places %}
+              <li style="margin-bottom:4px;">
+                <label>
+                  <input type="checkbox" name="place_ids" value="{{ place.id }}" data-category="{{ category }}">
+                  {{ place.name }}
+                </label>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="margin-top:15px;">
+        <button type="submit" class="button" style="padding:10px 20px;">선택된 장소 분석하기</button>
+      </div>
+    {% else %}
+      <p>분석 가능한 장소가 없습니다.</p>
+    {% endif %}
+  </form>
+</div>
+
+<!-- ✅ JS: 탭 & 선택 로직 -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const MAX = 100;
+
+  // ----------------------------
+  // 🔹 탭 전환 기능
+  // ----------------------------
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabBlocks = document.querySelectorAll(".category-block");
+
+  function activateTab(cat) {
+    tabButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.category === cat));
+    tabBlocks.forEach(block => block.classList.toggle("active", block.dataset.category === cat));
+  }
+
+  if (tabButtons.length > 0) {
+    activateTab(tabButtons[0].dataset.category); // 첫 탭 자동 활성화
+  }
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", e => {
+      const cat = e.target.dataset.category;
+      activateTab(cat);
+    });
+  });
+
+  // ----------------------------
+  // 🔹 선택 / 해제 / 카운트
+  // ----------------------------
+  function updateCategoryCount(category) {
+    const boxes = document.querySelectorAll(`input[name="place_ids"][data-category="${category}"]`);
+    const count = Array.from(boxes).filter(b => b.checked).length;
+    const label = document.querySelector(`.sel-count[data-category="${category}"]`);
+    if (label) label.textContent = count;
+  }
+
+  function selectCategory(category, limit) {
+    const boxes = Array.from(document.querySelectorAll(`input[name="place_ids"][data-category="${category}"]`));
+    const unchecked = boxes.filter(b => !b.checked);
+    unchecked.slice(0, limit).forEach(b => (b.checked = true));
+    updateCategoryCount(category);
+  }
+
+  function clearCategory(category) {
+    const boxes = document.querySelectorAll(`input[name="place_ids"][data-category="${category}"]`);
+    boxes.forEach(b => (b.checked = false));
+    updateCategoryCount(category);
+  }
+
+  // 버튼 이벤트 연결
+  document.querySelectorAll(".btn-select-category").forEach(btn => {
+    btn.addEventListener("click", e => {
+      const cat = e.target.dataset.category;
+      selectCategory(cat, MAX);
+    });
+  });
+
+  document.querySelectorAll(".btn-clear-category").forEach(btn => {
+    btn.addEventListener("click", e => {
+      const cat = e.target.dataset.category;
+      clearCategory(cat);
+    });
+  });
+
+  // 체크 시 100개 초과 방지
+  document.querySelectorAll('input[name="place_ids"]').forEach(chk => {
+    chk.addEventListener("change", e => {
+      const cat = e.target.dataset.category;
+      const boxes = Array.from(document.querySelectorAll(`input[name="place_ids"][data-category="${cat}"]`));
+      const count = boxes.filter(b => b.checked).length;
+      if (count > MAX) {
+        e.target.checked = false;
+        alert(`${cat}은(는) 최대 ${MAX}개까지만 선택할 수 있어.`);
+      }
+      updateCategoryCount(cat);
+    });
+  });
+
+  // 초기 카운트
+  const cats = new Set(Array.from(document.querySelectorAll('input[name="place_ids"]'))
+                       .map(el => el.dataset.category));
+  cats.forEach(updateCategoryCount);
+});
+</script>
+
+{# 2) 분석 결과 화면 + DB 저장 버튼 #}
+{% if analysis_results %}
+<form method="post" action="{{ save_url }}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save">
+
+    <p style="margin:8px 0 16px;">아래 결과를 확인하고 <b>DB 저장</b>을 눌러.</p>
+    <button class="button default" type="submit" style="padding: 5px 10px;">DB 저장</button>
+    <hr/>
+
+    {% for item in analysis_results %}
+    <h3>{{ forloop.counter }}. {{ item.place_name }}</h3>
+    <pre style="white-space:pre-wrap; background:#f7f7f7; padding:10px; border-radius:6px; border:1px solid #eee;">
+    {{ item.analysis_json_pretty }}
+    </pre>
+
+    <!-- ✅ 전송용은 compact JSON을 textarea(hidden)로 보낸다. escape/escapejs 쓰지 말 것 -->
+    <textarea name="payload_{{ item.place_pk }}" hidden>{{ item.analysis_json_compact|safe }}</textarea>
+    {% endfor %}
+</form>
+
+<p style="margin-top:12px;">
+    <a class="button" href="{{ post_url }}">다시 선택하기</a>
+</p>
+{% endif %}
+{% endblock %}

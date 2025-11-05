@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}나의 여행 다이어리{% endblock %}
+
+{% block content %}
+<!-- Page Title -->
+<div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/destination-16.webp' %});">
+    <div class="container position-relative">
+        <h1>나의 여행 다이어리</h1>
+        <p>즐거웠던 여행을 다이어로 남겨 추억을 간직하세요</p>
+        <nav class="breadcrumbs">
+            <ol>
+                <li><a href="{% url 'main' %}">Home</a></li>
+                <li class="current">나의 여행 다이어리</li>
+            </ol>
+        </nav>
+    </div>
+</div><!-- End Page Title -->
+
+<div class="container mx-auto cont-wrap">
+    <!-- <div class="container section-title aos-init aos-animate" data-aos="fade-up">
+        <h2>TRAVEL DIARY</h2>
+        <div><span>나의 여행</span> <span class="description-title">다이어리</span></div>
+    </div> -->
+    <div class="max-w-6xl mx-auto p-8 border-slate-200">
+
+        <div class="flex justify-between items-center mb-6">
+            <a href="{% url 'travel:create_travel_diary' %}" class="text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center btn-primary">
+                <i class="fa-solid fa-plus mr-2"></i> 새 여행 다이어리 만들기
+            </a>
+        </div>
+
+        <div id="travel-diaries-list">
+            {% if travel_diaries %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 card-list">
+                    {% for diary in travel_diaries %}
+                        <div class="bg-slate-50 p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col tour-card">
+                            <h2 class="text-xl font-semibold text-slate-800 mb-2">{{ diary.name }}</h2>
+                            <p class="text-sm text-slate-500 mb-3">{{ diary.start_date|date:"Y년 m월 d일" }} - {{ diary.end_date|date:"Y년 m월 d일" }}</p>
+                            <p class="text-slate-700 text-base flex-grow">{{ diary.description|default:"설명이 없습니다." }}</p>
+                            <div class="mt-4 text-right">
+                                <a href="{% url 'travel:travel_diary_detail' pk=diary.pk %}" class="text-sky-600 hover:text-sky-800 text-sm font-medium">다이어리 보기</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center text-slate-600 text-lg py-10">아직 생성된 여행 다이어리가 없습니다. 새로운 다이어리를 만들어보세요!</p>
+            {% endif %}
+        </div>
+</div>
+{% endblock %}

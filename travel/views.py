@@ -22,6 +22,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.db import transaction # 트랜잭션을 사용해 안전하게 처리
+from django.db import connections
 
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
@@ -655,7 +656,16 @@ def ensure_plan_available(plan_pk):
     )
     # auth_user 테이블이 diary_db에 없으므로 FK 충돌을 피하기 위해 owner 정보는 비워 둔다.
     plan_clone.owner_id = None
-    plan_clone.save(using='diary_db')
+
+    diary_conn = connections['diary_db']
+    try:
+        with diary_conn.cursor() as cursor:
+            cursor.execute('PRAGMA foreign_keys=OFF')
+        plan_clone.save(using='diary_db', force_insert=True)
+    finally:
+        with diary_conn.cursor() as cursor:
+            cursor.execute('PRAGMA foreign_keys=ON')
+
     return plan_clone
 
 

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}여행 에이전트{% endblock %}
+
+    {% block content %}
+        <!-- Travel Hero Section -->
+        <section id="travel-hero" class="travel-hero section dark-background">
+
+            <div class="hero-background">
+                <video autoplay="" muted="" loop="">
+                <source src="{% static 'img/travel/video-2.mp4' %}" type="video/mp4">
+                </video>
+                <div class="hero-overlay"></div>
+            </div>
+
+            <div class="container position-relative">
+                <div class="row align-items-center">
+                    <div class="col-lg">
+                        <div class="container position-relative tx-center keep-all title-wrap">
+                            <h1>당신만의 여행을 설계해주는 여행 에이전트</h1>
+                            <p>AI가 나에게 꼭 맞는 여행 계획을 추천해줘요</p>
+                        </div>
+
+                        <form class="search-form tx-center" action="" method="post">
+                            {% csrf_token %}
+                            <div class="form-wrapper">
+                                <input type="text" name="text" class="text-input" placeholder="예: 강남, 마포 2박3일 힐링" required="">
+                                <button type="submit" class="subscribe-btn">
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </section><!-- /Travel Hero Section -->
+
+        <section id="card-list" class="card-list section">
+
+            <!-- Section Title -->
+            <div class="container section-title aos-init aos-animate" data-aos="fade-up">
+                <h2>Travel Plane</h2>
+                <div><span>사람들의</span> <span class="description-title">여행 플랜</span></div>
+            </div><!-- End Section Title -->
+
+            <div class="container aos-init aos-animate" data-aos="fade-up" data-aos-delay="100"> 
+
+                <div class="row gy-4">
+                    <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="200">
+                    <div class="tour-card">
+                        <!-- <div class="tour-image">
+                            <img src="assets/img/travel/tour-1.webp" alt="Serene Beach Retreat" class="img-fluid" loading="lazy">
+                        </div> -->
+                        <div class="tour-content">
+                        <h4>이태원 할로윈 파티 투어</h4>
+                        <div class="tour-meta">
+                            <span class="duration"><i class="bi bi-clock"></i> 3 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> 커플</span>
+                        </div>
+                        <!-- <p>Mauris ipsum neque, cursus ac ipsum at, iaculis facilisis ligula. Suspendisse non sapien vel enim cursus semper.</p> -->
+                        <div class="tour-highlights">
+                            <span>할로윈</span>
+                            <span>이태원</span>
+                            <span>ESFJ</span>
+                        </div>
+                        <div class="tour-action">
+                            <a href="booking.html" class="btn-book">Travel Plane</a>
+                                <div class="tour-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-half"></i>
+                                <span>4.8 (95)</span>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    </div><!-- End Tour Item -->
+
+                    <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="300">
+                    <div class="tour-card">
+                        <!-- <div class="tour-image">
+                            <img src="assets/img/travel/tour-2.webp" alt="Arctic Expedition" class="img-fluid" loading="lazy">
+                        </div> -->
+                        <div class="tour-content">
+                        <h4>송리단길 맛집 투어</h4>
+                        <div class="tour-meta">
+                            <span class="duration"><i class="bi bi-clock"></i> 1 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> 혼자 </span>
+                        </div>
+                        <!-- <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Donec dictum non massa nec fermentum.</p> -->
+                        <div class="tour-highlights">
+                            <span>맛집</span>
+                            <span>INFJ</span>
+                            <span>분위기</span>
+                        </div>
+                        <div class="tour-action">
+                            <a href="booking.html" class="btn-book">Travel Plane</a>
+                            <div class="tour-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star"></i>
+                                <span>4.6 (55)</span>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    </div><!-- End Tour Item -->
+
+                    <div class="col-lg-4 col-md-6 aos-init aos-animate" data-aos="fade-up" data-aos-delay="400">
+                    <div class="tour-card">
+                        <!-- <div class="tour-image">
+                            <img src="assets/img/travel/tour-4.webp" alt="Desert Safari" class="img-fluid" loading="lazy">
+                        </div> -->
+                        <div class="tour-content">
+                        <h4>미용의 중심지 강남 투어</h4>
+                        <div class="tour-meta">
+                            <span class="duration"><i class="bi bi-clock"></i> 2 Days</span>
+                            <span class="group-size"><i class="bi bi-people"></i> 친구 </span>
+                        </div>
+                        <!-- <p>Pellentesque euismod tincidunt turpis ac tristique. Phasellus vitae lacus in enim mollis facilisis vel quis ex. In hac habitasse platea dictumst.</p> -->
+                        <div class="tour-highlights">
+                            <span>화려함</span>
+                            <span>ESTP</span>
+                            <span>미용</span>
+                        </div>
+                        <div class="tour-action">
+                            <a href="booking.html" class="btn-book">Travel Plane</a>
+                            <div class="tour-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <span>4.9 (72)</span>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    </div><!-- End Tour Item -->
+                </div>
+
+                <div class="text-center mt-5 aos-init aos-animate" data-aos="fade-up" data-aos-delay="500">
+                    <a href="tours.html" class="btn-view-all">View All Tours</a>
+                </div>
+
+            </div>
+
+        </section>
+
+    {% endblock %}

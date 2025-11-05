@@ -1,0 +1,401 @@
+/* 전체 레이아웃 */
+.page-wrap {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    font-family: 'Poppins', 'Pretendard', sans-serif;
+    color: #222;
+}
+
+/* 상단 요약 영역 */
+.summary-header {
+    text-align: center;
+    padding-top: 1.5rem;
+    margin-bottom: 2rem;
+}
+.summary-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+.summary-header p {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* 본문 - 왼쪽 일정 / 오른쪽 지도 */
+.planner-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* 왼쪽 패널 (플랜 + Day 리스트) */
+.itinerary-panel {
+    flex: 1 1 350px;
+    min-width: 340px;
+    background: #fafafa;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 1rem;
+
+    display: flex;
+    flex-direction: column;
+
+    max-height: 75vh;         /* 화면 안에서만 스크롤 되게 */
+    overflow: hidden;
+}
+
+/* Day 리스트 전체를 감싸는 영역 -> 여기만 스크롤 */
+.itinerary-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-top: 0.75rem;
+}
+
+/* 상단 영역(추천 플랜 / 저장 버튼)은 고정 */
+.plan-selector {
+    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.plan-label-btn {
+    border: 1px solid #333;
+    background: #333;
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.plan-label-btn:hover {
+    background-color: #555;
+    border-color: #555;
+}
+.plan-label-btn.active {
+    background-color: #000;
+    border-color: #000;
+    color: #fff;
+    transform: scale(1.05);
+}
+
+.plan-action-wrap {
+    flex-shrink: 0;
+    margin-bottom: 0.75rem;
+}
+.save-plan-btn {
+    background:#0a61e8;
+    color:#fff;
+    border:0;
+    border-radius:4px;
+    font-size:0.85rem;
+    font-weight:600;
+    padding:8px 12px;
+    cursor:pointer;
+}
+.save-plan-btn:active {
+    transform:scale(.98);
+}
+
+/* Day 제목 + 장소 카드들 */
+.day-block {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #ddd;
+}
+.day-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+.spot-item {
+    display: flex;
+    align-items: flex-start;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 0.7rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.spot-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* 번호 + 거리 칼럼 */
+.spot-order {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 0.7rem;
+}
+
+.spot-order-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #db4040;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    margin-bottom: 4px; /* 숫자와 거리 사이 여백 */
+}
+
+/* N→N+1 구간 거리 */
+.spot-order-dist {
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.2;
+    padding: 2px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.spot-meta {
+    flex: 1;
+}
+.spot-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 2px;
+}
+.spot-desc {
+    font-size: 0.8rem;
+    color: #666;
+    line-height: 1.3;
+}
+
+.spot-next-dist {
+    margin-top: 6px;
+    margin-left: 38px;
+    background: #111;
+    color: #fff;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* 오른쪽 지도 패널 */
+.map-panel {
+    flex: 2 1 600px;
+    min-width: 500px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+
+    display: flex;
+    flex-direction: column;
+
+    max-height: 75vh;
+    position: relative;
+    overflow: hidden;
+}
+.map-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #ddd;
+    background: #f8f8f8;
+    flex-shrink: 0;
+}
+.map-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #222;
+}
+.day-tabs {
+    display: flex;
+    gap: 4px;
+}
+.day-tab-btn {
+    background: #333;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.day-tab-btn.active {
+    background: #000;
+    border-color: #000;
+}
+
+.map-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 0 1rem 1rem;
+}
+
+#mapArea {
+    flex: 1;
+    min-height: 360px;
+    max-height: none; /* 높이는 JS에서 왼쪽 패널에 맞춰 조정 */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* 총 이동 거리 / 안내 박스 (항상 지도 하단 중앙 고정) */
+/* 지도 아래 고정으로 항상 보이는 Day 총 거리 */
+.route-summary-box {
+    margin-top: 8px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #111827;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    line-height: 1.4;
+    width: fit-content;
+}
+
+/* 가이드 */
+.guide-wrap {
+    margin-top: 2rem;
+}
+.guide-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 1rem 1.2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+.guide-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+}
+.guide-head h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+.copy-btn {
+    border: 1px solid #333;
+    background: #fff;
+    color: #333;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.copy-btn:hover {
+    background: #333;
+    color: #fff;
+}
+.guide-body {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #444;
+    white-space: pre-wrap;
+}
+
+/* 반응형 */
+@media (max-width: 960px) {
+    .planner-body {
+        flex-direction: column;
+    }
+    .map-panel {
+        min-width: 100%;
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+    #mapArea {
+        min-height: 400px;
+    }
+    .itinerary-panel {
+        max-height: none;
+        overflow: visible;
+        display: block;
+    }
+    .itinerary-scroll {
+        max-height: none;
+        overflow: visible;
+    }
+}
+
+/* 지도 마커 (번호 원) */
+.map-marker-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(-8px);
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+.map-marker-circle {
+    background: #c62828;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.map-marker-number {
+    display: inline-block;
+}
+
+/* (지금은 지도 마커 밑에 세그먼트 거리 띄우지 않지만 유지) */
+.segment-distance {
+    margin-top: 2px;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 500;
+    padding: 2px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Day 제목 오른쪽 전체 거리 표시 */
+.day-total-dist {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #666;
+    margin-left: 6px;
+}

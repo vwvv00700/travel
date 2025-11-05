@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}태그: #{{ tag_name }}{% endblock %}
+
+{% block content %}
+<!-- Page Title -->
+<div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/destination-16.webp' %});">
+    <div class="container position-relative">
+        <h1>#{{ tag_name }} 태그 기록</h1>
+        <p>총 {{ total_entries }}개의 기록</p>
+        <nav class="breadcrumbs">
+            <ol>
+                <li><a href="{% url 'main' %}">Home</a></li>
+                <li><a href="{% url 'travel:diary_home' %}">다이어리 홈</a></li>
+                <li class="current">#{{ tag_name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div><!-- End Page Title -->
+
+<section>
+    <div class="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-md border border-slate-200">
+        <h1 class="text-3xl font-bold text-slate-800 mb-4">#{{ tag_name }} 태그 기록</h1>
+        <p class="text-slate-600 mb-6">총 {{ total_entries }}개의 기록이 있습니다.</p>
+
+        <div id="time-sort-view" class="diary-view">
+            {% if entries_by_date %}
+                <div class="relative border-l-4 border-gray-200 ml-4 pl-4">
+                    {% for date, entries_for_date in entries_by_date %}
+                        <div class="mb-8 relative">
+                            <div class="absolute -left-6 flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full ring-8 ring-white shadow-lg">
+                                <span class="text-white text-sm font-bold">{{ date|date:"m/d" }}</span>
+                            </div>
+                            <h2 class="text-2xl font-bold text-slate-800 mb-4 ml-8">{{ date|date:"Y년 m월 d일" }}</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ml-8">
+                                {% for entry in entries_for_date %}
+                                    <div class="bg-slate-50 p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col">
+                                        {% if entry.media_file %}
+                                            {% if entry.media_type == 'image' %}
+                                                <img src="{{ entry.media_file.url }}" alt="{{ entry.location }}" class="w-full h-48 object-cover rounded-md mb-4">
+                                            {% elif entry.media_type == 'video' %}
+                                                <video controls class="w-full h-48 object-cover rounded-md mb-4">
+                                                    <source src="{{ entry.media_file.url }}" type="video/mp4">
+                                                    Your browser does not support the video tag.
+                                                </video>
+                                            {% endif %}
+                                        {% endif %}
+                                        <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ entry.location|default:"위치 정보 없음" }}</h3>
+                                        <p class="text-sm text-slate-500 mb-3">{{ entry.timestamp|date:"H시 i분" }}</p>
+                                        <p class="text-slate-700 text-base flex-grow">{{ entry.comment|default:"감상평이 없습니다." }}</p>
+
+                                        <!-- Tags -->
+                                        <div class="mt-4">
+                                            {% for tag in entry.tags.all %}
+                                                <span class="inline-block bg-sky-100 text-sky-800 rounded-full px-3 py-1 text-sm font-semibold mr-2 mb-2">#{{ tag.name }}</span>
+                                            {% endfor %}
+                                        </div>
+
+                                        <div class="mt-4 text-right flex justify-end space-x-2">
+                                            <a href="{% url 'travel:edit_diary_entry' pk=entry.pk %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">편집</a>
+                                            <a href="{% url 'travel:delete_diary_entry' pk=entry.pk %}" class="text-red-600 hover:hover:text-red-800 text-sm font-medium">삭제</a>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center text-slate-600 text-lg py-10">이 태그를 가진 기록이 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
