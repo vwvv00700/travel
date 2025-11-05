@@ -725,7 +725,6 @@ def create_travel_diary(request):
 
 @login_required
 def travel_diary_detail(request, pk):
-    # travel_diary = get_object_or_404(Travel, pk=pk, author=request.user)
     travel_diary = get_object_or_404(Travel, pk=pk, author_id=request.user.id)
     diary_entries = travel_diary.diary_entries.all().order_by('timestamp')
     media_entries = diary_entries.filter(media_file__isnull=False).exclude(media_file__exact='')
@@ -736,13 +735,7 @@ def travel_diary_detail(request, pk):
         if entry.timestamp:
             grouped_entries[entry.timestamp.date()].append(entry)
 
-    # Sort dates for consistent display
-    sorted_dates = sorted(grouped_entries.keys())
-
-    # Prepare data for template: list of (date, entries_for_date) tuples
-    entries_by_date = [(date, grouped_entries[date]) for date in sorted_dates]
-    
-    # Prepare data for JavaScript map (ensure photo__url is correctly accessed)
+    # Prepare data for JavaScript map
     diary_entries_data = []
     for entry in media_entries:
         diary_entries_data.append({
@@ -751,8 +744,6 @@ def travel_diary_detail(request, pk):
             'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %M분") if entry.timestamp else '',
             'latitude': entry.latitude,
             'longitude': entry.longitude,
-            # 'photo_url': entry.photo.url if entry.photo else '',
-            # 'comment': entry.comment
             'media_url': entry.media_file.url if entry.media_file else '',
             'media_type': entry.media_type,
             'comment': entry.comment,
@@ -760,14 +751,10 @@ def travel_diary_detail(request, pk):
         })
     diary_entries_json = json.dumps(diary_entries_data)
 
-    print("DEBUG: diary_entries_json content:", diary_entries_json) # Debug print
-
+    # Try to find the associated travel plan
     display_plan = travel_diary.plan
-    if display_plan:
-        synced_plan = ensure_plan_available(display_plan.pk)
-        if synced_plan:
-            display_plan = synced_plan
-    else:
+    if not display_plan:
+        # Fallback logic to find a plan if not directly linked
         plan_title_hint = None
         if travel_diary.name:
             match = re.search(r'\(([^)]+)\)\s*$' , travel_diary.name)
@@ -784,45 +771,49 @@ def travel_diary_detail(request, pk):
 
         candidate = candidate_qs.first()
         if candidate:
-            synced_plan = ensure_plan_available(candidate.plan_id)
-            if synced_plan:
-                display_plan = synced_plan
-                if travel_diary.plan_id != synced_plan.pk:
-                    travel_diary.plan = synced_plan
-                    travel_diary.save(update_fields=['plan'])
-            else:
-                display_plan = candidate.plan
+            display_plan = candidate.plan
+            # Optionally link it for future lookups
+            travel_diary.plan = ensure_plan_available(candidate.plan_id)
+            travel_diary.save(update_fields=['plan'])
 
-    processed_plan_data = None
-    plan_day_plans = []
-    if display_plan:
-        plan = display_plan
-        english_areas = plan.user_query.get('areas', []) if plan.user_query else []
-        korean_areas = []
-        for area_key in english_areas:
-            korean_name = AREA_LABELS.get(area_key, area_key)
-            korean_areas.append(korean_name)
-        areas_display = ", ".join(korean_areas) if korean_areas else "전체 지역"
+    # --- New Combined Data Structure ---
+    combined_days = []
+    unmatched_entries = []
+    
+    # Make a mutable copy of grouped_entries
+    remaining_entries = grouped_entries.copy()
 
-        processed_plan_data = {
-            'name': plan.title,
-            'start_date': travel_diary.start_date.strftime('%Y-%m-%d') if travel_diary.start_date else '',
-            'end_date': travel_diary.end_date.strftime('%Y-%m-%d') if travel_diary.end_date else '',
-            'areas_display': areas_display,
-        }
-        if isinstance(plan.data, dict):
-            plan_day_plans = plan.data.get('day_plans', []) or []
-            if not isinstance(plan_day_plans, list):
-                plan_day_plans = []
+    if display_plan and travel_diary.start_date and isinstance(display_plan.data, dict):
+        plan_day_plans = display_plan.data.get('day_plans', []) or []
+        if isinstance(plan_day_plans, list):
+            for i, day_plan_stops in enumerate(plan_day_plans):
+                current_date = travel_diary.start_date + timedelta(days=i)
+                
+                combined_days.append({
+                    "day_index": i,
+                    "day_number": i + 1,
+                    "date": current_date,
+                    "plan_stops": day_plan_stops,
+                    "diary_entries": grouped_entries.get(current_date, [])
+                })
+                # Remove the date from remaining_entries if it was matched
+                if current_date in remaining_entries:
+                    del remaining_entries[current_date]
 
-    return render(request, 'travel/travel_diary_detail.html', {
+    # Add any remaining diary entries that didn't match a plan day
+    # Sort by date before adding
+    for date, entries in sorted(remaining_entries.items()):
+        unmatched_entries.extend(entries)
+
+    context = {
         'travel_diary': travel_diary,
-        'travel_plan': display_plan, # Pass the plan to the template
-        'entries_by_date': entries_by_date,
         'diary_entries_json': diary_entries_json,
-        'processed_plan_data': processed_plan_data,
-        'plan_day_plans': plan_day_plans,
-    })
+        'combined_days': combined_days,
+        'unmatched_entries': unmatched_entries,
+        'travel_plan': display_plan, # Still useful for high-level info
+    }
+
+    return render(request, 'travel/travel_diary_detail.html', context)
 
 @login_required # Ensure user is logged in to view their diary
 def diary_list(request):

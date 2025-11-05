@@ -1,0 +1,27 @@
+<div class="bg-slate-50 p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col">
+    {% if entry.media_file %}
+        {% if entry.media_type == 'image' %}
+            <img src="{{ entry.media_file.url }}" alt="{{ entry.location }}" class="w-full h-48 object-cover rounded-md mb-4">
+        {% elif entry.media_type == 'video' %}
+            <video controls class="w-full h-48 object-cover rounded-md mb-4">
+                <source src="{{ entry.media_file.url }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        {% endif %}
+    {% endif %}
+    <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ entry.location|default:"위치 정보 없음" }}</h3>
+    <p class="text-sm text-slate-500 mb-3">{{ entry.timestamp|date:"H시 i분" }}</p>
+    <p class="text-slate-700 text-base flex-grow">{{ entry.comment|default:"감상평이 없습니다." }}</p>
+
+    <!-- Tags -->
+    <div class="mt-4">
+        {% for tag in entry.tags.all %}
+            <span class="inline-block bg-sky-100 text-sky-800 rounded-full px-3 py-1 text-sm font-semibold mr-2 mb-2">#{{ tag.name }}</span>
+        {% endfor %}
+    </div>
+
+    <div class="mt-4 text-right flex justify-end space-x-2">
+        <a href="{% url 'travel:edit_diary_entry' pk=entry.pk %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">편집</a>
+        <a href="{% url 'travel:delete_diary_entry' pk=entry.pk %}" class="text-red-600 hover:text-red-800 text-sm font-medium">삭제</a>
+    </div>
+</div>

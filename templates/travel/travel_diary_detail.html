@@ -24,29 +24,7 @@
         <p class="text-slate-600 mb-6">{{ travel_diary.start_date|date:"Y년 m월 d일" }} - {{ travel_diary.end_date|date:"Y년 m월 d일" }}</p>
         <p class="text-slate-700 mb-8">{{ travel_diary.description|default:"설명이 없습니다." }}</p>
 
-        {% if travel_plan and processed_plan_data %}
-        <!-- Plan Details Information Window -->
-        <div id="plan-details-window" class="hidden mb-6 p-6 bg-white rounded-lg shadow-md border border-slate-200">
-            <h2 id="plan-details-title" class="text-2xl font-bold text-slate-800 mb-4">선택된 여행 플랜 정보</h2>
-            <div id="plan-duration" class="mb-4 text-slate-600"></div>
-            <div id="plan-day-tabs" class="border-b border-gray-200 mb-4"></div>
-            <div id="plan-itinerary" class="flex overflow-x-auto space-x-4 p-2"></div>
-        </div>
-        {% endif %}
-
-        {% if travel_plan and processed_plan_data %}
-        {{ plan_day_plans|json_script:"selected-plan-day-plans" }}
-        {{ processed_plan_data|json_script:"selected-plan-meta" }}
-        {% endif %}
-
-        <div class="my-6 text-right">
-            <button id="ai-summary-btn" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 ease-in-out">
-                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> AI 요약 보기
-            </button>
-        </div>
-
-
-        <div class="flex justify-between items-center mb-6">
+        <div class="my-6 flex justify-between items-center">
             <div>
                 <a href="{% url 'travel:upload_diary_entry_to_travel' travel_id=travel_diary.pk %}" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center inline-flex">
                     <i class="fa-solid fa-plus mr-2"></i> 새로운 기록 추가
@@ -55,79 +33,106 @@
                     <i class="fa-solid fa-edit mr-2"></i> 다이어리 수정
                 </a>
             </div>
-            <div class="flex space-x-2">
-                <button id="sort-time-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">시간순 보기</button>
-                <button id="sort-location-btn" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">지역순 보기 (지도)</button>
+            <button id="ai-summary-btn" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 ease-in-out">
+                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> AI 요약 보기
+            </button>
+        </div>
+
+        <!-- AI Summary Modal -->
+        <div id="ai-summary-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                <div class="flex justify-between items-center pb-3">
+                    <h3 class="text-2xl font-bold text-gray-900">AI 여행 요약</h3>
+                    <button id="ai-summary-close-btn" class="text-gray-400 hover:text-gray-600 text-2xl font-semibold">&times;</button>
+                </div>
+                <div id="ai-summary-modal-content" class="mt-2 mb-4 text-gray-700 whitespace-pre-wrap"></div>
+                <div class="flex justify-end pt-2">
+                    <button id="ai-summary-ok-btn" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700">확인</button>
+                </div>
             </div>
         </div>
 
-<!-- AI Summary Modal -->
-<div id="ai-summary-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-        <!-- Modal header -->
-        <div class="flex justify-between items-center pb-3">
-            <h3 class="text-2xl font-bold text-gray-900">AI 여행 요약</h3>
-            <button id="ai-summary-close-btn" class="text-gray-400 hover:text-gray-600 text-2xl font-semibold">&times;</button>
+        <!-- View Toggles -->
+        <div class="mb-6 flex justify-center space-x-2 border-b">
+            <button id="sort-time-btn" class="view-toggle-btn flex-1 py-2 px-4 text-center font-semibold rounded-t-lg border-b-2 border-indigo-500 text-indigo-600">일정별 보기</button>
+            <button id="sort-location-btn" class="view-toggle-btn flex-1 py-2 px-4 text-center font-semibold rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700">지도에서 보기</button>
         </div>
-        <!-- Modal body -->
-        <div class="mt-2 mb-4">
-            <p id="ai-summary-modal-content" class="text-gray-700 whitespace-pre-wrap"></p>
-        </div>
-        <!-- Modal footer -->
-        <div class="flex justify-end pt-2">
-            <button id="ai-summary-ok-btn" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">확인</button>
-        </div>
-    </div>
-</div>
 
+        <!-- Time Sort View (Unified) -->
         <div id="time-sort-view" class="diary-view">
-            {% if entries_by_date %}
-                <div class="relative border-l-4 border-gray-200 ml-4 pl-4">
-                    {% for date, entries_for_date in entries_by_date %}
-                        <div class="mb-8 relative">
-                            <div class="absolute -left-6 flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full ring-8 ring-white shadow-lg">
-                                <span class="text-white text-sm font-bold">{{ date|date:"m/d" }}</span>
-                            </div>
-                            <h2 class="text-2xl font-bold text-slate-800 mb-4 ml-8">{{ date|date:"Y년 m월 d일" }}</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ml-8">
-                                {% for entry in entries_for_date %}
-                                    <div class="bg-slate-50 p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col">
-                                        {% if entry.media_file %}
-                                            {% if entry.media_type == 'image' %}
-                                                <img src="{{ entry.media_file.url }}" alt="{{ entry.location }}" class="w-full h-48 object-cover rounded-md mb-4">
-                                            {% elif entry.media_type == 'video' %}
-                                                <video controls class="w-full h-48 object-cover rounded-md mb-4">
-                                                    <source src="{{ entry.media_file.url }}" type="video/mp4">
-                                                    Your browser does not support the video tag.
-                                                </video>
-                                            {% endif %}
-                                        {% endif %}
-                                        <h3 class="text-xl font-semibold text-slate-800 mb-2">{{ entry.location|default:"위치 정보 없음" }}</h3>
-                                        <p class="text-sm text-slate-500 mb-3">{{ entry.timestamp|date:"H시 i분" }}</p>
-                                        <p class="text-slate-700 text-base flex-grow">{{ entry.comment|default:"감상평이 없습니다." }}</p>
-
-                                        <!-- Tags -->
-                                        <div class="mt-4">
-                                            {% for tag in entry.tags.all %}
-                                                <span class="inline-block bg-sky-100 text-sky-800 rounded-full px-3 py-1 text-sm font-semibold mr-2 mb-2">#{{ tag.name }}</span>
-                                            {% endfor %}
-                                        </div>
-
-                                        <div class="mt-4 text-right flex justify-end space-x-2">
-                                            <a href="{% url 'travel:edit_diary_entry' pk=entry.pk %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">편집</a>
-                                            <a href="{% url 'travel:delete_diary_entry' pk=entry.pk %}" class="text-red-600 hover:text-red-800 text-sm font-medium">삭제</a>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endfor %}
+            {% if combined_days or unmatched_entries %}
+                <!-- Unified Day Tabs -->
+                <div class="mb-6 border-b border-gray-200">
+                    <nav id="unified-day-tabs" class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
+                        <a href="#" data-target-day="all" class="unified-day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-500 text-indigo-600">
+                            전체
+                        </a>
+                        {% for day in combined_days %}
+                        <a href="#" data-target-day="{{ day.day_index }}" class="unified-day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            {{ day.day_number }}일차
+                        </a>
+                        {% endfor %}
+                    </nav>
                 </div>
+
+                <!-- Content for each day -->
+                {% for day in combined_days %}
+                <div class="unified-day-content mb-12" data-day-index="{{ day.day_index }}">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">{{ day.day_number }}일차</h2>
+                    <p class="text-slate-500 mb-6">{{ day.date|date:"Y년 m월 d일" }}</p>
+
+                    <!-- Itinerary Section -->
+                    {% if day.plan_stops %}
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">📝 계획된 일정</h3>
+                        <div class="flex overflow-x-auto space-x-4 p-2">
+                            {% for place in day.plan_stops %}
+                            <div class="flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                                <h4 class="font-bold text-md text-slate-900 truncate">{{ place.name | default:'이름 없음' }}</h4>
+                                <p class="text-sm text-gray-500">{{ place.category | default:'' }}</p>
+                                <p class="text-xs text-gray-500 mt-1 truncate">{{ place.address | default:'' }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Diary Entries Section -->
+                    {% if day.diary_entries %}
+                    <div>
+                        <h3 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">📸 나의 기록</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {% for entry in day.diary_entries %}
+                            {% include 'travel/partials/diary_entry_card.html' with entry=entry %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if not day.plan_stops and not day.diary_entries %}
+                    <p class="text-slate-500">이 날짜에는 계획된 일정도, 작성된 기록도 없습니다.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <!-- Unmatched Entries -->
+                {% if unmatched_entries %}
+                <div class="unified-day-content" data-day-index="unmatched">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">기타 기록</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for entry in unmatched_entries %}
+                        {% include 'travel/partials/diary_entry_card.html' with entry=entry %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
             {% else %}
-                <p class="text-center text-slate-600 text-lg py-10">아직 이 다이어리에 기록된 사진이 없습니다. 새로운 기록을 추가해보세요!</p>
+                <p class="text-center text-slate-600 text-lg py-10">아직 이 다이어리에 기록된 내용이 없습니다. 새로운 기록을 추가해보세요!</p>
             {% endif %}
         </div>
 
+        <!-- Location Sort View -->
         <div id="location-sort-view" class="diary-view hidden">
             <div class="flex flex-col md:flex-row gap-6">
                 <div id="map" class="w-full md:w-1/2 h-[500px] rounded-lg shadow-md"></div>
@@ -139,103 +144,6 @@
     </div>
 </section>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const planWindow = document.getElementById('plan-details-window');
-        const planMetaEl = document.getElementById('selected-plan-meta');
-        const planDayPlansEl = document.getElementById('selected-plan-day-plans');
-        const planDetailsTitle = document.getElementById('plan-details-title');
-        const planDurationEl = document.getElementById('plan-duration');
-        const planDayTabsEl = document.getElementById('plan-day-tabs');
-        const planItineraryEl = document.getElementById('plan-itinerary');
-
-        if (planWindow && planMetaEl && planDetailsTitle && planDurationEl && planDayTabsEl && planItineraryEl) {
-            try {
-                const planMeta = JSON.parse(planMetaEl.textContent);
-                const dayPlans = planDayPlansEl ? JSON.parse(planDayPlansEl.textContent) : [];
-                const areasSuffix = planMeta.areas_display ? ` (${planMeta.areas_display})` : '';
-
-                planDetailsTitle.textContent = `${planMeta.name || '선택된 여행 플랜 정보'}${areasSuffix}`;
-                planDurationEl.textContent = (planMeta.start_date && planMeta.end_date)
-                    ? `전체 일정: ${planMeta.start_date} ~ ${planMeta.end_date}`
-                    : '';
-
-                planDayTabsEl.innerHTML = '';
-                planItineraryEl.innerHTML = '';
-                planWindow.classList.remove('hidden');
-
-                const nav = document.createElement('nav');
-                nav.className = '-mb-px flex space-x-8';
-                nav.setAttribute('aria-label', 'Tabs');
-                planDayTabsEl.appendChild(nav);
-
-                const allDayPlans = Array.isArray(dayPlans) ? dayPlans : [];
-
-                function renderDay(index) {
-                    planItineraryEl.innerHTML = '';
-                    const places = allDayPlans[index] || [];
-
-                    if (!places.length) {
-                        const empty = document.createElement('p');
-                        empty.className = 'text-sm text-slate-500';
-                        empty.textContent = '등록된 일정이 없습니다.';
-                        planItineraryEl.appendChild(empty);
-                        return;
-                    }
-
-                    places.forEach(place => {
-                        const placeEl = document.createElement('div');
-                        placeEl.className = 'flex-shrink-0 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4';
-                        placeEl.innerHTML = `
-                            <h4 class="font-bold text-md text-slate-900 truncate">${place.name || '이름 없음'}</h4>
-                            <p class="text-sm text-gray-500">${place.category || ''}</p>
-                            <p class="text-xs text-gray-500 mt-1 truncate">${place.address || ''}</p>
-                        `;
-                        planItineraryEl.appendChild(placeEl);
-                    });
-                }
-
-                allDayPlans.forEach((_, idx) => {
-                    const day = idx + 1;
-                    const tab = document.createElement('a');
-                    tab.href = '#';
-                    tab.dataset.dayIndex = idx;
-                    tab.className = 'day-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
-
-                    if (idx === 0) {
-                        tab.classList.add('border-indigo-500', 'text-indigo-600');
-                    } else {
-                        tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
-                    }
-
-                    tab.textContent = `${day}일차`;
-                    tab.addEventListener('click', function(event) {
-                        event.preventDefault();
-                        nav.querySelectorAll('.day-tab').forEach(t => {
-                            t.classList.remove('border-indigo-500', 'text-indigo-600');
-                            t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
-                        });
-                        this.classList.add('border-indigo-500', 'text-indigo-600');
-                        this.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
-
-                        renderDay(Number(this.dataset.dayIndex));
-                    });
-
-                    nav.appendChild(tab);
-                });
-
-                if (allDayPlans.length > 0) {
-                    renderDay(0);
-                } else {
-                    planItineraryEl.innerHTML = '<p class="text-sm text-slate-500">등록된 일정이 없습니다.</p>';
-                }
-            } catch (error) {
-                console.error('여행 플랜 정보를 불러오는 중 오류가 발생했습니다.', error);
-            }
-        }
-    });
-</script>
-
 <script id="diary-entries-data" type="application/json">
     {{ diary_entries_json|safe }}
 </script>
@@ -243,13 +151,7 @@
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=290f79b4e40a1efbcba07b2da4bd4d39&libraries=services,clusterer,drawing"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const timeSortBtn = document.getElementById('sort-time-btn');
-        const locationSortBtn = document.getElementById('sort-location-btn');
-        const timeSortView = document.getElementById('time-sort-view');
-        const locationSortView = document.getElementById('location-sort-view');
-        const mapContainer = document.getElementById('map');
-        const locationPhotosContainer = document.getElementById('location-photos');
-
+        // --- MODAL LOGIC ---
         const summaryBtn = document.getElementById('ai-summary-btn');
         const aiSummaryModal = document.getElementById('ai-summary-modal');
         const aiSummaryModalContent = document.getElementById('ai-summary-modal-content');
@@ -258,96 +160,111 @@
 
         function closeModal() {
             aiSummaryModal.classList.add('hidden');
-            aiSummaryModalContent.textContent = ''; // Clear content
+            aiSummaryModalContent.textContent = '';
         }
 
         if (summaryBtn) {
             summaryBtn.addEventListener('click', function() {
-                aiSummaryModal.classList.remove('hidden'); // Show modal
+                aiSummaryModal.classList.remove('hidden');
                 aiSummaryModalContent.textContent = 'AI가 여행 기록을 요약하는 중입니다. 잠시만 기다려주세요...';
                 summaryBtn.disabled = true;
 
                 fetch(`{% url 'travel:summarize_diary' pk=travel_diary.pk %}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
-                        if (data.error) {
-                            aiSummaryModalContent.textContent = '오류: ' + data.error;
-                        } else {
-                            aiSummaryModalContent.textContent = data.summary;
-                        }
-                        summaryBtn.disabled = false;
+                        aiSummaryModalContent.textContent = data.error ? '오류: ' + data.error : data.summary;
                     })
                     .catch(error => {
                         console.error('Error fetching AI summary:', error);
-                        aiSummaryModalContent.textContent = '요약을 가져오는 중 오류가 발생했습니다. 다시 시도해주세요.';
-                        summaryBtn.disabled = false;
-                    });
+                        aiSummaryModalContent.textContent = '요약을 가져오는 중 오류가 발생했습니다.';
+                    })
+                    .finally(() => { summaryBtn.disabled = false; });
             });
         }
-
-        // Close modal listeners
         aiSummaryCloseBtn.addEventListener('click', closeModal);
         aiSummaryOkBtn.addEventListener('click', closeModal);
-        aiSummaryModal.addEventListener('click', function(event) {
-            if (event.target === aiSummaryModal) { // Close if clicked outside modal content
-                closeModal();
-            }
-        });
+        aiSummaryModal.addEventListener('click', (event) => { if (event.target === aiSummaryModal) closeModal(); });
 
+        // --- VIEW TOGGLING LOGIC ---
+        const timeSortBtn = document.getElementById('sort-time-btn');
+        const locationSortBtn = document.getElementById('sort-location-btn');
+        const timeSortView = document.getElementById('time-sort-view');
+        const locationSortView = document.getElementById('location-sort-view');
         let map = null;
-        let clusterer = null; // Initialize clusterer
-        let markers = [];
-        let currentInfowindow = null; // Added to track the currently open infowindow
-
-        const diaryEntries = JSON.parse(document.getElementById('diary-entries-data').textContent);
 
         function showTimeSortView() {
             timeSortView.classList.remove('hidden');
             locationSortView.classList.add('hidden');
-            timeSortBtn.classList.add('bg-amber-500', 'hover:bg-amber-600');
-            timeSortBtn.classList.remove('bg-slate-500', 'hover:bg-slate-600');
-            locationSortBtn.classList.add('bg-slate-500', 'hover:bg-slate-600');
-            locationSortBtn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+            timeSortBtn.classList.add('border-indigo-500', 'text-indigo-600');
+            timeSortBtn.classList.remove('border-transparent', 'text-gray-500');
+            locationSortBtn.classList.add('border-transparent', 'text-gray-500');
+            locationSortBtn.classList.remove('border-indigo-500', 'text-indigo-600');
         }
 
         function showLocationSortView() {
             timeSortView.classList.add('hidden');
             locationSortView.classList.remove('hidden');
-            locationSortBtn.classList.add('bg-amber-500', 'hover:bg-amber-600');
-            locationSortBtn.classList.remove('bg-slate-500', 'hover:bg-slate-600');
-            timeSortBtn.classList.add('bg-slate-500', 'hover:bg-slate-600');
-            timeSortBtn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
-
+            locationSortBtn.classList.add('border-indigo-500', 'text-indigo-600');
+            locationSortBtn.classList.remove('border-transparent', 'text-gray-500');
+            timeSortBtn.classList.add('border-transparent', 'text-gray-500');
+            timeSortBtn.classList.remove('border-indigo-500', 'text-indigo-600');
             if (!map) {
-                map = new kakao.maps.Map(mapContainer, {
-                    center: new kakao.maps.LatLng(37.5665, 126.9780), // Default to Seoul
-                    level: 9
-                });
-                clusterer = new kakao.maps.MarkerClusterer({
-                    map: map,
-                    averageCenter: true,
-                    minLevel: 5, // Adjusted minLevel for less aggressive clustering
-                    disableClickZoom: true // Disable click zoom to handle click event manually
-                });
+                initializeMap();
             }
-            map.relayout(); // Recenter map after div becomes visible
+            map.relayout();
+        }
+
+        timeSortBtn.addEventListener('click', showTimeSortView);
+        locationSortBtn.addEventListener('click', showLocationSortView);
+
+        // --- UNIFIED DAY TABS LOGIC ---
+        const dayTabs = document.querySelectorAll('.unified-day-tab');
+        const dayContents = document.querySelectorAll('.unified-day-content');
+
+        dayTabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetDay = this.dataset.targetDay;
+
+                dayTabs.forEach(t => t.classList.remove('border-indigo-500', 'text-indigo-600'));
+                this.classList.add('border-indigo-500', 'text-indigo-600');
+
+                dayContents.forEach(content => {
+                    const isVisible = (targetDay === 'all' || content.dataset.dayIndex === targetDay);
+                    content.style.display = isVisible ? 'block' : 'none';
+                });
+            });
+        });
+
+        // --- KAKAO MAP LOGIC ---
+        const diaryEntries = JSON.parse(document.getElementById('diary-entries-data').textContent);
+        const mapContainer = document.getElementById('map');
+        const locationPhotosContainer = document.getElementById('location-photos');
+        let clusterer = null;
+        let markers = [];
+        let currentInfowindow = null;
+
+        function initializeMap() {
+            map = new kakao.maps.Map(mapContainer, {
+                center: new kakao.maps.LatLng(37.5665, 126.9780), // Default to Seoul
+                level: 9
+            });
+            clusterer = new kakao.maps.MarkerClusterer({
+                map: map,
+                averageCenter: true,
+                minLevel: 5,
+                disableClickZoom: true
+            });
             displayMarkers();
         }
 
         function displayMarkers() {
-            if (clusterer) {
-                clusterer.removeMarkers(markers);
-            }
+            if (!clusterer) return;
+            clusterer.clear();
             markers = [];
             const bounds = new kakao.maps.LatLngBounds();
-
-            // Group entries by location (latitude, longitude)
             const locations = {};
+
             diaryEntries.forEach(entry => {
                 if (entry.latitude !== null && entry.longitude !== null) {
                     const key = `${entry.latitude},${entry.longitude}`;
@@ -359,116 +276,68 @@
             });
 
             for (const key in locations) {
-                const locationData = locations[key];
-                const position = new kakao.maps.LatLng(locationData.lat, locationData.lon);
-                const marker = new kakao.maps.Marker({
-                    position: position,
-                    title: locationData.name
-                });
+                const locData = locations[key];
+                const position = new kakao.maps.LatLng(locData.lat, locData.lon);
+                const marker = new kakao.maps.Marker({ position: position, title: locData.name });
+                marker.locationData = locData;
 
-                // Store location data with the marker for easy access
-                marker.locationData = locationData;
-
-                kakao.maps.event.addListener(marker, 'click', function() {
-                    if (currentInfowindow) {
-                        currentInfowindow.close();
-                    }
-                    // Collect unique tags for this location
-                    const allTags = new Set();
-                    locationData.entries.forEach(entry => {
-                        entry.tags.forEach(tag => allTags.add(tag));
-                    });
-                    const tagsHtml = allTags.size > 0 ? 
-                        `<div style="margin-top:5px;font-size:10px;color:#666;">태그: ${Array.from(allTags).map(tag => `#${tag}`).join(', ')}</div>` : '';
-
-                    const infowindow = new kakao.maps.InfoWindow({
-                        content: `<div style="padding:5px;font-size:12px;">사진: ${locationData.entries.length}개${tagsHtml}</div>`
-                    });                    infowindow.open(map, marker);
+                kakao.maps.event.addListener(marker, 'click', () => {
+                    if (currentInfowindow) currentInfowindow.close();
+                    const tags = [...new Set(locData.entries.flatMap(e => e.tags))];
+                    const tagsHtml = tags.length ? `<div style="margin-top:5px;font-size:10px;color:#666;">태그: ${tags.map(t => `#${t}`).join(', ')}</div>` : '';
+                    const infowindow = new kakao.maps.InfoWindow({ content: `<div style="padding:5px;font-size:12px;">사진: ${locData.entries.length}개${tagsHtml}</div>` });
+                    infowindow.open(map, marker);
                     currentInfowindow = infowindow;
-                    displayLocationPhotos(locationData.entries, locationData.name);
+                    displayLocationPhotos(locData.entries, locData.name);
                 });
 
                 markers.push(marker);
                 bounds.extend(position);
             }
 
-            if (clusterer) {
-                clusterer.addMarkers(markers);
+            clusterer.addMarkers(markers);
+            if (!bounds.isEmpty()) map.setBounds(bounds);
 
-                // Handle cluster click event
-                kakao.maps.event.addListener(clusterer, 'clusterclick', function(cluster) {
-                    // If the cluster contains only one marker, treat it as a single marker click
-                    if (cluster.getMarkers().length === 1) {
-                        const marker = cluster.getMarkers()[0];
-                        // Manually trigger the marker's click event
-                        kakao.maps.event.trigger(marker, 'click');
-                    } else {
-                        // Gather all entries from markers within this cluster
-                        let clusterEntries = [];
-                        cluster.getMarkers().forEach(marker => {
-                            // Each marker's locationData contains an 'entries' array
-                            if (marker.locationData && marker.locationData.entries) {
-                                clusterEntries = clusterEntries.concat(marker.locationData.entries);
-                            }
-                        });
-                        // Display all entries from the cluster in the side panel
-                        displayLocationPhotos(clusterEntries, `클러스터 (${clusterEntries.length}개)`);
-                    }
-                });
-            }
-
-            if (!bounds.isEmpty()) {
-                map.setBounds(bounds);
-            }
+            kakao.maps.event.addListener(clusterer, 'clusterclick', function(cluster) {
+                if (cluster.getMarkers().length === 1) {
+                    kakao.maps.event.trigger(cluster.getMarkers()[0], 'click');
+                } else {
+                    const clusterEntries = cluster.getMarkers().flatMap(m => m.locationData.entries);
+                    displayLocationPhotos(clusterEntries, `클러스터 (${clusterEntries.length}개)`);
+                }
+            });
         }
 
-        function displayLocationPhotos(entriesToShow, locationName = "여러 위치") {
-            locationPhotosContainer.innerHTML = ''; // Clear previous photos
-            const entries = entriesToShow; // Rename for clarity
-            
-            // Sort by timestamp (newest first)
-            entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); 
+        function displayLocationPhotos(entries, locationName) {
+            locationPhotosContainer.innerHTML = '';
+            entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             if (entries.length > 0) {
-                // Use provided locationName or derive it
-                const displayTitle = locationName === "여러 위치" ? 
-                                     `선택된 위치 (${entries.length}개)` : 
-                                     `${locationName} (${entries.length}개)`;
+                const title = `${locationName} (${entries.length}개)`;
+                let photosHtml = `<h3 class="text-xl font-bold text-slate-800 mb-4">${title}</h3><div class="grid grid-cols-1 gap-4">`;
 
-                let photosHtml = `<h3 class="text-xl font-bold text-slate-800 mb-4">${displayTitle}</h3>`;
-                photosHtml += '<div class="grid grid-cols-1 gap-4">';
                 entries.forEach(entry => {
                     let mediaHtml = '';
                     if (entry.media_url) {
                         if (entry.media_type === 'image') {
                             mediaHtml = `<img src="${entry.media_url}" alt="${entry.location}" class="w-full h-40 object-cover rounded-md mb-2">`;
                         } else if (entry.media_type === 'video') {
-                            // Ensure proper video type is provided for source tag
-                            const videoType = entry.media_url.endsWith('.mp4') ? 'video/mp4' : 'video/webm'; // Example, ideally get from backend
-                            mediaHtml = `
-                                <video controls class="w-full h-40 object-cover rounded-md mb-2">
-                                    <source src="${entry.media_url}" type="${videoType}">
-                                    Your browser does not support the video tag.
-                                </video>`;
+                            mediaHtml = `<video controls class="w-full h-40 object-cover rounded-md mb-2"><source src="${entry.media_url}" type="video/mp4"></video>`;
                         }
                     }
-
-                    // Generate tags HTML
-                    const entryTagsHtml = entry.tags.length > 0 ?
-                        `<div class="mt-2">${entry.tags.map(tag => `<span class="inline-block bg-sky-100 text-sky-800 rounded-full px-2 py-0.5 text-xs font-semibold mr-1 mb-1">#${tag}</span>`).join('')}</div>` : '';
+                    const tagsHtml = entry.tags.length ? `<div class="mt-2">${entry.tags.map(t => `<span class="inline-block bg-sky-100 text-sky-800 rounded-full px-2 py-0.5 text-xs font-semibold mr-1 mb-1">#${t}</span>`).join('')}</div>` : '';
 
                     photosHtml += `
                         <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
                             ${mediaHtml}
                             <p class="text-sm text-slate-700">${entry.comment}</p>
-                            ${entryTagsHtml} <!-- Add tags here -->
+                            ${tagsHtml}
                             <p class="text-xs text-slate-500 mt-1">${entry.timestamp}</p>
                             <div class="mt-4 text-right flex justify-end space-x-2">
                                 <a href="/travel/diary_entry/${entry.id}/edit/" class="text-blue-600 hover:text-blue-800 text-sm font-medium">편집</a>
                                 <a href="/travel/diary_entry/${entry.id}/delete/" class="text-red-600 hover:text-red-800 text-sm font-medium">삭제</a>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
                 photosHtml += '</div>';
                 locationPhotosContainer.innerHTML = photosHtml;
@@ -477,10 +346,7 @@
             }
         }
 
-        timeSortBtn.addEventListener('click', showTimeSortView);
-        locationSortBtn.addEventListener('click', showLocationSortView);
-
-        // Initial view
+        // Initial View
         showTimeSortView();
     });
 </script>
