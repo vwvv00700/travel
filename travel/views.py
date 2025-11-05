@@ -729,27 +729,11 @@ def travel_diary_detail(request, pk):
     diary_entries = travel_diary.diary_entries.all().order_by('timestamp')
     media_entries = diary_entries.filter(media_file__isnull=False).exclude(media_file__exact='')
 
-    # Group entries by date
+    # Group entries by date for the timeline view
     grouped_entries = defaultdict(list)
     for entry in media_entries:
         if entry.timestamp:
             grouped_entries[entry.timestamp.date()].append(entry)
-
-    # Prepare data for JavaScript map
-    diary_entries_data = []
-    for entry in media_entries:
-        diary_entries_data.append({
-            'id': entry.id,
-            'location': entry.location,
-            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %M분") if entry.timestamp else '',
-            'latitude': entry.latitude,
-            'longitude': entry.longitude,
-            'media_url': entry.media_file.url if entry.media_file else '',
-            'media_type': entry.media_type,
-            'comment': entry.comment,
-            'tags': [tag.name for tag in entry.tags.all()]
-        })
-    diary_entries_json = json.dumps(diary_entries_data)
 
     # Try to find the associated travel plan
     display_plan = travel_diary.plan
@@ -757,7 +741,7 @@ def travel_diary_detail(request, pk):
         # Fallback logic to find a plan if not directly linked
         plan_title_hint = None
         if travel_diary.name:
-            match = re.search(r'\(([^)]+)\)\s*$' , travel_diary.name)
+            match = re.search(r'\(([^)]+)\)\s*$', travel_diary.name)
             if match:
                 plan_title_hint = match.group(1).strip()
 
@@ -776,11 +760,9 @@ def travel_diary_detail(request, pk):
             travel_diary.plan = ensure_plan_available(candidate.plan_id)
             travel_diary.save(update_fields=['plan'])
 
-    # --- New Combined Data Structure ---
+    # --- New Combined Data Structure for Timeline ---
     combined_days = []
     unmatched_entries = []
-    
-    # Make a mutable copy of grouped_entries
     remaining_entries = grouped_entries.copy()
 
     if display_plan and travel_diary.start_date and isinstance(display_plan.data, dict):
@@ -788,7 +770,6 @@ def travel_diary_detail(request, pk):
         if isinstance(plan_day_plans, list):
             for i, day_plan_stops in enumerate(plan_day_plans):
                 current_date = travel_diary.start_date + timedelta(days=i)
-                
                 combined_days.append({
                     "day_index": i,
                     "day_number": i + 1,
@@ -796,21 +777,79 @@ def travel_diary_detail(request, pk):
                     "plan_stops": day_plan_stops,
                     "diary_entries": grouped_entries.get(current_date, [])
                 })
-                # Remove the date from remaining_entries if it was matched
                 if current_date in remaining_entries:
                     del remaining_entries[current_date]
 
-    # Add any remaining diary entries that didn't match a plan day
-    # Sort by date before adding
     for date, entries in sorted(remaining_entries.items()):
         unmatched_entries.extend(entries)
 
+    # --- New Unified Location Data for Map ---
+    map_locations = {}
+
+    # 1. Process plan locations
+    if display_plan and isinstance(display_plan.data, dict):
+        plan_day_plans = display_plan.data.get('day_plans', []) or []
+        for day_plan in plan_day_plans:
+            for place in day_plan:
+                try:
+                    lat, lon = place.get('lat'), place.get('lng')
+                    if lat and lon:
+                        key = f"{float(lat):.6f},{float(lon):.6f}"
+                        if key not in map_locations:
+                            map_locations[key] = {
+                                'lat': lat,
+                                'lon': lon,
+                                'name': place.get('name'),
+                                'type': 'plan', # Initially marked as plan
+                                'plan_details': place,
+                                'diary_entries': []
+                            }
+                except (ValueError, TypeError):
+                    continue # Skip if lat/lon are invalid
+
+    # 2. Process diary entries and merge
+    diary_entries_data_for_map = []
+    for entry in media_entries:
+        entry_data = {
+            'id': entry.id,
+            'location': entry.location,
+            'timestamp': entry.timestamp.strftime("%Y년 %m월 %d일 %H시 %M분") if entry.timestamp else '',
+            'latitude': entry.latitude,
+            'longitude': entry.longitude,
+            'media_url': entry.media_file.url if entry.media_file else '',
+            'media_type': entry.media_type,
+            'comment': entry.comment,
+            'tags': [tag.name for tag in entry.tags.all()]
+        }
+        diary_entries_data_for_map.append(entry_data)
+
+        if entry.latitude is not None and entry.longitude is not None:
+            try:
+                key = f"{float(entry.latitude):.6f},{float(entry.longitude):.6f}"
+                if key in map_locations:
+                    # Location exists from plan, update type to 'both'
+                    map_locations[key]['type'] = 'both'
+                    map_locations[key]['diary_entries'].append(entry_data)
+                else:
+                    # New location only from diary
+                    map_locations[key] = {
+                        'lat': entry.latitude,
+                        'lon': entry.longitude,
+                        'name': entry.location or '위치 정보 없음',
+                        'type': 'diary',
+                        'plan_details': None,
+                        'diary_entries': [entry_data]
+                    }
+            except (ValueError, TypeError):
+                continue # Skip if lat/lon are invalid
+
     context = {
         'travel_diary': travel_diary,
-        'diary_entries_json': diary_entries_json,
         'combined_days': combined_days,
         'unmatched_entries': unmatched_entries,
-        'travel_plan': display_plan, # Still useful for high-level info
+        'travel_plan': display_plan,
+        'map_locations_json': json.dumps(list(map_locations.values()), ensure_ascii=False),
+        'diary_entries_json': json.dumps(diary_entries_data_for_map, ensure_ascii=False), # Keep for original side panel logic if needed
     }
 
     return render(request, 'travel/travel_diary_detail.html', context)
