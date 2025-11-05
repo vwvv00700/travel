@@ -50,6 +50,8 @@ urlpatterns += i18n_patterns(
     path('chat/', chat, name='chat'),
     path('chat/report/', travel_views.report_message, name='chat_report'),
     
+    path('chat/matching/', travel_views.matching, name='matching'),
+
     prefix_default_language=False # <-- 기본 언어(ko)에는 접두사(/ko/)를 붙이지 않음 (선택 사항)
 ) 
 

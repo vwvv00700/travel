@@ -27,6 +27,7 @@ from django.utils.safestring import mark_safe
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.utils import timezone
+from django.db import IntegrityError
 
 # ======================================
 # 3. 로컬 앱 임포트 (Local Application)
@@ -1200,3 +1201,61 @@ def travel_plan_detail(request, plan_id):
         'error_boolean': False,
     }
     return render(request, "travel/travel_plan_detail.html", context)
+
+@login_required
+def matching(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # travel_plans = UserSelectedPlan.objects.all()
+    travel_plans = UserSelectedPlan.objects.filter(user=request.user)
+
+    for travel in travel_plans:
+        startDate = travel.start_date
+        endDate = travel.end_date
+
+        user_areas = travel.plan.user_query.get("areas")
+        user_plan = travel.plan
+        plan_user_1 = travel.user
+
+        areas_str = ",".join(user_areas)    
+        list = UserSelectedPlan.objects.filter(start_date=startDate, end_date=endDate)
+        for item in list:
+            other_area = item.plan.user_query.get("areas")
+            other_plan = item.plan
+            plan_user_2 = item.user
+
+            if travel.pk == item.pk:
+                continue
+                 
+            room_name = f"Chat_{plan_user_1}_vs_{plan_user_2}_{areas_str}_{startDate.strftime('%Y%m%d')}-{endDate.strftime('%Y%m%d')}"
+
+            if sorted(user_areas) == sorted(other_area):
+
+                if not ChatRoom.objects.filter(room_name=room_name).exists():
+                    try:
+                        room, created = ChatRoom.objects.get_or_create(
+                            room_name=room_name,
+                            defaults={
+                                "plan_user_1": str(plan_user_1),
+                                "travel_plan1_pk": user_plan.pk,
+                                "plan_user_2": str(plan_user_2),
+                                "travel_plan2_pk": other_plan.pk,
+                            }
+                        )
+                        if created:
+                            print("ChatRoom created:", room.pk)
+                        else:
+                            print("ChatRoom already existed (race avoided).")
+                    except IntegrityError as e:
+                        print("IntegrityError during ChatRoom create:", e)
+                        # 추가 로그: 각각 PK 다시 확인
+                        print("user_plan.pk (retry):", getattr(user_plan, "pk", None))
+                        print("other_plan.pk (retry):", getattr(other_plan, "pk", None))
+
+    context = {
+        'message': "새로고침 완료.",
+    }
+
+    print("저장됨!")
+    return redirect('chat')

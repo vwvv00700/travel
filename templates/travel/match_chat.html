@@ -111,6 +111,9 @@ body {
     #chat-area{position:absolute; top:0; left:0; width:100%; height:100%; z-index:20; display:none;}
     #sidebar{border-bottom:none;}
 }
+
+.refresh {position: absolute;bottom: 15px;width: 180px;left: 50%;margin-left: -90px;display: flex;align-items: center;justify-content: center;gap: 10px;color: #333;background: #ededed;padding: 8px 0px;border-radius: 5px;text-decoration: none;font-weight: 600;font-size: 14px;}
+.refresh img{width: 15px; height: 15px;}
 </style>
 </head>
 <body>
@@ -120,7 +123,7 @@ const MY_USERNAME="{{ request.user.username }}";
 const MY_USER_ID="{{ request.user.id }}";
 </script>
 
-<div id="app-container">
+<div id="app-container" style="position: relative;">
     <aside id="sidebar">
         <header>
             <h2><i class="fas fa-users-line"></i> 파트너 매칭 목록</h2>
@@ -146,6 +149,8 @@ const MY_USER_ID="{{ request.user.id }}";
             <li style="padding:15px; text-align:center; color:#888;">매칭된 파트너가 없습니다.</li>
         {% endfor %}
         </ul>
+
+        <a href="{% url 'matching' %}" class="refresh"><img src="{% static '/img/refresh.png' %}">채팅방 새로고침</a>
     </aside>
 
     <main id="chat-area">

@@ -409,9 +409,30 @@ class UserSelectedPlan(models.Model):
 class ChatRoom(models.Model):
     room_name = models.CharField(max_length=100, unique=True)
     participants = models.ManyToManyField(User, related_name='chatrooms')
-    travel_plan1 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan1')
-    travel_plan2 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan2')
+
+    plan_user_1 = models.CharField(max_length=100, null=False)
+    travel_plan1_pk = models.IntegerField(null=True, blank=True)
+    # travel_plan1 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan1')
+
+    plan_user_2 = models.CharField(max_length=100, null=False)
+    travel_plan2_pk = models.IntegerField(null=True, blank=True)
+    # travel_plan2 = models.ForeignKey(TravelPlan, on_delete=models.CASCADE, related_name='chatrooms_as_plan2')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    user_matched = models.BooleanField(default=True)
+
+     # (선택) 편의 헬퍼
+    def get_travel_plan1(self, using='default'):
+        from travel.models import TravelPlan
+        if self.travel_plan1_pk:
+            return TravelPlan.objects.using(using).filter(pk=self.travel_plan1_pk).first()
+        return None
+
+    def get_travel_plan2(self, using='default'):
+        from travel.models import TravelPlan
+        if self.travel_plan2_pk:
+            return TravelPlan.objects.using(using).filter(pk=self.travel_plan2_pk).first()
+        return None
 
     def __str__(self):
         return f"ChatRoom({self.id}): {self.room_name}"
