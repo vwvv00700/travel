@@ -10,6 +10,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.models import User
 
 from travel.models import TravelPlan, Place, ChatRoom, UserSelectedPlan
+from travel.services.matching import matchingRoom
 
 logger = logging.getLogger(__name__)
 
@@ -25,44 +26,31 @@ def chat(request):
     current_user = request.user
     # 참여자가 2명인 방만 가져오거나, 나중에 필터링하는 것이 좋습니다.
     # 현재는 일단 모든 방을 가져와서 처리합니다.
-    current_rooms = ChatRoom.objects.filter(participants=current_user)
+
+    # 같은 여행 플랜을 가진 사용자와 매칭하여 ChatRoom 데이터 생성
+    refresh , messages = matchingRoom(request)
     
+    or_condition = Q(plan_user_1=current_user) | Q(plan_user_2=current_user)
+    current_rooms = ChatRoom.objects.filter(or_condition, user_matched=True)
     room_data_list = []
     
     for room in current_rooms:
-        # 현재 사용자를 제외한 나머지 참가자 QuerySet
-        other_participants = room.participants.exclude(id=current_user.id)
+
+        if room.plan_user_1 == current_user.username:
+            partner = room.plan_user_2
+            plan_pk = room.travel_plan2_pk
+        else:
+            partner = room.plan_user_1
+            plan_pk = room.travel_plan1_pk
         
-        # ⚠️ (가정) 1:1 채팅방임을 명시적으로 확인
-        # 현재 유저를 제외한 참가자가 정확히 1명인 경우만 처리
-        if other_participants.count() != 1:
-            continue
-            
-        partner = other_participants.first()
-        
-        # ... (이후의 여행 계획 유효성 검사 및 데이터 처리 로직은 동일)
-        
-        # 🚨 NULL 체크 및 객체 유효성 확인 강화
-        # 1. 파트너가 없거나 (1인 방) -> 위에서 count로 처리했으므로 사실상 불필요
-        if not partner:
-            continue
-            
-        # 2. room.travel_plan1이 None이거나 TravelPlan 객체가 아니면 건너뜁니다.
-        if not room.travel_plan1 or not isinstance(room.travel_plan1, TravelPlan):
-            continue
-            
-        # 3. 객체와 필드가 모두 유효함을 확인했으므로, 안전하게 접근합니다.
-        try:
-            location_value = room.travel_plan1.destination 
-        except AttributeError:
-            print(f"ERROR: TravelPlan object {room.travel_plan1.id} has no 'destination' field.")
-            location_value = "ERROR: 필드 누락"
+        plan = UserSelectedPlan.objects.filter(id=plan_pk).first()
+        plan_title = plan.plan_title if plan else "알 수 없음"
             
         room_data_list.append({
             'room': room,
-            'partner': partner,
-            'partner_name': partner.username, 
-            'location': location_value, 
+            'plan_title': plan_title,
+            'partner_name': partner,
+            # 'location': location_value, 
         })
             
     return render(request, 'travel/match_chat.html', {
@@ -70,6 +58,7 @@ def chat(request):
         'current_user': current_user.username,
         'message': None,
     })
+
 
 def signup_view(request):
     if request.method == 'POST':

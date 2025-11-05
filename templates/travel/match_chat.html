@@ -47,7 +47,7 @@ body {
 
 .partner-card {
     display:flex; align-items:center; padding:15px;
-    border-bottom:1px solid var(--border-light); cursor:pointer; transition:0.2s; position:relative;
+    border-bottom:1px solid var(--border-light); cursor:pointer; transition:0.2s; position:relative; background: #f9f9f9;
 }
 
 .partner-card:hover { background:var(--primary-color);}
@@ -56,7 +56,7 @@ body {
 .partner-name { font-weight:bold; color:var(--text-dark);}
 .match-actions { position:absolute; right:10px; display:flex; gap:5px; top:50%; transform:translateY(-50%);}
 .match-actions button { padding:4px 8px; border:none; border-radius:6px; cursor:pointer; font-size:0.8em;}
-.accept-btn { background:#4caf50; color:white;}
+.accept-btn { background:#333; color:white;}
 .reject-btn { background:#f44336; color:white;}
 
 
@@ -136,10 +136,10 @@ const MY_USER_ID="{{ request.user.id }}";
                 data-partner-name="{{ data.partner.username }}"
                 data-partner-id="{{ data.partner.id }}"
                 data-location="{{ data.location }}">
-                <img src="{% static 'img/profile.png' %}" alt="{{ data.partner.username }}" 
+                <img src="{% static 'img/profile.png' %}" alt="{{ data.partner_name }}" 
                      onerror="this.onerror=null;this.src='{% static 'img/profile.png' %}'">
-                <span class="partner-name">{{ data.partner.username }}</span>
-                <p style="font-size:0.8em; color:#888;">{{ data.location }} 여행</p>
+                <span class="partner-name">{{ data.partner_name }}</span>
+                <p style="font-size:0.8em; color:#888;">{{ data.plan_title }} 여행</p>
                 <div class="match-actions">
                     <button class="accept-btn">수락</button>
                     <button class="reject-btn">거절</button>
@@ -163,7 +163,7 @@ const MY_USER_ID="{{ request.user.id }}";
                 <span id="partner-name">{{ data.partner.username }}</span>
             </div>
             <div class="chat-actions">
-                <button class="action-btn" id="back-to-list-btn" title="목록으로"><i class="fas fa-arrow-left"></i></button>
+                <a class="action-btn" id="back-to-list-btn" href="{% url 'chat' %}" ><i class="fas fa-arrow-left"></i></a>
             </div>
         </header>
         <div class="chat-box" id="chat-box"></div>

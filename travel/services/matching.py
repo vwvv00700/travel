@@ -1,6 +1,7 @@
 from datetime import date
 from travel.models import TravelPlan, ChatRoom, UserSelectedPlan
 from django.db.models import Q
+from django.db import IntegrityError
 
 def dates_overlap(start1, end1, start2, end2):
     """날짜 범위가 겹치는지 체크"""
@@ -48,3 +49,74 @@ def auto_match_and_create_room(new_plan: UserSelectedPlan):
             created_rooms.append(room)
 
     return created_rooms # 생성된 방 목록을 반환하도록 변경
+
+def matchingRoom(request):
+    # if not request.user.is_authenticated:
+    #     return redirect('login')
+    
+    # travel_plans = UserSelectedPlan.objects.all()
+    travel_plans = UserSelectedPlan.objects.filter(user=request.user)
+    match_refresh = False
+    messages = ""
+
+    for travel in travel_plans:
+        startDate = travel.start_date
+        endDate = travel.end_date
+
+        user_areas = travel.plan.user_query.get("areas")
+        # user_plan = travel.plan
+        plan_user_1 = travel.user
+
+        areas_str = ",".join(user_areas)    
+        list = UserSelectedPlan.objects.filter(start_date=startDate, end_date=endDate)
+        for item in list:
+            user_list = []
+            other_area = item.plan.user_query.get("areas")
+            # other_plan = item.plan
+            plan_user_2 = item.user
+
+            if travel.id == item.id:
+                continue
+            
+            user_list.append(plan_user_1.username)
+            user_list.append(plan_user_2.username)
+            users = sorted(user_list)
+
+            room_name = f"Chat_{users[0]}_vs_{users[1]}_{areas_str}_{startDate.strftime('%Y%m%d')}-{endDate.strftime('%Y%m%d')}"
+
+            if sorted(user_areas) == sorted(other_area):
+                
+                if not ChatRoom.objects.filter(room_name=room_name).exists():
+                    try:
+                        room, created = ChatRoom.objects.get_or_create(
+                            room_name=room_name,
+                            defaults={
+                                "plan_user_1": str(plan_user_1),
+                                "travel_plan1_pk": travel.id,
+                                "plan_user_2": str(plan_user_2),
+                                "travel_plan2_pk": item.id,
+                            }
+                        )
+                        print(f"ChatRoom 생성 완료")
+                        if created:
+                            print("ChatRoom created:", room.pk)
+                            messages = "새로운 채팅방이 생성되었습니다!"
+                            match_refresh = True
+                        else:
+                            print("ChatRoom already existed (race avoided).")
+                            messages = "채팅방이 이미 생성 되었습니다."
+                    except IntegrityError as e:
+                        print("IntegrityError during ChatRoom create:", e)
+                        # 추가 로그: 각각 PK 다시 확인
+                        print("user_plan.pk (retry):", getattr(travel, "pk", None))
+                        print("other_plan.pk (retry):", getattr(item, "pk", None))
+                        messages = "새로운 채팅방 생성중 오류가 발생했습니다."
+                else:
+                    print("채팅방이 이미 존재합니다.")
+                    messages = "채팅방이 이미 존재합니다."
+                
+    # print("저장됨!")
+    # return redirect('match')
+    # return render(request, "travel/match_chat.html", context)
+
+    return match_refresh, messages

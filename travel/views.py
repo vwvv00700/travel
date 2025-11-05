@@ -155,26 +155,23 @@ def _strategy_plan_A(items):
     return items[:60]
 
 def _strategy_plan_B(items):
-    # 힐링/데이트 위주: 키워드로 보너스 준 다음 많이 준다
+    # 힐링/데이트 키워드로 보너스 → 상위 10개는 건너뛰고 그 다음 60개
     healing_keywords = (
         "힐링","휴식","온천","공원","산책","뷰","조용","분위기",
         "감성","야경","카페","데이트","로맨틱","분위기좋은",
         "드라이브","한적","산책코스"
     )
     boosted_sorted = _boost_and_sort(items, healing_keywords)
-
-    return boosted_sorted[:60]
+    return boosted_sorted[10:70] or boosted_sorted[:60]
 
 def _strategy_plan_C(items):
-    # 핫플/이색/액티비티 위주
+    # 액티브/핫플 보너스 → 상위 20개 건너뛰고 그 다음 60개
     active_keywords = (
         "핫플","핫플레이스","SNS","인스타","액티비티","체험",
         "독특","이색","야경","맛집투어","트렌디","핫스팟"
     )
     boosted_sorted = _boost_and_sort(items, active_keywords)
-
-    return boosted_sorted[:60]
-
+    return boosted_sorted[20:80] or boosted_sorted[:60]
 
 def _extract_day_waypoints(day_plans):
     """
@@ -1207,7 +1204,6 @@ def matching(request):
     if not request.user.is_authenticated:
         return redirect('login')
     
-    # travel_plans = UserSelectedPlan.objects.all()
     travel_plans = UserSelectedPlan.objects.filter(user=request.user)
 
     for travel in travel_plans:
@@ -1215,32 +1211,37 @@ def matching(request):
         endDate = travel.end_date
 
         user_areas = travel.plan.user_query.get("areas")
-        user_plan = travel.plan
+        # user_plan = travel.plan
         plan_user_1 = travel.user
 
         areas_str = ",".join(user_areas)    
         list = UserSelectedPlan.objects.filter(start_date=startDate, end_date=endDate)
         for item in list:
+            user_list = []
             other_area = item.plan.user_query.get("areas")
-            other_plan = item.plan
+            # other_plan = item.plan
             plan_user_2 = item.user
 
-            if travel.pk == item.pk:
+            if travel.id == item.id:
                 continue
-                 
-            room_name = f"Chat_{plan_user_1}_vs_{plan_user_2}_{areas_str}_{startDate.strftime('%Y%m%d')}-{endDate.strftime('%Y%m%d')}"
+            
+            user_list.append(plan_user_1.username)
+            user_list.append(plan_user_2.username)
+            users = sorted(user_list)
+
+            room_name = f"Chat_{users[0]}_vs_{users[1]}_{areas_str}_{startDate.strftime('%Y%m%d')}-{endDate.strftime('%Y%m%d')}"
 
             if sorted(user_areas) == sorted(other_area):
-
+                
                 if not ChatRoom.objects.filter(room_name=room_name).exists():
                     try:
                         room, created = ChatRoom.objects.get_or_create(
                             room_name=room_name,
                             defaults={
                                 "plan_user_1": str(plan_user_1),
-                                "travel_plan1_pk": user_plan.pk,
+                                "travel_plan1_pk": travel.id,
                                 "plan_user_2": str(plan_user_2),
-                                "travel_plan2_pk": other_plan.pk,
+                                "travel_plan2_pk": item.id,
                             }
                         )
                         if created:
@@ -1250,12 +1251,7 @@ def matching(request):
                     except IntegrityError as e:
                         print("IntegrityError during ChatRoom create:", e)
                         # 추가 로그: 각각 PK 다시 확인
-                        print("user_plan.pk (retry):", getattr(user_plan, "pk", None))
-                        print("other_plan.pk (retry):", getattr(other_plan, "pk", None))
+                        print("user_plan.pk (retry):", getattr(travel, "pk", None))
+                        print("other_plan.pk (retry):", getattr(item, "pk", None))
 
-    context = {
-        'message': "새로고침 완료.",
-    }
-
-    print("저장됨!")
     return redirect('chat')
