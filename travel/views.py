@@ -272,7 +272,10 @@ def travel_list(request):
     raw_text = request.POST.get("text", "").strip()
 
     if search_yn == "True" and raw_text:
-        user_query = parse_user_text_request(raw_text)
+        user_query = parse_user_text_request(request, raw_text)
+        if user_query is False:
+            messages.info(request, f"로그인 후 이용해 주세요.")
+            return redirect('/')
     else:
         user_query = parse_user_request(request)
 

@@ -21,111 +21,111 @@
 
     <!-- ✈️ Signup Container -->
     <div class="signup-container">
-        <h2 data-ko="여행 회원가입" data-en="Create Your Travel Account" data-es="Registro">회원가입</h2>
+        <h2 data-ko="여행 회원가입" data-en="Create Your Travel Account" data-es="Registro de viaje">회원가입</h2>
         <form class="signup-form" method="POST" action="{% url 'travel:signup' %}">
         {% csrf_token %}
         
         <div>
             <label data-ko="이름 / 닉네임" data-en="Full Name / Nickname" data-es="Nombre / Apodo">이름 / 닉네임</label>
-            <input type="text" name="nickname" placeholder="홍길동 / John Doe" required />
+            <input type="text" name="nickname" placeholder="홍길동 / John Doe / Nombre Apodo" data-ko-placeholder="홍길동 / John Doe" data-en-placeholder="John Doe" data-es-placeholder="Nombre Apodo" required />
         </div>
         
         <div>
             <label data-ko="아이디" data-en="userid" data-es="Nombre de usuario">아이디</label>
-            <input type="userid" name="userid" placeholder="아이디" required />
+            <input type="text" name="userid" placeholder="아이디 / Username / Nombre de usuario" data-ko-placeholder="아이디" data-en-placeholder="Username" data-es-placeholder="Nombre de usuario" required />
         </div>
         
         <div>
             <label data-ko="비밀번호" data-en="Password" data-es="Contraseña">비밀번호</label>
-            <input type="password" name="password" id="password" placeholder="8자 이상" required />
-            <small data-ko="비밀번호는 8자 이상이어야 합니다." data-en="Password must be at least 8 characters long.">
+            <input type="password" name="password" id="password" placeholder="8자 이상 / at least 8 chars / al menos 8 caracteres" data-ko-placeholder="8자 이상" data-en-placeholder="at least 8 chars" data-es-placeholder="al menos 8 caracteres" required />
+            <small data-ko="비밀번호는 8자 이상이어야 합니다." data-en="Password must be at least 8 characters long." data-es="La contraseña debe tener al menos 8 caracteres.">
                 비밀번호는 8자 이상이어야 합니다.
             </small>
         </div>
         
         <div>
             <label data-ko="비밀번호 확인" data-en="Confirm Password" data-es="Confirmar contraseña">비밀번호 확인</label>
-            <input type="password" name="password2" placeholder="비밀번호 확인" required />
+            <input type="password" name="password2" placeholder="비밀번호 확인 / Confirm password / Confirmar contraseña" data-ko-placeholder="비밀번호 확인" data-en-placeholder="Confirm password" data-es-placeholder="Confirmar contraseña" required />
         </div>
         
         <div>
             <label data-ko="이메일" data-en="Email" data-es="Correo electrónico">이메일</label>
-            <input type="email" name="email" placeholder="you@example.com" required />
+            <input type="email" name="email" placeholder="you@example.com / correo@ejemplo.com" data-ko-placeholder="you@example.com" data-en-placeholder="you@example.com" data-es-placeholder="correo@ejemplo.com" required />
         </div>
         
         <div>
             <label data-ko="성별" data-en="Gender" data-es="Género">성별</label>
-            <select name="gender" required>
-                <option value="" disabled selected>선택 / Select</option>
-                <option value="남성">남성 / Male</option>
-                <option value="여성">여성 / Female</option>
-                <!-- <option value="기타">기타 / Other</option>
-                <option value="선택 안함">선택 안함 / Prefer not to say</option> -->
+            <select name="gender" data-ko-placeholder="선택" data-en-placeholder="Select" data-es-placeholder="Seleccionar" required>
+                <option value="" disabled selected data-ko="선택 / Select" data-en="Select" data-es="Seleccionar">선택 / Select</option>
+                <option value="남성" data-ko="남성 / Male" data-en="Male" data-es="Hombre">남성 / Male</option>
+                <option value="여성" data-ko="여성 / Female" data-en="Female" data-es="Mujer">여성 / Female</option>
+                <!-- <option value="기타">기타 / Other / Otro</option>
+                <option value="선택 안함">선택 안함 / Prefer not to say / Prefiero no decir</option> -->
             </select>
         </div>
 
         <div>
             <label data-ko="연령대" data-en="Age Group" data-es="Rango de edad">연령대</label>
-            <select name="age_range" required>
-                <option value="" disabled selected>선택 / Select</option>
-                <option value="10대">10대</option>
-                <option value="20대">20대</option>
-                <option value="30대">30대</option>
-                <option value="40대 이상">40대 이상</option>
+            <select name="age_range" data-es-placeholder="Seleccionar" required>
+                <option value="" disabled selected data-ko="선택 / Select" data-en="Select" data-es="Seleccionar">선택 / Select</option>
+                <option value="10대" data-ko="10대" data-en="Teens" data-es="Adolescentes">10대 / Teens</option>
+                <option value="20대" data-ko="20대" data-en="20s" data-es="Veinteañeros">20대 / 20s</option>
+                <option value="30대" data-ko="30대" data-en="30s" data-es="Treintañeros">30대 / 30s</option>
+                <option value="40대 이상" data-ko="40대 이상" data-en="40+" data-es="40 o más">40대 이상 / 40+</option>
             </select>
         </div>
 
         <div>
             <label data-ko="국가" data-en="Country" data-es="País">국가</label>
-            <input type="text" name="country" placeholder="대한민국 / South Korea" />
+            <input type="text" name="country" placeholder="대한민국 / South Korea / Corea del Sur" data-ko-placeholder="대한민국" data-en-placeholder="South Korea" data-es-placeholder="Corea del Sur" />
         </div>
 
         <div>
             <label data-ko="사용 언어" data-en="Languages Spoken" data-es="Idioma(s) de uso">사용 언어</label>
-            <input type="text" name="language" placeholder="한국어, 영어, 스페인어" />
+            <input type="text" name="language" placeholder="한국어, 영어, 스페인어 / Korean, English, Spanish / Coreano, Inglés, Español" data-ko-placeholder="한국어, 영어, 스페인어" data-en-placeholder="Korean, English, Spanish" data-es-placeholder="Coreano, Inglés, Español" />
         </div>
 
         <div>
             <label data-ko="여행 스타일" data-en="Travel Style" data-es="Estilo de viaje">여행 스타일</label>
-            <select name="travel_style">
-                <option value="휴양형">🌿 휴양형 / Relax</option>
-                <option value="액티비티">🏃‍♂️ 액티비티 / Adventure</option>
-                <option value="문화탐방">🎭 문화탐방 / Culture</option>
-                <option value="미식">🍽 미식 / Foodie</option>
-                <option value="사진">📸 사진 / Photography</option>
+            <select name="travel_style" data-es-placeholder="Seleccionar estilo">
+                <option value="휴양형" data-ko="🌿 휴양형" data-en="🌿 Relax" data-es="🌿 Relajación">🌿 휴양형</option>
+                <option value="액티비티" data-ko="🏃‍♂️ 액티비티" data-en="🏃‍♂️ Adventure" data-es="🏃‍♂️ Actividad">🏃‍♂️ 액티비티</option>
+                <option value="문화탐방" data-ko="🎭 문화탐방" data-en="🎭 Culture" data-es="🎭 Exploración cultural">🎭 문화탐방</option>
+                <option value="미식" data-ko="🍽 미식" data-en="🍽 Foodie" data-es="🍽 Gastronómico">🍽 미식</option>
+                <option value="사진" data-ko="📸 사진" data-en="📸 Photography" data-es="📸 Fotografía">📸 사진</option>
             </select>
         </div>
 
         <div>
             <label data-ko="예산 수준" data-en="Budget Level" data-es="Nivel de presupuesto">예산 수준</label>
             <select name="budget">
-                <option value="저예산">₩ 저예산 / Budget</option>
-                <option value="중간">₩₩ 중간 / Standard</option>
-                <option value="고급">₩₩₩ 고급 / Luxury</option>
+                <option value="저예산" data-ko="₩ 저예산" data-en="Budget" data-es="₩ Económico">₩ 저예산</option>
+                <option value="중간" data-ko="₩₩ 중간" data-en="Standard" data-es="₩₩ Intermedio">₩₩ 중간</option>
+                <option value="고급" data-ko="₩₩₩ 고급" data-en="Luxury" data-es="₩₩₩ Lujo">₩₩₩ 고급</option>
             </select>
         </div>
 
         <div>
             <label data-ko="흡연 여부" data-en="Smoking Preference" data-es="Fuma (Sí/No)">흡연 여부</label>
             <select name="smoking">
-                <option value="비흡연">🚭 비흡연 / Non-smoker</option>
-                <option value="흡연">🚬 흡연 / Smoker</option>
+                <option value="비흡연" data-ko="🚭 비흡연" data-en="🚭 Non-smoker" data-es="🚭 No fumador">🚭 비흡연</option>
+                <option value="흡연" data-ko="🚬 흡연" data-en="🚬 Smoker" data-es="🚬 Fumador">🚬 흡연</option>
             </select>
         </div>
 
         <div>
             <label data-ko="음주 여부" data-en="Drinking Preference" data-es="Bebe alcohol (Sí/No)">음주 여부</label>
             <select name="drinking">
-                <option value="즐김">🍷 즐김 / Enjoys alcohol</option>
-                <option value="가끔">🍺 가끔 / Sometimes</option>
-                <option value="안 마심">🚫 안 마심 / Non-drinker</option>
+                <option value="즐김" data-ko="🍷 즐김 / Enjoys alcohol" data-en="🍷 Enjoys alcohol" data-es="🍷 Le gusta beber">🍷 즐김</option>
+                <option value="가끔" data-ko="🍺 가끔 / Sometimes" data-en="🍺 Sometimes" data-es="🍺 A veces">🍺 가끔</option>
+                <option value="안 마심" data-ko="🚫 안 마심 / Non-drinker" data-en="🚫 Non-drinker" data-es="🚫 No bebe alcohol">🚫 안 마심</option>
             </select>
         </div>
 
         <div>
             <label data-ko="MBTI 성격 유형" data-en="MBTI Type" data-es="Tipo de personalidad MBTI">MBTI 성격 유형</label>
             <select name="mbti" required>
-                <option value="" disabled selected>선택 / Select</option>
+                <option value="" disabled selected data-ko="선택 / Select" data-en="Select" data-es="Seleccionar">선택 / Select</option>
                 <option value="INTJ">INTJ</option>
                 <option value="INTP">INTP</option>
                 <option value="ENTJ">ENTJ</option>
@@ -147,12 +147,12 @@
 
         <div>
             <label data-ko="SNS 연결 (선택)" data-en="SNS (optional)" data-es="Conexión a redes sociales (Opcional)">SNS 연결 (선택)</label>
-            <input type="text" name="sns" placeholder="@username / link" />
+            <input type="text" name="sns" placeholder="@username / link / @usuario / enlace" data-ko-placeholder="@username / link" data-en-placeholder="@username / link" data-es-placeholder="@usuario / enlace" />
         </div>
 
         <div>
             <label data-ko="자기소개" data-en="About Me" data-es="Sobre mí / Presentación">자기소개</label>
-            <textarea name="bio" placeholder="간단한 자기소개를 입력해주세요 / Tell us a bit about yourself"></textarea>
+            <textarea name="bio" placeholder="간단한 자기소개를 입력해주세요 / Tell us a bit about yourself / Por favor, escribe una breve presentación" data-ko-placeholder="간단한 자기소개를 입력해주세요" data-en-placeholder="Tell us a bit about yourself" data-es-placeholder="Por favor, escribe una breve presentación"></textarea>
         </div>
 
         <label class="terms">
@@ -175,7 +175,29 @@
         function switchLanguage(lang) {
             console.log(lang)
             document.querySelectorAll('[data-ko]').forEach(el => {
-                el.textContent = el.getAttribute(`data-${lang}`);
+                // 텍스트 콘텐츠 전환
+                const attr = 'data-' + lang;
+                if (el.hasAttribute(attr)) {
+                    el.textContent = el.getAttribute(attr);
+                }
+            });
+
+            // placeholder 전환 (input, textarea)
+            document.querySelectorAll('input[data-ko-placeholder], textarea[data-ko-placeholder]').forEach(el => {
+                const attr = 'data-' + lang + '-placeholder';
+                if (el.hasAttribute(attr)) {
+                    el.placeholder = el.getAttribute(attr);
+                }
+            });
+
+            // select 안의 option들은 textContent를 직접 바꿔주기 (option에 data-es, data-en 있으면 사용)
+            document.querySelectorAll('select').forEach(sel => {
+                sel.querySelectorAll('option').forEach(opt => {
+                    const attr = 'data-' + lang;
+                    if (opt.hasAttribute(attr)) {
+                        opt.textContent = opt.getAttribute(attr);
+                    }
+                });
             });
 
             koBtn.classList.toggle('active', lang === 'ko');

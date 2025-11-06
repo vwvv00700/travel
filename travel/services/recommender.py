@@ -150,7 +150,10 @@ def parse_user_request(request) -> Dict[str, Any]:
         "user_id": user_id_val,     # 👈 JS가 저장 클릭할 때 같이 보냄
     }
 
-def parse_user_text_request(raw_text: str) -> Dict[str, Any]:
+def parse_user_text_request(request, raw_text: str) -> Dict[str, Any]:
+    if not request.user.is_authenticated:
+        return False
+    
     """
     자연어 검색어 기반으로 user_query를 생성 (index.html에서 검색창 입력 시 사용)
     기존 parse_user_request() 로직은 그대로 두고,
@@ -190,13 +193,19 @@ def parse_user_text_request(raw_text: str) -> Dict[str, Any]:
     if "카페" in text:
         themes.append("카페")
 
+    mbti = request.user.userprofile.mbti
+    if mbti :
+        mbti_guess = mbti
+    else:
+        mbti_guess = "ENFP"
+
     return {
         "areas": areas,
         "themes": themes,
         "nights": nights,
         "total_days": max(1, nights + 1),
         "group": "friends",
-        "mbti_guess": "ENFP",
+        "mbti_guess": mbti_guess,
         "season": "autumn",
         "raw_text": raw_text,
         "start_date": "",
