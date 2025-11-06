@@ -53,6 +53,7 @@ from .services.analysis_loader import create_or_update_analysis_from_json
 from .services.itinerary_llm_gemini import generate_itinerary_guide
 from travel.services.matching import auto_match_and_create_room
 from .services.recommender import (
+    parse_user_text_request,
     parse_user_request,
     get_ranked_places,
     split_into_days,
@@ -266,10 +267,14 @@ def travel_list(request):
       비동기(fetch)로 따로 받도록 함.
     - 대신 TravelPlan을 유저마다 새로 create해서 저장.
     """
+    
+    search_yn = request.POST.get("search_yn", "").strip()
+    raw_text = request.POST.get("text", "").strip()
 
-    # 1) 유저 조건 파싱
-    user_query = parse_user_request(request)
-    print(f"DEBUG: user_query = {user_query}")
+    if search_yn == "True" and raw_text:
+        user_query = parse_user_text_request(raw_text)
+    else:
+        user_query = parse_user_request(request)
 
     # 2) 후보 장소 스코어링
     ranked_all = get_ranked_places(user_query)
@@ -332,48 +337,6 @@ def travel_list(request):
     }
 
     return render(request, "travel/travel_list.html", context)
-
-# def travel_list(request):
-#     # 1) 검색창에서 넘어온 자연어 문장 받기
-#     if request.method == "POST":
-#         raw_text = request.POST.get("text", "").strip()
-#         if raw_text:
-#             # 유저 검색어를 파싱해서 user_query 딕셔너리로 만든다
-#             user_query = parse_user_request(raw_text)
-#         else:
-#             # 아무 것도 안 썼으면 기본값
-#             user_query = {
-#                 "areas": ["강남구", "서초구"],
-#                 "nights": 1,
-#                 "themes": ["힐링", "맛집"],
-#             }
-#     else:
-#         # GET으로 직접 /travel/list/ 들어올 때 기본값
-#         user_query = {
-#             "areas": ["강남구", "서초구"],
-#             "nights": 1,
-#             "themes": ["힐링", "맛집"],
-#         }
-
-#     # 2) 후보 장소 랭킹 뽑기
-#     ranked_all = get_ranked_places(user_query)
-
-#     # 3) 플랜 A/B/C 구성 (너 기존 코드 그대로 유지)
-#     plan_A = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 A", _strategy_plan_A)
-#     plan_B = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 B", _strategy_plan_B)
-#     plan_C = _build_plan_variant_no_guide(user_query, ranked_all, "추천 플랜 C", _strategy_plan_C)
-
-#     # 4) 템플릿 렌더
-#     return render(
-#         request,
-#         "travel_list.html",
-#         {
-#             "plan_A": plan_A,
-#             "plan_B": plan_B,
-#             "plan_C": plan_C,
-#         },
-#     )
-
 
 @require_GET
 def generate_guide_api(request):
@@ -1142,6 +1105,8 @@ def signup_view(request):
 
             # 5. 로그인 처리 및 리다이렉트
             login(request, user)
+
+            messages.info(request, f"회원가입 완료!! {user.username}님 환영합니다 🎉")
             return redirect("/")
 
         except Exception as e:

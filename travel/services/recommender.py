@@ -1,8 +1,7 @@
 from typing import Dict, List, Any
-from datetime import datetime
 from django.db.models import Prefetch, Q
 from travel.models import Place, PlaceAnalysis, UserProfile
-
+from datetime import date, datetime
 
 def parse_user_request(request) -> Dict[str, Any]:
     """
@@ -151,6 +150,59 @@ def parse_user_request(request) -> Dict[str, Any]:
         "user_id": user_id_val,     # 👈 JS가 저장 클릭할 때 같이 보냄
     }
 
+def parse_user_text_request(raw_text: str) -> Dict[str, Any]:
+    """
+    자연어 검색어 기반으로 user_query를 생성 (index.html에서 검색창 입력 시 사용)
+    기존 parse_user_request() 로직은 그대로 두고,
+    views에서 텍스트 검색 요청인 경우에만 이 함수를 호출하면 됨.
+    """
+    text = (raw_text or "").strip()
+    areas, themes = [], []
+    nights = 0
+
+    # 지역 파싱 (간단 키워드 매칭)
+    AREA_KEYWORDS = {
+        "강남": "강남구", "서초": "서초구", "송파": "송파구", "마포": "마포구",
+        "홍대": "마포구", "용산": "용산구", "종로": "종로구", "강북": "강북구"
+    }
+    for k, v in AREA_KEYWORDS.items():
+        if k in text:
+            areas.append(v)
+    areas = list(dict.fromkeys(areas))  # 중복 제거
+
+    # 숙박일수 파싱
+    if "1박" in text:
+        nights = 1
+    elif "2박" in text:
+        nights = 2
+    elif "3박" in text:
+        nights = 3
+
+    # 테마 파싱
+    if "맛집" in text or "먹방" in text:
+        themes.append("맛집")
+    if "힐링" in text:
+        themes.append("힐링")
+    if "데이트" in text:
+        themes.append("데이트")
+    if "가족" in text or "아이" in text:
+        themes.append("가족")
+    if "카페" in text:
+        themes.append("카페")
+
+    return {
+        "areas": areas,
+        "themes": themes,
+        "nights": nights,
+        "total_days": max(1, nights + 1),
+        "group": "friends",
+        "mbti_guess": "ENFP",
+        "season": "autumn",
+        "raw_text": raw_text,
+        "start_date": "",
+        "end_date": "",
+        "user_id": "",
+    }
 
 def score_place(pa: PlaceAnalysis, user: Dict[str, Any]) -> float:
     season_field = {

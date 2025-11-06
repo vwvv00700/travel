@@ -90,3 +90,7 @@
     width: 100%;
     resize: none;
 }
+
+.photo-wrap{display: flex; gap: 10px;}
+.photo-wrap label{display: block; width: 150px; line-height: 54px; text-align:center; border-radius: 5px; color: #fff; cursor:pointer; font-weight: bold;}
+#file_val{border: 1px solid #d1d5db; border-radius: 5px; width: 100%; line-height: 44px; padding: 5px 10px; box-sizing: border-box;}
