@@ -71,14 +71,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def save_message(self, user_id, room_id, content):
         try:
             print(f"[DB] try save room_id={room_id} user_id={user_id} content={content!r}")
-            room = ChatRoom.objects.get(id=room_id)
-            # Ensure related_name exists; try both ways to surface errors
-            if hasattr(room, 'messages'):
-                # Use field names from your model: sender, message
-                room.messages.create(sender_id=user_id, message=content)
-            else:
-                # fallback: create via ChatMessage
-                ChatMessage.objects.create(room=room, sender_id=user_id, message=content)
+            room = ChatRoom.objects.using('chat_db').get(id=room_id)
+            ChatMessage.objects.using('chat_db').create(room=room, sender_id=user_id, message=content)
             print("[DB] saved ok")
         except Exception as e:
             print("[ERROR][save_message]", e)

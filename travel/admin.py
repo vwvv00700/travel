@@ -584,8 +584,8 @@ class ChatRoomAdmin(admin.ModelAdmin):
 class ChatMessageAdmin(admin.ModelAdmin):
     list_display = ('id', 'get_room_name', 'sender_id', 'message', 'timestamp')
     search_fields = ('room__room_name', 'message')
-    list_filter = ('room__room_name', 'sender', 'timestamp')
-    raw_id_fields = ('room', 'sender') # 데이터가 많을 때 드롭다운 대신 ID로 검색
+    list_filter = ('room__room_name', 'sender_id', 'timestamp')
+    raw_id_fields = ('room',)
 
     def get_room_name(self, obj):
         return obj.room.room_name

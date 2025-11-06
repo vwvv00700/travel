@@ -115,9 +115,9 @@
                     <li><a href="{% url 'select' %}">{% trans "AI 코스 추천" %}</a></li>
                     <li class="dropdown"><a href="#"><span>{{ user.username }}</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
                         <ul>
-                            <li><a href="{% url 'travel:user_travel_plans' %}">{% trans "나의 여행 플랜" %}</a></li>
+                            <li><a href="{% url 'my_travel_plans_page' %}">{% trans "나의 여행 플랜" %}</a></li>
                             <li><a href="{% url 'travel:diary_list' %}">{% trans "내 다이어리" %}</a></li>
-                            <li><a href="{% url 'chat' %}">{% trans "여행자 채팅" %}</a></li>
+                            <li><a href="{% url 'chat_list_page' %}">{% trans "여행자 채팅" %}</a></li>
                         </ul>
                     </li>
                     <li><a href="{% url 'travel:logout' %}">{% trans "로그아웃" %}</a></li>
