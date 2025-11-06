@@ -6,6 +6,12 @@
 {% block map_style %}
 <link href="{% static 'css/travel_list.css' %}" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+    /* 나의 여행 플랜 */
+    .detail_title{max-width: 1300px; margin: 0 auto; margin-bottom: 2rem; padding: 20px; background: #fafafa; border: solid 1px #e1e0e0; border-radius: 12px;}
+    .detail_title h3{font-size: 30px; font-weight: 600; margin-bottom: 5px;}
+    .detail_title p{display: flex; gap: 10px;}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -30,6 +36,11 @@
 <div class="container mx-auto cont-wrap">
 
     <div class="page-wrap">
+
+        <div class="detail_title">
+            <h3>{{plan_title}}</h3>
+            <p><span>{{start_date}}</span> ~ <span>{{end_date}}</span></p>
+        </div>
 
         <!-- 본문 두 칸 레이아웃 -->
         <section class="planner-body" style="padding: 0;">

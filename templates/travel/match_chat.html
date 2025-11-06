@@ -29,7 +29,7 @@ body {
 
 #app-container {
     display:flex; flex-direction:column;
-    width:100%; max-width:420px; height:80vh;
+    width:100%; max-width:420px; height:90vh;
     background:white; border-radius:20px; overflow:hidden; box-shadow:var(--shadow-soft);
 }
 
@@ -37,7 +37,7 @@ body {
     width:100%; max-height:100%; background:#F8F8FF; display:flex; flex-direction:column;
 }
 
-#sidebar header { padding:15px; background:#333; color:white; display:flex; justify-content:space-between; align-items:center; }
+#sidebar header { padding:15px; background:var(--secondary-color); color:white; display:flex; justify-content:space-between; align-items:center; }
 
 #sidebar h2 { margin:0; font-size:1.2em; display:flex; align-items:center; gap:8px;}
 #back-to-main-btn { background:none; border:none; color:white; font-size:1.2em; cursor:pointer; transition:color 0.2s;}
@@ -56,11 +56,11 @@ body {
 .partner-name { font-weight:bold; color:var(--text-dark);}
 .match-actions { position:absolute; right:10px; display:flex; gap:5px; top:50%; transform:translateY(-50%);}
 .match-actions button { padding:4px 8px; border:none; border-radius:6px; cursor:pointer; font-size:0.8em;}
-.accept-btn { background:#333; color:white;}
-.reject-btn { background:#f44336; color:white;}
+.accept-btn { background:var(--secondary-color); color:white;}
+.reject-btn { background:#adadad; color:white;}
 
 
-#chat-area { flex-grow:1; display:none; flex-direction:column; width:100%;}
+#chat-area { flex-grow:1; display:none; flex-direction:column; width:100%; height:100%;}
 
 .chat-header {
     flex-shrink:0; display:flex; justify-content:space-between; align-items:center;
@@ -71,6 +71,7 @@ body {
 #partner-avatar { width:45px; height:45px; border-radius:50%; margin-right:15px; border:3px solid white; object-fit:cover;}
 #partner-name { font-weight:bold; font-size:1.2em;}
 
+.chat-actions{display: flex; align-items: center; gap: 10px;}
 .chat-actions .action-btn { background:none; border:none; color:white; font-size:1.2em; cursor:pointer; padding:5px; border-radius:50%; }
 
 .chat-box { flex-grow:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; background:var(--bg-light);}
@@ -112,7 +113,7 @@ body {
     #sidebar{border-bottom:none;}
 }
 
-.refresh {position: absolute;bottom: 15px;width: 180px;left: 50%;margin-left: -90px;display: flex;align-items: center;justify-content: center;gap: 10px;color: #333;background: #ededed;padding: 8px 0px;border-radius: 5px;text-decoration: none;font-weight: 600;font-size: 14px;}
+.refresh {position: absolute;bottom: 15px;width: 180px;left: 50%;margin-left: -90px;display: flex;align-items: center;justify-content: center;gap: 10px;color: #fff;background: var(--secondary-color); padding: 8px 0px;border-radius: 5px;text-decoration: none;font-weight: 600;font-size: 14px;}
 .refresh img{width: 15px; height: 15px;}
 </style>
 </head>
@@ -127,19 +128,21 @@ const MY_USER_ID="{{ request.user.id }}";
     <aside id="sidebar">
         <header>
             <h2><i class="fas fa-users-line"></i> 파트너 매칭 목록</h2>
-            <a href="{% url 'main' %}" id="back-to-main-btn" title="메인으로"><i class="fas fa-arrow-left"></i></a>
+            <!-- <a href="{% url 'main' %}" id="back-to-main-btn" title="메인으로"><i class="fas fa-arrow-left"></i></a> -->
+            <a href="{% url 'main' %}" style="width: 25px; height: 25px;"><img src="{% static 'img/home.png' %}" style="width: 100%;"></a>
         </header>
         <ul id="match-list" class="match-list">
         {% for data in room_data_list %}
             <li class="partner-card" 
                 data-room-id="{{ data.room.id }}" 
-                data-partner-name="{{ data.partner.username }}"
+                data-partner-name="{{ data.partner_name }}"
                 data-partner-id="{{ data.partner.id }}"
-                data-location="{{ data.location }}">
+                data-location="{{ data.location }}"
+                data-plan-title="{{ data.plan_title }}">
                 <img src="{% static 'img/profile.png' %}" alt="{{ data.partner_name }}" 
                      onerror="this.onerror=null;this.src='{% static 'img/profile.png' %}'">
-                <span class="partner-name">{{ data.partner_name }}</span>
-                <p style="font-size:0.8em; color:#888;">{{ data.plan_title }} 여행</p>
+                <span class="partner-name">{{ data.partner_name }} </span>
+                <p style="font-size:0.8em; color:#888; margin-left: 10px;">{{ data.plan_title }} 여행</p>
                 <div class="match-actions">
                     <button class="accept-btn">수락</button>
                     <button class="reject-btn">거절</button>
@@ -156,14 +159,13 @@ const MY_USER_ID="{{ request.user.id }}";
     <main id="chat-area">
         <header class="chat-header">
             <div id="partner-info">
-                <img id="partner-avatar"
-                    src="{% static 'img/profile.png' %}" 
-                    alt="{{ data.partner.username }}" 
-                    onerror="this.src='{% static 'img/profile.png' %}'">
-                <span id="partner-name">{{ data.partner.username }}</span>
+                <img id="partner-avatar" src="{% static 'img/profile.png' %}"  alt="{{ data.partner.username }}"  onerror="this.src='{% static 'img/profile.png' %}'">
+
+                <span id="partner-name">{{ data.partner_name }}</span>
             </div>
             <div class="chat-actions">
                 <a class="action-btn" id="back-to-list-btn" href="{% url 'chat' %}" ><i class="fas fa-arrow-left"></i></a>
+                <a href="{% url 'main' %}" style="width: 25px; height: 25px;"><img src="{% static 'img/home.png' %}" style="width: 100%;"></a>
             </div>
         </header>
         <div class="chat-box" id="chat-box"></div>
@@ -210,11 +212,26 @@ function displaySystem(message){
 // WebSocket 연결
 function connectWebSocket(roomId){
     if(chatSocket) chatSocket.close();
+    chatBox.innerHTML = ''; 
+
     const protocol = location.protocol==='https:' ? 'wss:' : 'ws:';
     const wsURL = `${protocol}//${location.host}/ws/chat/${roomId}/`;
     chatSocket = new WebSocket(wsURL);
 
-    chatSocket.onopen = ()=> displaySystem(`채팅방 ${roomId} 접속`);
+    chatSocket.onopen = ()=> {
+        displaySystem(`채팅방 ${roomId} 접속`);
+        // Fetch and display chat history
+        fetch(`/travel/api/messages/${roomId}/`)
+            .then(response => response.json())
+            .then(history => {
+                history.forEach(msg => {
+                    displayMessage(msg.message, msg.username, msg.timestamp);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom after loading history
+            })
+            .catch(error => console.error('Error fetching chat history:', error));
+    };
+    
     chatSocket.onmessage = e=>{
         const data = JSON.parse(e.data);
         displayMessage(data.message, data.username, data.timestamp);
@@ -243,6 +260,7 @@ matchList.addEventListener('click', e=>{
 
     if(acceptBtn){
         currentRoom = card.dataset.roomId;
+        console.log(card)
         connectWebSocket(currentRoom);
         partnerNameDisplay.textContent = card.dataset.partnerName;
         chatArea.style.display='flex';

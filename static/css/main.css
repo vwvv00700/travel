@@ -757,3 +757,4 @@ section, .section { color: var(--default-color); background-color: var(--backgro
 #map-container svg { width: 100%; height: auto; }
 
 #selected-districts-display { width: 100%; min-height: 50px; padding: 15px 20px; border-radius: 8px; color: #333; font-weight: 500; box-sizing: border-box; text-align: center; }
+

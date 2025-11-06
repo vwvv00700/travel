@@ -2,8 +2,12 @@ import json, datetime, traceback
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import ChatRoom, ChatMessage
+from django.contrib.auth import get_user_model
+
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    User = get_user_model()
+    
     async def connect(self):
         try:
             self.room_id = int(self.scope['url_route']['kwargs']['room_id'])
@@ -12,9 +16,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.accept()
             print(f"[CONNECT] channel {self.channel_name} joined {self.room_group_name}")
         except Exception as e:
-            print("[ERROR][connect]", e)
             traceback.print_exc()
-            await self.close(code=1011)
+            # await self.close(code=1011)
+            await self.close()  
 
     async def disconnect(self, close_code):
         try:
@@ -54,7 +58,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print("[ERROR][receive]", e)
             traceback.print_exc()
-            await self.close(code=1011)
+            # await self.close(code=1011)
+            await self.close()  
 
     async def chat_message(self, event):
         try:

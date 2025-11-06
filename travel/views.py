@@ -1376,9 +1376,33 @@ def travel_plan_detail(request, plan_id):
         "day_plans": data.get("day_plans", []),                    # Day 탭 생성용
         "list_html": mark_safe("".join(html_parts)),               # 좌측 리스트
         "user": request.user,
+        'plan_title': usp.plan_title,
+        'start_date': usp.start_date,
+        'end_date': usp.end_date,
         'error_boolean': False,
     }
     return render(request, "travel/travel_plan_detail.html", context)
+
+@login_required
+def get_chat_messages(request, room_id):
+    print(room_id)
+    try:
+        messages = ChatMessage.objects.using('chat_db').filter(room_id=room_id).order_by('timestamp')
+        sender_ids = {msg.sender_id for msg in messages}
+        users = User.objects.filter(id__in=sender_ids).values('id', 'username')
+        user_map = {user['id']: user['username'] for user in users}
+
+        history = [
+            {
+                "message": msg.message,
+                "username": user_map.get(msg.sender_id, "알 수 없음"),
+                "timestamp": msg.timestamp.isoformat(),
+            }
+            for msg in messages
+        ]
+        return JsonResponse(history, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
 def matching(request):

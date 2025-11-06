@@ -582,7 +582,8 @@ class ChatRoomAdmin(admin.ModelAdmin):
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'get_room_name', 'sender_id', 'message', 'timestamp')
+    # list_display = ('id', 'get_room_name', 'sender_id', 'message', 'timestamp')
+    list_display = ('id', 'get_room_name', 'get_sender_username', 'message', 'timestamp')
     search_fields = ('room__room_name', 'message')
     list_filter = ('room__room_name', 'sender', 'timestamp')
     raw_id_fields = ('room', 'sender') # 데이터가 많을 때 드롭다운 대신 ID로 검색
@@ -590,6 +591,14 @@ class ChatMessageAdmin(admin.ModelAdmin):
     def get_room_name(self, obj):
         return obj.room.room_name
     get_room_name.short_description = 'Chat Room'
+
+    def get_sender_username(self, obj):
+        try:
+            user = User.objects.using('default').get(id=obj.sender_id)
+            return user.username
+        except User.DoesNotExist:
+            return f"Unknown User (ID: {obj.sender_id})"
+    get_sender_username.short_description = 'Sender'
 
 @admin.register(ChatReport)
 class ChatReportAdmin(admin.ModelAdmin):

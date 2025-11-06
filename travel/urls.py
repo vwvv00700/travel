@@ -40,6 +40,7 @@ urlpatterns = [
     path("get_selected_plan/", views.get_selected_plan_api, name="get_selected_plan"),
     path("proxy_mapbox/", views.proxy_mapbox_route, name="proxy_mapbox"),
 
+    path('api/messages/<int:room_id>/', views.get_chat_messages, name='get_chat_messages'),
     path('chat/<str:room_name>/', views.chat_view, name='chat'),
     path("travel/create/", views.create_travel_plan, name="create_travel_plan"),
 
