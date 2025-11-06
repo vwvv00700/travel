@@ -1413,6 +1413,27 @@ def travel_plan_detail(request, plan_id):
     return render(request, "travel/travel_plan_detail.html", context)
 
 @login_required
+def get_chat_messages(request, room_id):
+    try:
+        messages = ChatMessage.objects.using('chat_db').filter(room_id=room_id).order_by('timestamp')
+        sender_ids = {msg.sender_id for msg in messages}
+        users = User.objects.filter(id__in=sender_ids).values('id', 'username')
+        user_map = {user['id']: user['username'] for user in users}
+
+        history = [
+            {
+                "message": msg.message,
+                "username": user_map.get(msg.sender_id, "알 수 없음"),
+                "timestamp": msg.timestamp.isoformat(),
+            }
+            for msg in messages
+        ]
+        return JsonResponse(history, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
 def matching(request):
     if not request.user.is_authenticated:
         return redirect('login')

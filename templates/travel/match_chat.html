@@ -60,7 +60,13 @@ body {
 .reject-btn { background:#f44336; color:white;}
 
 
-#chat-area { flex-grow:1; display:none; flex-direction:column; width:100%;}
+#chat-area { 
+    flex-grow:1; 
+    display:none; 
+    flex-direction:column; 
+    width:100%;
+    height: 100%; /* Ensure chat-area fills its container */
+}
 
 .chat-header {
     flex-shrink:0; display:flex; justify-content:space-between; align-items:center;
@@ -73,7 +79,12 @@ body {
 
 .chat-actions .action-btn { background:none; border:none; color:white; font-size:1.2em; cursor:pointer; padding:5px; border-radius:50%; }
 
-.chat-box { flex-grow:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; background:var(--bg-light);}
+.chat-box { 
+    flex-grow:1; /* Allow chat-box to grow and fill available space */
+    padding:10px; 
+    overflow-y:auto; /* Add a scrollbar when content overflows */
+    background:var(--bg-light);
+}
 .message { display:flex; margin-bottom:10px; align-items:flex-end;}
 .message-content { max-width:65%; padding:10px 15px; border-radius:20px; line-height:1.4; box-shadow:0 1px 3px rgba(0,0,0,0.08); word-break:break-word;}
 .message-time { font-size:0.7em; color:#888; align-self:flex-end; white-space: nowrap;}
@@ -210,11 +221,26 @@ function displaySystem(message){
 // WebSocket 연결
 function connectWebSocket(roomId){
     if(chatSocket) chatSocket.close();
+    chatBox.innerHTML = ''; // Clear previous messages
+
     const protocol = location.protocol==='https:' ? 'wss:' : 'ws:';
     const wsURL = `${protocol}//${location.host}/ws/chat/${roomId}/`;
     chatSocket = new WebSocket(wsURL);
 
-    chatSocket.onopen = ()=> displaySystem(`채팅방 ${roomId} 접속`);
+    chatSocket.onopen = ()=> {
+        displaySystem(`채팅방 ${roomId} 접속`);
+        // Fetch and display chat history
+        fetch(`/travel/api/messages/${roomId}/`)
+            .then(response => response.json())
+            .then(history => {
+                history.forEach(msg => {
+                    displayMessage(msg.message, msg.username, msg.timestamp);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom after loading history
+            })
+            .catch(error => console.error('Error fetching chat history:', error));
+    };
+
     chatSocket.onmessage = e=>{
         const data = JSON.parse(e.data);
         displayMessage(data.message, data.username, data.timestamp);
