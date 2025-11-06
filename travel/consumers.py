@@ -12,9 +12,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.accept()
             print(f"[CONNECT] channel {self.channel_name} joined {self.room_group_name}")
         except Exception as e:
-            print("[ERROR][connect]", e)
             traceback.print_exc()
-            await self.close(code=1011)
+            await self.close()
 
     async def disconnect(self, close_code):
         try:
@@ -54,7 +53,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print("[ERROR][receive]", e)
             traceback.print_exc()
-            await self.close(code=1011)
+            await self.close()
 
     async def chat_message(self, event):
         try:
