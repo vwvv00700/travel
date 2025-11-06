@@ -429,7 +429,7 @@ class ChatMessage(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.sender.username} -> {self.room.room_name}"
+        return f"Message from user ID {self.sender_id} in room {self.room_id}"
 
 # ----- 채팅 신고 모델 ------------------------------------------
 class ChatReport(models.Model):
