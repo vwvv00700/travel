@@ -8,9 +8,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-05 16:31+0900\n"
+"POT-Creation-Date: 2025-11-07 13:14+0900\n"
 "PO-Revision-Date: 2025-11-05 16:45+0900\n"
-"Last-Translator: ChatGPT <translator@openai.com>\n"
+"Last-Translator: Gemini <ai-translator@google.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -33,7 +33,7 @@ msgstr "AI Course Recommendation"
 #: .\templates\base.html:118 .\templates\travel\my_travel_plan.html:10
 #: .\templates\travel\my_travel_plan.html:15
 msgid "나의 여행 플랜"
-msgstr "My Travel Plan"
+msgstr "My Travel Plans"
 
 #: .\templates\base.html:119
 msgid "내 다이어리"
@@ -57,7 +57,7 @@ msgstr "Sign Up"
 
 #: .\templates\base.html:168
 msgid "알림"
-msgstr "Notification"
+msgstr "Notifications"
 
 #: .\templates\base.html:170 .\templates\travel\travel_diary_detail.html:50
 msgid "확인"
@@ -71,31 +71,31 @@ msgstr "A travel agent that designs your personalized trip"
 msgid "AI가 나에게 꼭 맞는 여행 계획을 추천해줘요"
 msgstr "AI recommends a travel plan perfectly suited to you"
 
-#: .\templates\index.html:28
+#: .\templates\index.html:29
 msgid "예: 강남, 마포 2박3일 힐링"
 msgstr "Ex: Gangnam, Mapo 2 nights 3 days healing trip"
 
-#: .\templates\index.html:44
+#: .\templates\index.html:45
 msgid "사람들의"
 msgstr "People's"
 
-#: .\templates\index.html:44 .\templates\travel\travel_plan_detail.html:24
+#: .\templates\index.html:45 .\templates\travel\travel_plan_detail.html:29
 msgid "여행 플랜"
-msgstr "Travel Plan"
+msgstr "Travel Plans"
 
-#: .\templates\index.html:58 .\templates\travel\my_travel_plan.html:42
+#: .\templates\index.html:59 .\templates\travel\my_travel_plan.html:42
 msgid "Days"
 msgstr "Days"
 
-#: .\templates\index.html:68 .\templates\travel\my_travel_plan.html:52
+#: .\templates\index.html:69 .\templates\travel\my_travel_plan.html:52
 msgid "상세보기"
 msgstr "View Details"
 
-#: .\templates\index.html:83
+#: .\templates\index.html:84
 msgid "여행 플랜이 없습니다."
 msgstr "No travel plans available."
 
-#: .\templates\index.html:88
+#: .\templates\index.html:89
 msgid "더보기 +"
 msgstr "View More +"
 
@@ -111,12 +111,12 @@ msgstr "Select destinations, duration, and theme to get AI course recommendation
 #: .\templates\travel\delete_diary_entry.html:15
 #: .\templates\travel\diary_entries_by_tag.html:14
 #: .\templates\travel\diary_list.html:14
-#: .\templates\travel\edit_diary_entry.html:15
+#: .\templates\travel\edit_diary_entry.html:19
 #: .\templates\travel\edit_travel_diary.html:29
 #: .\templates\travel\my_travel_plan.html:14
 #: .\templates\travel\travel_diary_detail.html:14
 #: .\templates\travel\travel_list.html:19
-#: .\templates\travel\travel_plan_detail.html:23 .\templates\upload.html:23
+#: .\templates\travel\travel_plan_detail.html:28 .\templates\upload.html:18
 msgid "Home"
 msgstr "Home"
 
@@ -126,7 +126,7 @@ msgstr "Travel Date"
 
 #: .\templates\select.html:44
 msgid "출발일부터 마지막 날까지 선택해주세요"
-msgstr "Please select from departure to the last day"
+msgstr "Please select from the departure to the last day"
 
 #: .\templates\select.html:48 .\templates\select.html:54
 #: .\templates\travel\create_travel_diary.html:57
@@ -140,7 +140,7 @@ msgstr "Destination (Select on map)"
 
 #: .\templates\select.html:62 .\templates\select.html:168
 msgid "최대 4개까지 선택 해주세요"
-msgstr "You can select up to 4"
+msgstr "You can select up to 4 destinations"
 
 #: .\templates\select.html:92 .\templates\select.html:125
 msgid "강남구"
@@ -252,7 +252,7 @@ msgstr "Travel Group"
 
 #: .\templates\select.html:156
 msgid "여행의 동행이 있는지 알려주세요"
-msgstr "Let us know if you're traveling with someone"
+msgstr "Let us know who you are traveling with"
 
 #: .\templates\select.html:158
 msgid "혼자"
@@ -276,11 +276,11 @@ msgstr "Travel Theme"
 
 #: .\templates\select.html:170
 msgid "카페"
-msgstr "Cafes"
+msgstr "Cafe"
 
 #: .\templates\select.html:171
 msgid "맛집"
-msgstr "Food"
+msgstr "Food/Restaurants"
 
 #: .\templates\select.html:172
 msgid "축제"
@@ -314,11 +314,11 @@ msgstr "AI Recommended Course"
 #: .\templates\travel\delete_diary_entry.html:11
 #: .\templates\travel\edit_travel_diary.html:25
 msgid "나만의 여행 다이어리 작성"
-msgstr "Create My Own Travel Diary"
+msgstr "Create My Travel Diary"
 
 #: .\templates\travel\create_travel_diary.html:14
 #: .\templates\travel\delete_diary_entry.html:12
-#: .\templates\travel\edit_travel_diary.html:26 .\templates\upload.html:20
+#: .\templates\travel\edit_travel_diary.html:26 .\templates\upload.html:15
 msgid "특별했던 여행의 순간을 기록해보세요"
 msgstr "Record the special moments of your trip"
 
@@ -378,7 +378,7 @@ msgid "삭제"
 msgstr "Delete"
 
 #: .\templates\travel\delete_diary_entry.html:30
-#: .\templates\travel\edit_diary_entry.html:83
+#: .\templates\travel\edit_diary_entry.html:90
 #: .\templates\travel\edit_travel_diary.html:50
 msgid "취소"
 msgstr "Cancel"
@@ -417,15 +417,15 @@ msgid "이 태그를 가진 기록이 없습니다."
 msgstr "No records with this tag."
 
 #: .\templates\travel\diary_list.html:10 .\templates\travel\diary_list.html:15
-#: .\templates\travel\edit_diary_entry.html:11
-#: .\templates\travel\edit_diary_entry.html:16
+#: .\templates\travel\edit_diary_entry.html:15
+#: .\templates\travel\edit_diary_entry.html:20
 msgid "나의 여행 다이어리"
 msgstr "My Travel Diary"
 
 #: .\templates\travel\diary_list.html:11
-#: .\templates\travel\edit_diary_entry.html:12
+#: .\templates\travel\edit_diary_entry.html:16
 msgid "즐거웠던 여행을 다이어로 남겨 추억을 간직하세요"
-msgstr "Keep memories of your trips through your diary"
+msgstr "Keep memories of your enjoyable trips through your diary"
 
 #: .\templates\travel\diary_list.html:30
 msgid "새 여행 다이어리 만들기"
@@ -443,38 +443,187 @@ msgstr "View Diary"
 msgid "아직 생성된 여행 다이어리가 없습니다. 새로운 다이어리를 만들어보세요!"
 msgstr "No travel diaries yet. Create a new one!"
 
-#: .\templates\travel\edit_diary_entry.html:23
+#: .\templates\travel\edit_diary_entry.html:28
 msgid "기록 편집"
 msgstr "Edit Record"
 
-#: .\templates\travel\edit_diary_entry.html:35
+#: .\templates\travel\edit_diary_entry.html:40
 msgid "소속 다이어리"
 msgstr "Parent Diary"
 
-#: .\templates\travel\edit_diary_entry.html:41 .\templates\upload.html:66
+#: .\templates\travel\edit_diary_entry.html:47 .\templates\upload.html:61
 msgid "사진 또는 동영상"
 msgstr "Photo or Video"
 
-#: .\templates\travel\edit_diary_entry.html:54 .\templates\upload.html:74
+#: .\templates\travel\edit_diary_entry.html:61 .\templates\upload.html:69
 msgid "미리보기"
 msgstr "Preview"
 
-#: .\templates\travel\edit_diary_entry.html:59 .\templates\upload.html:78
+#: .\templates\travel\edit_diary_entry.html:66 .\templates\upload.html:73
 msgid "감상평"
-msgstr "Review"
+msgstr "Review/Comment"
 
-#: .\templates\travel\edit_diary_entry.html:67 .\templates\upload.html:86
+#: .\templates\travel\edit_diary_entry.html:74 .\templates\upload.html:81
 msgid "태그"
 msgstr "Tags"
 
-#: .\templates\travel\edit_diary_entry.html:71 .\templates\upload.html:90
+#: .\templates\travel\edit_diary_entry.html:78 .\templates\upload.html:85
 msgid "AI 태그 생성"
 msgstr "Generate AI Tags"
 
-#: .\templates\travel\edit_diary_entry.html:82
+#: .\templates\travel\edit_diary_entry.html:89
 #: .\templates\travel\edit_travel_diary.html:49
 msgid "수정 완료"
 msgstr "Save Changes"
 
 #: .\templates\travel\edit_travel_diary.html:37
-#: .\templates\travel\travel_diary
+#: .\templates\travel\travel_diary_detail.html:33
+msgid "다이어리 수정"
+msgstr "Edit Diary"
+
+#: .\templates\travel\my_travel_plan.html:11
+msgid "내가 저장한 여행의 일정을 확인해보세요."
+msgstr "Check the schedule of the trip you saved."
+
+#: .\templates\travel\my_travel_plan.html:26
+msgid "여행 플랜 추천받기"
+msgstr "Get Travel Plan Recommendations"
+
+#: .\templates\travel\my_travel_plan.html:68
+msgid "아직 생성된 여행 플랜이 없습니다. 새로운 플랜을 추천받아 보세요!"
+msgstr "You haven't saved any travel plans yet. Get a new recommendation!"
+
+#: .\templates\travel\travel_diary_detail.html:10
+msgid "나만의 여행 다이어리"
+msgstr "My Own Travel Diary"
+
+#: .\templates\travel\travel_diary_detail.html:11
+msgid "특별했던 여행의 순간을 확인해보세요"
+msgstr "Check the special moments of your trip"
+
+#: .\templates\travel\travel_diary_detail.html:15
+msgid "여행 다이어리 상세"
+msgstr "Travel Diary Details"
+
+#: .\templates\travel\travel_diary_detail.html:30
+msgid "새로운 기록 추가"
+msgstr "Add New Record"
+
+#: .\templates\travel\travel_diary_detail.html:37
+msgid "AI 요약 보기"
+msgstr "View AI Summary"
+
+#: .\templates\travel\travel_diary_detail.html:45
+msgid "AI 여행 요약"
+msgstr "AI Travel Summary"
+
+#: .\templates\travel\travel_diary_detail.html:57
+msgid "일정별 보기"
+msgstr "View by Schedule"
+
+#: .\templates\travel\travel_diary_detail.html:58
+msgid "지도에서 보기"
+msgstr "View on Map"
+
+#: .\templates\travel\travel_diary_detail.html:68
+#: .\templates\travel\travel_diary_detail.html:146
+msgid "전체"
+msgstr "All"
+
+#: .\templates\travel\travel_diary_detail.html:83
+#, python-format
+msgid ""
+"\n"
+"                            %(day.day_number)s 일차\n"
+"                        "
+msgstr ""
+"\n"
+"                            Day %(day.day_number)s\n"
+"                        "
+
+#: .\templates\travel\travel_diary_detail.html:92
+msgid "계획된 일정"
+msgstr "Planned Schedule"
+
+#: .\templates\travel\travel_diary_detail.html:108
+msgid "나의 기록"
+msgstr "My Records"
+
+#: .\templates\travel\travel_diary_detail.html:118
+msgid "이 날짜에는 계획된 일정도, 작성된 기록도 없습니다."
+msgstr "No planned schedule or records for this date."
+
+#: .\templates\travel\travel_diary_detail.html:126
+msgid "기타 기록"
+msgstr "Other Records"
+
+#: .\templates\travel\travel_diary_detail.html:136
+msgid "아직 이 다이어리에 기록된 내용이 없습니다. 새로운 기록을 추가해보세요!"
+msgstr "No records yet in this diary. Add a new record!"
+
+#: .\templates\travel\travel_diary_detail.html:147
+#: .\templates\travel\travel_diary_detail.html:155
+msgid "계획"
+msgstr "Plan"
+
+#: .\templates\travel\travel_diary_detail.html:148
+#: .\templates\travel\travel_diary_detail.html:159
+msgid "다이어리"
+msgstr "Diary"
+
+#: .\templates\travel\travel_diary_detail.html:163
+msgid "계획+다이어리"
+msgstr "Plan + Diary"
+
+#: .\templates\travel\travel_diary_detail.html:171
+msgid "지도에서 위치를 선택하면 해당 위치의 사진이 표시됩니다."
+msgstr "Select a location on the map to view photos of that location."
+
+#: .\templates\travel\travel_list.html:15
+#: .\templates\travel\travel_list.html:20
+msgid "맞춤 여행 플랜"
+msgstr "Custom Travel Plans"
+
+#: .\templates\travel\travel_list.html:16
+msgid "아래는 취향&계절&동행 정보를 고려해 만든 맞춤 여행 플랜이에요."
+msgstr "Below are custom travel plans considering your preferences, season, and travel group."
+
+#: .\templates\travel\travel_plan_detail.html:23
+msgid "님의 여행 플랜"
+msgstr "'s Travel Plan"
+
+#: .\templates\travel\travel_plan_detail.html:25
+msgid "일정을 공유하고 정보를 얻어가세요."
+msgstr "Share your schedule and get information."
+
+#: .\templates\travel\travel_plan_detail.html:58
+msgid "동선 미리보기"
+msgstr "View Route Preview"
+
+#: .\templates\upload.html:14
+msgid "나만의 여행 다이어리 업로드"
+msgstr "Upload My Travel Diary"
+
+#: .\templates\upload.html:19 .\templates\upload.html:27
+msgid "여행 다이어리 업로드"
+msgstr "Upload Travel Diary"
+
+#: .\templates\upload.html:40
+msgid "선택된 여행 다이어리"
+msgstr "Selected Travel Diary"
+
+#: .\templates\upload.html:47
+msgid "여행 다이어리 선택"
+msgstr "Select Travel Diary"
+
+#: .\templates\upload.html:148
+msgid "지원하지 않는 파일 형식입니다."
+msgstr "Unsupported file format."
+
+#: .\templates\upload.html:191
+msgid "AI가 태그를 생성하지 못했습니다."
+msgstr "AI failed to generate tags."
+
+#: .\templates\upload.html:197
+msgid "AI 태그 생성 중 오류가 발생했습니다"
+msgstr "An error occurred while generating AI tags"

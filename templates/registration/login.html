@@ -2,15 +2,31 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로그인 | TravelMatch</title>
-  <link rel="stylesheet" href="{% static 'css/signup.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 | TravelMatch</title>
+    <link rel="stylesheet" href="{% static 'css/signup.css' %}">
+    <style>
+        .background {
+            background-image: url("{% static 'img/travel/showcase-9.webp' %}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            filter: brightness(0.7);
+        }
+
+        .background div{width: 100%;height: 100%; position:absolute;background:rgba(147, 147, 147, 0.5);}
+
+    </style>
 </head>
 <body>
     <!-- 🌐 언어 전환 버튼 -->
     <div class="language-switch">
-        <a href="{% url 'main' %}">TRAVEL</a>
+        <a href="{% url 'main' %}" style="color:#fff;">TRAVEL</a>
         <button id="lang-ko" class="active">🇰🇷 한국어</button>
         <button id="lang-en">🇺🇸 English</button>
         <button id="lang-es">🇪🇸 Español</button>
@@ -49,7 +65,7 @@
     </script>
     {% endif %}
     <!-- 🌄 배경 -->
-    <div class="background"></div>
+    <div class="background"><div></div></div>
 
     <!-- ✈️ 로그인 카드 -->
     <div class="signup-container">

@@ -461,6 +461,8 @@ def _render_select_page(request):
     grouped_places = {cat: list(items)
                       for cat, items in groupby(all_places, key=attrgetter("category"))}
 
+    print(f"분석 대기 장소 수: {all_places.count()}")
+
     ctx = {
         "title": "장소 LLM 분석 도구",
         "grouped_places": grouped_places,

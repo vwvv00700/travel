@@ -356,13 +356,17 @@ main {background: #fff;}
         min-height: 400px;
     }
     .itinerary-panel {
-        max-height: none;
-        overflow: visible;
+        overflow: scroll;
         display: block;
+        max-width: 100%;
+        width: 100%;
     }
     .itinerary-scroll {
         max-height: none;
         overflow: visible;
+    }
+    .plan-action-wrap input{
+        width: calc(100% - 150px);
     }
 }
 

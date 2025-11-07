@@ -38,18 +38,6 @@ a {text-decoration: none; color: #333;}
     color: white;
 }
 
-/* 🌄 배경 이미지 */
-.background {
-    background: url("assets/bg.jpg") center/cover no-repeat;
-
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    filter: brightness(0.7);
-}
-
 /* ✈️ 회원가입 카드 */
 .signup-container {
     background: rgba(255, 255, 255, 0.95);

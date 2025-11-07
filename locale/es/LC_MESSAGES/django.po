@@ -589,20 +589,14 @@ msgstr "Plan de Viaje Personalizado"
 msgid "아래는 취향&계절&동행 정보를 고려해 만든 맞춤 여행 플랜이에요."
 msgstr "Aquí tienes un plan de viaje personalizado que considera tus gustos, la estación y los acompañantes."
 
-#: .\templates\travel\travel_plan_detail.html:16
-#, python-format
-msgid ""
-"\n"
-"                <span class=\"user-name\">%(user)s</span>님의 여행 플랜\n"
-"            "
-msgstr ""
-"\n"
-"                Plan de Viaje de <span class=\"user-name\">%(user)s</span>\n"
-"            "
-
 #: .\templates\travel\travel_plan_detail.html:20
 msgid "일정을 공유하고 정보를 얻어가세요."
 msgstr "Comparte tu itinerario y obtén información."
+
+#: .\templates\travel\travel_plan_detail.html:23
+#, python-format
+msgid "님의 여행 플랜"
+msgstr "Plan de Viaje de"
 
 #: .\templates\travel\travel_plan_detail.html:48
 msgid "동선 미리보기"

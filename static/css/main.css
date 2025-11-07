@@ -273,7 +273,7 @@ h6 {
 --------------------------------------------------------------*/
 .page-title { color: var(--default-color); background-color: var(--background-color); background-size: cover; background-position: center; background-repeat: no-repeat; padding: 160px 0 80px 0; text-align: center; position: relative; }
 .page-title:before { content: ""; background-color: color-mix(in srgb, var(--background-color), transparent 50%); position: absolute; inset: 0; }
-.page-title h1 { font-size: 42px; font-weight: 700; margin-bottom: 10px; word-break: keep-all; }
+.page-title h1 { gap:5px; font-size: 42px; font-weight: 700; margin-bottom: 10px; word-break: keep-all; display: flex; justify-content: center;}
 .page-title p { word-break: keep-all; }
 .page-title .breadcrumbs ol { display: flex; flex-wrap: wrap; list-style: none; justify-content: center; padding: 0; margin: 0; font-size: 16px; font-weight: 400; }
 .page-title .breadcrumbs ol li+li { padding-left: 10px; }
@@ -422,8 +422,8 @@ section, .section { color: var(--default-color); background-color: var(--backgro
 .card-list .tour-card .tour-content .tour-meta span { color: color-mix(in srgb, var(--default-color), transparent 30%); font-size: 14px; display: flex; align-items: center; gap: 5px; }
 .card-list .tour-card .tour-content .tour-meta span i { color: var(--accent-color); }
 .card-list .tour-card .tour-content p { color: color-mix(in srgb, var(--default-color), transparent 20%); font-size: 15px; line-height: 1.6; margin-bottom: 20px; flex-grow: 1; }
-.card-list .tour-card .tour-content .tour-highlights { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 40px; }
-.card-list .tour-card .tour-content .tour-highlights span { background-color: color-mix(in srgb, var(--accent-color), transparent 90%); color: var(--accent-color); padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: 500; }
+.card-list .tour-card .tour-content .tour-highlights { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 40px; min-height: 60px; }
+.card-list .tour-card .tour-content .tour-highlights span { height: 26px; background-color: color-mix(in srgb, var(--accent-color), transparent 90%); color: var(--accent-color); padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: 500; }
 .card-list .tour-card .tour-content .tour-action { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
 .card-list .tour-card .tour-content .tour-action .btn-book { background-color: var(--accent-color); color: var(--contrast-color); padding: 12px 25px; border-radius: 6px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; font-size: 14px; margin-top:0; }
 .card-list .tour-card .tour-content .tour-action .btn-book:hover { background-color: color-mix(in srgb, var(--accent-color), black 15%); transform: translateY(-2px); color: var(--contrast-color); }
